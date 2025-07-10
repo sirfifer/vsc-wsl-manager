@@ -1,0 +1,98 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build extension
+      run: npm run compile
+    
+    - name: Package extension
+      run: |
+        npm install -g vsce
+        vsce package --no-yarn
+    
+    - name: Verify package
+      run: |
+        $vsixFile = Get-ChildItem -Filter "*.vsix" | Select-Object -First 1
+        if (-not $vsixFile) {
+          Write-Error "No VSIX file found"
+          exit 1
+        }
+        
+        # Check file size (should be reasonable, not too large)
+        $size = $vsixFile.Length / 1MB
+        Write-Host "VSIX size: ${size}MB"
+        if ($size -gt 10) {
+          Write-Warning "VSIX file is larger than 10MB"
+        }
+        
+        # Extract and verify contents
+        $tempDir = New-Item -ItemType Directory -Path "$env:TEMP\vsix-verify-$(Get-Random)"
+        Expand-Archive -Path $vsixFile.FullName -DestinationPath $tempDir
+        
+        # Check for required files
+        $requiredFiles = @(
+          "extension.vsixmanifest",
+          "package.json",
+          "out/extension.js"
+        )
+        
+        foreach ($file in $requiredFiles) {
+          $filePath = Join-Path $tempDir $file
+          if (-not (Test-Path $filePath)) {
+            Write-Error "Required file missing from VSIX: $file"
+            exit 1
+          }
+        }
+        
+        Write-Host "VSIX verification passed"
+        Remove-Item -Recurse -Force $tempDir
+    
+    - name: Upload VSIX artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: vsc-wsl-manager-vsix
+        path: '*.vsix'
+    
+    - name: Generate documentation
+      run: npm run docs
+    
+    - name: Upload documentation
+      uses: actions/upload-artifact@v3
+      with:
+        name: api-documentation
+        path: docs/api/
+    
+    - name: Bundle size check
+      run: |
+        $outDir = "out"
+        $totalSize = 0
+        Get-ChildItem -Path $outDir -Recurse -File | ForEach-Object {
+          $totalSize += $_.Length
+        }
+        $sizeMB = [math]::Round($totalSize / 1MB, 2)
+        Write-Host "Total bundle size: ${sizeMB}MB"
+        
+        if ($sizeMB -gt 5) {
+          Write-Warning "Bundle size exceeds 5MB threshold"
+        }

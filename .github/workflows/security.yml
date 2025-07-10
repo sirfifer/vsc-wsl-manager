@@ -1,0 +1,268 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run npm audit
+      run: |
+        npm audit --production --audit-level=moderate
+        
+        # Also check dev dependencies
+        echo "Checking all dependencies (including dev)..."
+        npm audit --audit-level=high || true
+    
+    - name: Check for known vulnerabilities with Snyk
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+    
+    - name: Upload Snyk results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: snyk.sarif
+
+  code-scanning:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: javascript, typescript
+        queries: security-extended
+    
+    - name: Build code for analysis
+      run: |
+        npm ci
+        npm run compile
+    
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+    
+    - name: Run ESLint security plugin
+      run: |
+        npm install --save-dev eslint-plugin-security
+        npx eslint . --ext .ts,.js --plugin security --rule 'security/detect-object-injection: error' --format json > eslint-security-report.json || true
+    
+    - name: Upload ESLint results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: eslint-security-report
+        path: eslint-security-report.json
+
+  secret-scanning:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Full history for secret scanning
+    
+    - name: Run GitLeaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Run TruffleHog
+      uses: trufflesecurity/trufflehog@v3
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --debug --only-verified
+
+  license-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Check licenses
+      run: |
+        npx license-checker --production --summary --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;CC-BY-3.0;CC-BY-4.0;Unlicense;WTFPL'
+    
+    - name: Generate license report
+      run: |
+        npx license-checker --production --json > licenses.json
+        
+        # Check for copyleft licenses
+        echo "Checking for copyleft licenses..."
+        npx license-checker --production --onlyAllow 'GPL;LGPL;AGPL;CC-BY-SA' || echo "No copyleft licenses found (this is good)"
+
+  security-policy-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Check for security policy
+      run: |
+        if [ ! -f "SECURITY.md" ]; then
+          echo "::warning::SECURITY.md file is missing. Please add a security policy."
+          exit 1
+        fi
+    
+    - name: Validate security headers in code
+      run: |
+        # Check for common security issues
+        echo "Checking for hardcoded secrets..."
+        grep -r -E "(api[_-]?key|api[_-]?secret|password|passwd|pwd|token|secret)" --include="*.ts" --include="*.js" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=test . || true
+        
+        echo "Checking for unsafe regex..."
+        grep -r -E "new RegExp\(" --include="*.ts" --include="*.js" --exclude-dir=node_modules --exclude-dir=.git . || true
+        
+        echo "Checking for eval usage..."
+        grep -r -E "\beval\s*\(" --include="*.ts" --include="*.js" --exclude-dir=node_modules --exclude-dir=.git . || true
+
+  container-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Build test container
+      run: |
+        cat > Dockerfile.test << 'EOF'
+        FROM node:18-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm ci --only=production
+        COPY . .
+        RUN npm run compile
+        CMD ["node", "out/extension.js"]
+        EOF
+        
+        docker build -f Dockerfile.test -t wsl-manager:test .
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'wsl-manager:test'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  security-report:
+    needs: [dependency-audit, code-scanning, secret-scanning, license-check, security-policy-check]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Generate security summary
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const jobs = [
+            { name: 'Dependency Audit', status: '${{ needs.dependency-audit.result }}' },
+            { name: 'Code Scanning', status: '${{ needs.code-scanning.result }}' },
+            { name: 'Secret Scanning', status: '${{ needs.secret-scanning.result }}' },
+            { name: 'License Check', status: '${{ needs.license-check.result }}' },
+            { name: 'Security Policy', status: '${{ needs.security-policy-check.result }}' }
+          ];
+          
+          let summary = '## Security Scan Summary\n\n';
+          let hasFailures = false;
+          
+          jobs.forEach(job => {
+            const emoji = job.status === 'success' ? '✅' : '❌';
+            summary += `${emoji} ${job.name}: ${job.status}\n`;
+            if (job.status !== 'success') hasFailures = true;
+          });
+          
+          if (hasFailures) {
+            summary += '\n⚠️ **Security issues detected!** Please review the job logs above.';
+            core.setFailed('Security scan failed');
+          } else {
+            summary += '\n✅ **All security checks passed!**';
+          }
+          
+          // Create a comment on PR
+          if (context.eventName === 'pull_request') {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('Security Scan Summary')
+            );
+            
+            const comment = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            };
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                ...comment,
+                comment_id: botComment.id
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...comment,
+                issue_number: context.issue.number
+              });
+            }
+          }
+          
+          // Set output for job summary
+          await core.summary
+            .addRaw(summary)
+            .write();

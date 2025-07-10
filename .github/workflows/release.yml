@@ -1,0 +1,271 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.3)'
+        required: true
+        type: string
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Determine version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "push" ]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION="${{ inputs.version }}"
+        fi
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Version: ${VERSION}"
+    
+    - name: Validate version format
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Error: Version must be in format X.Y.Z"
+          exit 1
+        fi
+
+  build-and-test:
+    needs: validate-version
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Update version in package.json
+      run: |
+        $version = "${{ needs.validate-version.outputs.version }}"
+        $packageJson = Get-Content package.json | ConvertFrom-Json
+        $packageJson.version = $version
+        $packageJson | ConvertTo-Json -Depth 10 | Set-Content package.json
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add package.json
+        git diff --cached --quiet || git commit -m "chore: update version to $version"
+    
+    - name: Run tests
+      run: npm test
+    
+    - name: Check coverage
+      run: |
+        npm run test:coverage
+        $coverage = Get-Content ./coverage/coverage-summary.json | ConvertFrom-Json
+        $lineCoverage = $coverage.total.lines.pct
+        if ($lineCoverage -lt 80) {
+          Write-Error "Code coverage is below 80% threshold: $lineCoverage%"
+          exit 1
+        }
+    
+    - name: Build extension
+      run: npm run compile
+    
+    - name: Package extension
+      run: |
+        npm install -g vsce
+        vsce package --no-yarn
+    
+    - name: Verify VSIX
+      run: |
+        $vsixFile = Get-ChildItem -Filter "*.vsix" | Select-Object -First 1
+        if (-not $vsixFile) {
+          Write-Error "No VSIX file found"
+          exit 1
+        }
+        
+        # Verify file name includes version
+        $expectedName = "vsc-wsl-manager-${{ needs.validate-version.outputs.version }}.vsix"
+        if ($vsixFile.Name -ne $expectedName) {
+          Rename-Item $vsixFile.FullName $expectedName
+        }
+        
+        # Check size
+        $size = (Get-Item $expectedName).Length / 1MB
+        Write-Host "VSIX size: ${size}MB"
+        
+        # Extract and verify
+        $tempDir = New-Item -ItemType Directory -Path "$env:TEMP\vsix-release-check"
+        Expand-Archive -Path $expectedName -DestinationPath $tempDir
+        
+        # Verify package.json has correct version
+        $packageJson = Get-Content "$tempDir\extension\package.json" | ConvertFrom-Json
+        if ($packageJson.version -ne "${{ needs.validate-version.outputs.version }}") {
+          Write-Error "Package version mismatch"
+          exit 1
+        }
+        
+        Remove-Item -Recurse -Force $tempDir
+    
+    - name: Upload VSIX artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: vsix-package
+        path: '*.vsix'
+    
+    - name: Generate documentation
+      run: npm run docs
+    
+    - name: Upload documentation artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: api-docs
+        path: docs/api/
+
+  create-release:
+    needs: [validate-version, build-and-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Download VSIX artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: vsix-package
+    
+    - name: Extract changelog for version
+      id: changelog
+      run: |
+        VERSION="${{ needs.validate-version.outputs.version }}"
+        
+        # Extract changelog section for this version
+        awk -v ver="$VERSION" '
+          /^## \[/ { if (found) exit; }
+          /^## \['$VERSION'\]/ { found=1; next; }
+          found { print }
+        ' CHANGELOG.md > release-notes.md
+        
+        if [ ! -s release-notes.md ]; then
+          echo "No changelog entry found for version $VERSION"
+          echo "Please update CHANGELOG.md" > release-notes.md
+        fi
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ needs.validate-version.outputs.version }}
+        name: Release v${{ needs.validate-version.outputs.version }}
+        body_path: release-notes.md
+        draft: true
+        prerelease: false
+        files: |
+          *.vsix
+    
+    - name: Comment on related issues
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const version = '${{ needs.validate-version.outputs.version }}';
+          const releaseUrl = `https://github.com/${{ github.repository }}/releases/tag/v${version}`;
+          
+          // Find issues/PRs that mention this version
+          const { data: issues } = await github.rest.search.issuesAndPullRequests({
+            q: `repo:${{ github.repository }} ${version} in:body`,
+            per_page: 100
+          });
+          
+          for (const issue of issues.items) {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: `🎉 This has been released in [v${version}](${releaseUrl})!`
+            });
+          }
+
+  publish-marketplace:
+    needs: [validate-version, create-release]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    environment: marketplace
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    
+    - name: Download VSIX artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: vsix-package
+    
+    - name: Install vsce
+      run: npm install -g vsce
+    
+    - name: Publish to VS Code Marketplace
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      run: |
+        vsce publish -p $VSCE_PAT --packagePath *.vsix
+    
+    - name: Verify marketplace listing
+      run: |
+        sleep 30  # Wait for marketplace to update
+        VERSION="${{ needs.validate-version.outputs.version }}"
+        
+        # Check if version is available
+        MARKETPLACE_INFO=$(curl -s "https://marketplace.visualstudio.com/items?itemName=your-publisher.wsl-manager")
+        if [[ $MARKETPLACE_INFO == *"$VERSION"* ]]; then
+          echo "✅ Version $VERSION is now available on the marketplace"
+        else
+          echo "⚠️  Version might not be available yet, please check manually"
+        fi
+
+  notify-release:
+    needs: [validate-version, create-release, publish-marketplace]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Send notification
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const version = '${{ needs.validate-version.outputs.version }}';
+          const success = '${{ needs.publish-marketplace.result }}' === 'success';
+          
+          const message = success
+            ? `✅ Release v${version} completed successfully!`
+            : `❌ Release v${version} failed. Check the workflow logs.`;
+          
+          // Create an issue if release failed
+          if (!success) {
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release v${version} failed`,
+              body: `The release workflow for v${version} failed.\n\nWorkflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ['bug', 'release']
+            });
+          }

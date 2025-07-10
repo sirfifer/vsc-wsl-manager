@@ -1,0 +1,36 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/extension.ts", "./src/wslManager.ts", "./src/wslTreeDataProvider.ts", "./src/terminalProfileManager.ts"],
+  "entryPointStrategy": "resolve",
+  "out": "./docs/api",
+  "readme": "./README.md",
+  "name": "VSC WSL Manager API",
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeProtected": false,
+  "hideGenerator": true,
+  "navigationLinks": {
+    "GitHub": "https://github.com/your-username/vsc-wsl-manager",
+    "VS Code Marketplace": "https://marketplace.visualstudio.com/items?itemName=your-publisher.wsl-image-manager"
+  },
+  "plugin": ["typedoc-plugin-markdown"],
+  "githubPages": false,
+  "disableSources": false,
+  "sort": ["alphabetical"],
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  },
+  "exclude": [
+    "**/test/**/*",
+    "**/node_modules/**",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/claude-personas/**"
+  ],
+  "tsconfig": "./tsconfig.json"
+}
