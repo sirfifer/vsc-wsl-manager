@@ -1,0 +1,22 @@
+# Icon Placeholder
+
+This is a placeholder for the extension icon.
+
+For the actual release, create a 128x128 PNG icon that represents WSL management.
+
+Suggested design:
+- WSL/Linux penguin logo combined with VS Code elements
+- Color scheme matching the galleryBanner color (#0066CC)
+- Clear and recognizable at small sizes
+
+You can use tools like:
+- Figma
+- Adobe Illustrator
+- Inkscape (free)
+- Canva
+
+Icon requirements:
+- Format: PNG
+- Size: 128x128 pixels
+- Background: Transparent or matching theme
+- File size: < 100KB

@@ -2,20 +2,58 @@ import * as vscode from 'vscode';
 import { WSLManager, WSLDistribution } from './wslManager';
 import * as path from 'path';
 
+/**
+ * Tree data provider for displaying WSL distributions in VS Code's tree view
+ * 
+ * @example
+ * ```typescript
+ * const provider = new WSLTreeDataProvider(wslManager);
+ * vscode.window.createTreeView('wslDistributions', { treeDataProvider: provider });
+ * ```
+ */
 export class WSLTreeDataProvider implements vscode.TreeDataProvider<WSLTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<WSLTreeItem | undefined | null | void> = new vscode.EventEmitter<WSLTreeItem | undefined | null | void>();
+    /** Event fired when tree data changes */
     readonly onDidChangeTreeData: vscode.Event<WSLTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
+    /**
+     * Creates a new WSL tree data provider
+     * @param wslManager - WSL manager instance for retrieving distribution data
+     */
     constructor(private wslManager: WSLManager) {}
 
+    /**
+     * Refreshes the tree view by firing the change event
+     * 
+     * @example
+     * ```typescript
+     * provider.refresh(); // Updates the tree view
+     * ```
+     */
     refresh(): void {
         this._onDidChangeTreeData.fire();
     }
 
+    /**
+     * Gets the tree item representation for display
+     * 
+     * @param element - The tree item to display
+     * @returns The tree item for VS Code to render
+     */
     getTreeItem(element: WSLTreeItem): vscode.TreeItem {
         return element;
     }
 
+    /**
+     * Gets child elements for a tree item
+     * 
+     * @param element - Parent element, or undefined for root level
+     * @returns Promise resolving to array of child tree items
+     * 
+     * @remarks
+     * - When element is undefined, returns list of distributions
+     * - When element is a distribution, returns distribution details
+     */
     async getChildren(element?: WSLTreeItem): Promise<WSLTreeItem[]> {
         if (!element) {
             // Root level - show distributions
@@ -85,7 +123,18 @@ export class WSLTreeDataProvider implements vscode.TreeDataProvider<WSLTreeItem>
     }
 }
 
+/**
+ * Tree item representing a WSL distribution or distribution information
+ */
 class WSLTreeItem extends vscode.TreeItem {
+    /**
+     * Creates a new WSL tree item
+     * 
+     * @param label - Display label for the tree item
+     * @param distribution - Associated WSL distribution
+     * @param collapsibleState - Whether the item can be expanded
+     * @param type - Type of tree item (distribution or info)
+     */
     constructor(
         public readonly label: string,
         public readonly distribution: WSLDistribution,
