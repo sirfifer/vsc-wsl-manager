@@ -1,0 +1,122 @@
+{
+  "name": "wsl-image-manager",
+  "displayName": "WSL Image Manager",
+  "description": "Manage WSL images and integrate them as VS Code terminal profiles",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Other"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "wsl-manager.refreshDistributions",
+        "title": "WSL: Refresh Distributions",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "wsl-manager.createDistribution",
+        "title": "WSL: Create New Distribution",
+        "icon": "$(add)"
+      },
+      {
+        "command": "wsl-manager.importDistribution",
+        "title": "WSL: Import Distribution from TAR"
+      },
+      {
+        "command": "wsl-manager.exportDistribution",
+        "title": "WSL: Export Distribution to TAR"
+      },
+      {
+        "command": "wsl-manager.deleteDistribution",
+        "title": "WSL: Delete Distribution",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "wsl-manager.openTerminal",
+        "title": "WSL: Open Terminal",
+        "icon": "$(terminal)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "wsl-manager",
+          "title": "WSL Manager",
+          "icon": "resources/wsl-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "wsl-manager": [
+        {
+          "id": "wslDistributions",
+          "name": "WSL Distributions",
+          "icon": "$(server)",
+          "contextualTitle": "WSL Distributions"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "wsl-manager.refreshDistributions",
+          "when": "view == wslDistributions",
+          "group": "navigation"
+        },
+        {
+          "command": "wsl-manager.createDistribution",
+          "when": "view == wslDistributions",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "wsl-manager.openTerminal",
+          "when": "view == wslDistributions && viewItem == distribution",
+          "group": "inline"
+        },
+        {
+          "command": "wsl-manager.exportDistribution",
+          "when": "view == wslDistributions && viewItem == distribution"
+        },
+        {
+          "command": "wsl-manager.deleteDistribution",
+          "when": "view == wslDistributions && viewItem == distribution"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "WSL Manager",
+      "properties": {
+        "wsl-manager.defaultDistributionPath": {
+          "type": "string",
+          "default": "",
+          "description": "Default path for storing WSL distributions"
+        },
+        "wsl-manager.autoRegisterProfiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically register WSL distributions as terminal profiles"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.3"
+  }
+}
