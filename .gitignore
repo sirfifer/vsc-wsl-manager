@@ -3,3 +3,26 @@ dist
 node_modules
 .vscode-test/
 *.vsix
+
+# Local configuration
+.env.local
+setup-report.json
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+.nyc_output/
