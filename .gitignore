@@ -26,3 +26,6 @@ yarn-error.log*
 # Test coverage
 coverage/
 .nyc_output/
+
+# Claude personas development
+claude-personas/
