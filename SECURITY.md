@@ -73,9 +73,11 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ## Security Best Practices for Contributors
 
+> 📢 **Note**: While we're currently only accepting ideas and feedback (not code contributions), these guidelines will apply when we open up for community contributions.
+
 ### Code Review Checklist
 
-Before submitting code, ensure:
+When we begin accepting code contributions, ensure:
 
 - [ ] No user input directly concatenated into commands
 - [ ] All paths validated and normalized

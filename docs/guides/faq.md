@@ -233,11 +233,13 @@ The extension manages WSL distributions independently. Docker Desktop's WSL inte
 
 ### Can I contribute to development?
 
-Yes! See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines. We welcome:
-- Bug fixes
-- New features
-- Documentation improvements
-- Translations
+We're currently accepting **ideas and feedback only** while we establish core functionality. See [CONTRIBUTING.md](../../CONTRIBUTING.md) for details. We welcome:
+- Feature suggestions and ideas
+- Bug reports
+- Feedback on architecture and design
+- Use case discussions
+
+Once we reach a stable foundation, we'll open up for code contributions!
 
 ## Getting Help
 

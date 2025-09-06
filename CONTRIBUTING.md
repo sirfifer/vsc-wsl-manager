@@ -1,6 +1,14 @@
 # Contributing to VSC WSL Manager
 
-First off, thank you for considering contributing to VSC WSL Manager! It's people like you that make this extension better for everyone.
+> 📢 **Current Status: Accepting Ideas & Feedback Only**
+>
+> Thank you for your interest in contributing! At this early stage, we're focusing on rapid initial development to establish core functionality. **We warmly welcome your ideas, feedback, and suggestions**, but are not yet accepting code contributions or pull requests.
+>
+> This is temporary - once we reach a stable foundation, we'll open up for full community contributions. For now, please share your thoughts through:
+> - **GitHub Issues**: Bug reports, feature requests, and suggestions
+> - **GitHub Discussions**: Ideas, questions, and general feedback
+>
+> Your input during this phase is invaluable in shaping the project's direction!
 
 ## Code of Conduct
 
@@ -12,6 +20,8 @@ This project and everyone participating in it is governed by our Code of Conduct
 - **Be collaborative** - Work together to solve problems
 
 ## How Can I Contribute?
+
+> 🔔 **Note**: The sections below describe our full contribution process for when we open up code contributions. Currently, we're only accepting ideas and feedback through Issues and Discussions.
 
 ### Reporting Bugs
 
@@ -57,8 +67,11 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 - **Alternatives considered**: What other solutions did you consider?
 - **Additional context**: Mockups, examples, etc.
 
-### Pull Requests
+### Pull Requests (Coming Soon!)
 
+> ⏸️ **Not Yet Accepting Pull Requests**: We're not accepting code contributions at this time. This section is provided for future reference when we open up for community contributions.
+
+When we begin accepting pull requests, the process will be:
 1. Fork the repo and create your branch from `main`
 2. If you've added code that should be tested, add tests
 3. If you've changed APIs, update the documentation
@@ -67,6 +80,8 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 6. Issue that pull request!
 
 ## Development Setup
+
+> 📘 **For Reference**: The following sections detail our development setup and guidelines. While we're not accepting code contributions yet, you're welcome to set up the development environment to explore the codebase and test your ideas locally.
 
 ### Prerequisites
 

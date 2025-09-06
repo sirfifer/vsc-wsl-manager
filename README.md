@@ -36,11 +36,18 @@ VSC WSL Manager will be a comprehensive VS Code extension for managing Windows S
 - 📊 **Real-time Status**: Monitor distribution states with live updates
 - 🔒 **Security First**: Input validation, rate limiting, audit logging
 
-## 🤝 Contributing - Yes, Even Now!
+## 🤝 Contributing - Ideas & Feedback Welcome!
 
-**"But it doesn't work yet!"** - That's exactly why we need you! 
+### 📢 Current Contribution Status
 
-Getting involved in a project from day one means you can help shape its direction. We believe the best projects are built by communities, not individuals.
+We're currently **accepting ideas and feedback only** - not code contributions or pull requests. This temporary approach allows us to rapidly establish core functionality while still benefiting from community input.
+
+**Why this approach?**
+- Enables faster initial development for essential features
+- Ensures consistent architecture and security implementation
+- Allows us to reach a stable foundation quickly
+
+**This is temporary!** Once we have a solid base, we'll open up for full community contributions.
 
 ### How You Can Help Right Now
 
@@ -48,29 +55,25 @@ Getting involved in a project from day one means you can help shape its directio
 - What features would make this useful for you?
 - What security concerns should we address?
 - How could the UI/UX be most intuitive?
+- Open an issue or start a discussion!
 
-#### 🔍 Review Our Approach
-- Check our [planned architecture](docs/architecture/overview.md)
-- Review our [security design](docs/architecture/security.md)
+#### 🔍 Provide Feedback
+- Review our [planned architecture](docs/architecture/overview.md)
+- Check our [security design](docs/architecture/security.md)
 - Suggest improvements before we build the wrong thing!
+- Test early releases and report issues
 
-#### 📖 Improve Documentation
-- Found a typo? Fix it!
-- Confused by something? Help us clarify!
-- Have expertise in WSL? Share your knowledge!
+#### 🐛 Report Bugs
+- Found something broken? Let us know!
+- Include detailed reproduction steps
+- Help us understand your use case
 
-#### 🧪 Prepare for Testing
-- Set up the development environment
-- Be ready to test early alpha builds
-- Help us identify edge cases we haven't thought of
+#### 💬 Join the Conversation
+- Participate in GitHub Discussions
+- Help answer community questions
+- Share your WSL workflows and pain points
 
-### For First-Time Contributors
-- **You're not too early!** This is actually the perfect time to join
-- **No contribution is too small** - even fixing a typo or asking a clarifying question helps
-- **We're learning too** - Don't worry about being perfect
-- **Questions are contributions** - If something isn't clear, others probably wonder too
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details, though remember we're all figuring this out together!
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details about our contribution process and future plans!
 
 ## 🗺️ Roadmap
 
@@ -104,7 +107,7 @@ Want to influence our direction? [Start a discussion](https://github.com/your-us
 
 **⚠️ Remember: This doesn't actually do anything useful yet!**
 
-But if you want to explore the code, contribute, or just see how we're building this:
+But if you want to explore the code, provide feedback, or just see how we're building this:
 
 ```bash
 # Clone the repository
@@ -148,7 +151,7 @@ We believe in radical transparency. Here's exactly where we are:
 
 - **Learn in Public**: Our mistakes and learnings might help others
 - **Early Feedback**: Avoid building features nobody wants
-- **Community Building**: Great projects are built by communities
+- **Community Input**: Your feedback shapes the project
 - **Accountability**: Public development keeps us motivated
 - **Transparency**: You can see exactly how software is built from scratch
 
@@ -180,7 +183,7 @@ Even though we're just starting, we're grateful for:
 - **Early Stars** ⭐ - Thanks for believing in the vision!
 - **Issue Reporters** - Yes, we know it doesn't work yet, but thanks for testing!
 - **Documentation Readers** - You're reading this, so thank you!
-- **Future Contributors** - We're excited to build this with you!
+- **Future Contributors** - Looking forward to your ideas and feedback!
 
 ### Special Thanks
 - The VS Code team for the excellent extension API
@@ -208,7 +211,7 @@ Yes, we're licensing code that doesn't work yet. We're thorough like that! 😄
 **Community Welcome**: 🟢 Absolutely  
 **Should You Install**: 🔴 Not Yet  
 **Should You Star**: 🟢 If You're Interested  
-**Should You Contribute**: 🟢 Yes Please!  
+**Share Your Ideas**: 🟢 Yes Please!  
 
 ---
 
