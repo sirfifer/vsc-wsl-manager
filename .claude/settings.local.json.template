@@ -1,0 +1,34 @@
+{
+  "description": "Local Claude Code settings override template - Copy to settings.local.json and customize",
+  "permissions": {
+    "allow": [
+      "// Add your custom allowed commands here",
+      "// Example: Bash(npm run my-custom-script)",
+      "// Example: Bash(node my-script.js)"
+    ],
+    "deny": [
+      "// Add additional files/commands to block",
+      "// Example: Read(./my-private-notes.md)",
+      "// Example: Bash(my-dangerous-command)"
+    ],
+    "ask": [
+      "// Add commands that should prompt for confirmation",
+      "// Example: Bash(git pull origin main)",
+      "// Example: Bash(npm run deploy)"
+    ]
+  },
+  "hooks": {
+    "// Custom hooks can be added here",
+    "// PreToolUse": {",
+    "//   Bash: 'echo \"Custom pre-command hook\"'",
+    "// }"
+  },
+  "notes": [
+    "1. Copy this file to settings.local.json to use it",
+    "2. Remove the .template extension",
+    "3. Uncomment and modify the permissions as needed",
+    "4. This file should be in .gitignore (already added)",
+    "5. These settings will override project settings",
+    "6. Use this for personal workflow customizations"
+  ]
+}

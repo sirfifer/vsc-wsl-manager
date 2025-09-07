@@ -1,0 +1,60 @@
+{
+  "description": "Claude Code settings for VSC WSL Manager autonomous iteration",
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Edit",
+      "MultiEdit",
+      "Write",
+      "Read",
+      "Bash(npm run compile)",
+      "Bash(npm run quick-test)",
+      "Bash(npm run automate)",
+      "Bash(npm run fix-iteration)",
+      "Bash(npm test)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run watch)",
+      "Bash(npm run dev)",
+      "Bash(npm run diagnostics)",
+      "Bash(npm run clean:*)",
+      "Bash(node scripts/safe-runner.js:*)",
+      "Bash(node out/scripts:*)",
+      "Bash(tsc:*)",
+      "Bash(cat:*)",
+      "Bash(tail:*)",
+      "Bash(ls:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git add .)",
+      "Bash(git commit -m:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(pwd)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(**/.env*)",
+      "Read(**/credentials*)",
+      "Read(**/*secret*)",
+      "Read(**/*password*)",
+      "Read(**/.ssh/*)",
+      "Bash(rm -rf:*)",
+      "Bash(rm -rf /)",
+      "Bash(del /f /q:*)",
+      "Bash(format:*)",
+      "Bash(git push:*)",
+      "Bash(git push)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(npm publish)",
+      "Bash(npm login)",
+      "Bash(npm adduser)",
+      "Bash(sudo:*)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "env": {
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1"
+  }
+}
