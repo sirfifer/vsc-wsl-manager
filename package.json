@@ -74,9 +74,42 @@
         "icon": "$(trash)"
       },
       {
-        "command": "wsl-manager.selectDistributionForImage",
-        "title": "WSL: Create new Image from Distribution",
+        "command": "wsl-manager.deleteImage",
+        "title": "WSL: Delete Image",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "wsl-manager.createImageFromDistribution",
+        "title": "WSL: Create Image from Distribution",
         "icon": "$(add)"
+      },
+      {
+        "command": "wsl-manager.createImageFromImage",
+        "title": "WSL: Create Image from Existing Image",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "wsl-manager.refreshImages",
+        "title": "WSL: Refresh Images",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "wsl-manager.editImageProperties",
+        "title": "WSL: Edit Image Properties",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "wsl-manager.toggleImageEnabled",
+        "title": "WSL: Toggle Image Enabled",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "wsl-manager.showImageHelp",
+        "title": "WSL: Learn about WSL Images"
+      },
+      {
+        "command": "wsl-manager.showHelp",
+        "title": "WSL: Learn about WSL"
       },
       {
         "command": "wsl-manager.openTerminal",
@@ -96,22 +129,80 @@
     "views": {
       "wsl-manager": [
         {
+          "id": "wslImages",
+          "name": "WSL Images",
+          "icon": "$(package)",
+          "contextualTitle": "WSL Images",
+          "visibility": "visible"
+        },
+        {
           "id": "wslDistributions",
           "name": "WSL Distributions",
           "icon": "$(server)",
-          "contextualTitle": "WSL Distributions"
+          "contextualTitle": "WSL Distributions",
+          "visibility": "visible"
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "wslImages",
+        "contents": "No WSL images found.\n[$(add) Create Image from Distribution](command:wsl-manager.createImageFromDistribution)\n[$(expand-all) Create Image from Existing Image](command:wsl-manager.createImageFromImage)\n[Learn about WSL Images](command:wsl-manager.showImageHelp)"
+      },
+      {
+        "view": "wslDistributions",
+        "contents": "No WSL distributions found.\n[$(cloud-download) Download Distribution](command:wsl-manager.downloadDistribution)\n[$(folder-opened) Import from TAR](command:wsl-manager.importDistribution)\n[Learn about WSL](command:wsl-manager.showHelp)"
+      }
+    ],
     "menus": {
       "view/title": [
         {
+          "command": "wsl-manager.createImageFromDistribution",
+          "when": "view == wslImages",
+          "group": "navigation@1",
+          "icon": "$(add)"
+        },
+        {
+          "command": "wsl-manager.createImageFromImage",
+          "when": "view == wslImages",
+          "group": "navigation@2",
+          "icon": "$(expand-all)"
+        },
+        {
+          "command": "wsl-manager.refreshImages",
+          "when": "view == wslImages",
+          "group": "navigation@3",
+          "icon": "$(refresh)"
+        },
+        {
+          "command": "wsl-manager.downloadDistribution",
+          "when": "view == wslDistributions",
+          "group": "navigation@1",
+          "icon": "$(cloud-download)"
+        },
+        {
           "command": "wsl-manager.refreshDistributions",
           "when": "view == wslDistributions",
-          "group": "navigation"
+          "group": "navigation@2",
+          "icon": "$(refresh)"
         }
       ],
       "view/item/context": [
+        {
+          "command": "wsl-manager.editImageProperties",
+          "when": "view == wslImages && viewItem =~ /^image/",
+          "group": "1_modify@1"
+        },
+        {
+          "command": "wsl-manager.toggleImageEnabled",
+          "when": "view == wslImages && viewItem =~ /^image/",
+          "group": "1_modify@2"
+        },
+        {
+          "command": "wsl-manager.deleteImage",
+          "when": "view == wslImages && viewItem =~ /^image/",
+          "group": "2_dangerous@1"
+        },
         {
           "command": "wsl-manager.openTerminal",
           "when": "view == wslDistributions && viewItem == distribution",

@@ -18,7 +18,8 @@ const logger = Logger.getInstance();
  */
 export interface ImageMetadata {
     name: string;
-    baseDistribution: string;
+    baseDistribution?: string;  // If created from distribution
+    baseImage?: string;         // If created from another image
     created: string;
     size: number;
     architecture: 'x64' | 'arm64';
@@ -28,14 +29,16 @@ export interface ImageMetadata {
     author?: string;
     compress?: boolean;
     postInstallScript?: string;
+    enabled?: boolean;          // Controls terminal profile visibility (default: true)
 }
 
 /**
  * Image information returned by list operations
  */
 export interface ImageInfo extends ImageMetadata {
-    // ImageInfo is essentially the same as ImageMetadata
-    // but represents the complete information about an image
+    enabled: boolean;           // Controls terminal profile visibility
+    baseDistribution?: string;  // If created from distribution
+    baseImage?: string;         // If created from another image
 }
 
 /**
@@ -195,6 +198,89 @@ export class WSLImageManager {
     }
     
     /**
+     * Create a new image from an existing image (cloning)
+     */
+    async createImageFromImage(sourceImageName: string, newImageName: string, options?: Partial<ImageMetadata>): Promise<void> {
+        logger.info(`Creating image '${newImageName}' from existing image '${sourceImageName}'`);
+        
+        const sourceImageDir = path.join(this.imageStorePath, sourceImageName);
+        if (!fs.existsSync(sourceImageDir)) {
+            throw new Error(`Source image not found: ${sourceImageName}`);
+        }
+        
+        const newImageDir = path.join(this.imageStorePath, newImageName);
+        if (fs.existsSync(newImageDir)) {
+            throw new Error(`Image already exists: ${newImageName}`);
+        }
+        
+        // Create new image directory
+        await fs.promises.mkdir(newImageDir, { recursive: true });
+        
+        // Copy TAR file
+        const tarFiles = ['rootfs.tar', 'rootfs.tar.gz'];
+        let tarCopied = false;
+        
+        for (const tarFile of tarFiles) {
+            const sourceTar = path.join(sourceImageDir, tarFile);
+            if (fs.existsSync(sourceTar)) {
+                const destTar = path.join(newImageDir, tarFile);
+                await fs.promises.copyFile(sourceTar, destTar);
+                tarCopied = true;
+                break;
+            }
+        }
+        
+        if (!tarCopied) {
+            throw new Error(`No TAR file found in source image: ${sourceImageName}`);
+        }
+        
+        // Load source metadata
+        const sourceMetadataPath = path.join(sourceImageDir, 'metadata.json');
+        const sourceMetadata: ImageMetadata = JSON.parse(await fs.promises.readFile(sourceMetadataPath, 'utf8'));
+        
+        // Create new metadata
+        const newMetadata: ImageMetadata = {
+            ...sourceMetadata,
+            name: newImageName,
+            created: new Date().toISOString(),
+            baseImage: sourceImageName, // Track that it was created from another image
+            baseDistribution: undefined, // Clear base distribution since it's from an image
+            ...options // Apply any custom options
+        };
+        
+        // Save metadata
+        const metadataPath = path.join(newImageDir, 'metadata.json');
+        await fs.promises.writeFile(metadataPath, JSON.stringify(newMetadata, null, 2), 'utf8');
+        
+        logger.info(`Image '${newImageName}' created from '${sourceImageName}'`);
+    }
+    
+    /**
+     * Update image properties (name, description, enabled state)
+     */
+    async updateImageProperties(imageName: string, updates: Partial<ImageMetadata>): Promise<void> {
+        const imageDir = path.join(this.imageStorePath, imageName);
+        if (!fs.existsSync(imageDir)) {
+            throw new Error(`Image not found: ${imageName}`);
+        }
+        
+        const metadataPath = path.join(imageDir, 'metadata.json');
+        const metadata: ImageMetadata = JSON.parse(await fs.promises.readFile(metadataPath, 'utf8'));
+        
+        // Apply updates
+        const updatedMetadata: ImageMetadata = {
+            ...metadata,
+            ...updates,
+            name: imageName // Ensure name stays consistent with directory
+        };
+        
+        // Save updated metadata
+        await fs.promises.writeFile(metadataPath, JSON.stringify(updatedMetadata, null, 2), 'utf8');
+        
+        logger.info(`Image '${imageName}' properties updated`);
+    }
+    
+    /**
      * List all available images
      */
     async listImages(): Promise<ImageInfo[]> {
@@ -214,7 +300,12 @@ export class WSLImageManager {
                 if (fs.existsSync(metadataPath)) {
                     try {
                         const metadata: ImageMetadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-                        images.push(metadata);
+                        // Ensure enabled property exists (default to true)
+                        const imageInfo: ImageInfo = {
+                            ...metadata,
+                            enabled: metadata.enabled !== false // Default to enabled
+                        };
+                        images.push(imageInfo);
                     } catch (error) {
                         logger.warn(`Failed to read metadata for image '${imageName}'`, { error: error });
                     }
