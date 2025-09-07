@@ -159,7 +159,7 @@ describe('ErrorHandler', () => {
     
     describe('showError', () => {
         it('should show error message with operation context', async () => {
-            const error = new Error('File not found');
+            const error = new Error('ENOENT: File not found');
             await ErrorHandler.showError(error, 'import distribution');
             
             expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(

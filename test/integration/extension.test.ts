@@ -9,19 +9,25 @@ import { WSLManager } from '../../src/wslManager';
 import { WSLTreeDataProvider } from '../../src/wslTreeDataProvider';
 import { TerminalProfileManager } from '../../src/terminalProfileManager';
 import { distributionGenerators } from '../utils/testDataGenerators';
-import { mockExec, commandMockUtils } from '../mocks/systemCommands';
 
-// Mock all modules
+// Mock all modules first
 jest.mock('vscode');
 jest.mock('../../src/wslManager');
 jest.mock('../../src/wslTreeDataProvider');
 jest.mock('../../src/terminalProfileManager');
-jest.mock('child_process', () => ({
-    exec: mockExec
-}));
+jest.mock('child_process', () => {
+    const systemCommands = require('../mocks/systemCommands');
+    return {
+        exec: systemCommands.mockExec,
+        spawn: systemCommands.mockSpawn
+    };
+});
 jest.mock('util', () => ({
     promisify: (fn: Function) => fn
 }));
+
+// Import utilities after mocks are configured
+import { commandMockUtils } from '../mocks/systemCommands';
 
 describe('Extension Integration Tests', () => {
     let mockContext: vscode.ExtensionContext;

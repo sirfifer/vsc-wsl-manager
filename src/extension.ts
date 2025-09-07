@@ -1,9 +1,12 @@
 import * as vscode from 'vscode';
 import { WSLManager } from './wslManager';
 import { WSLTreeDataProvider } from './wslTreeDataProvider';
-import { TerminalProfileManager } from './terminalProfileManager';
+import { WSLTerminalProfileManager } from './terminal/wslTerminalProfileProvider';
 import { InputValidator } from './utils/inputValidator';
 import { ErrorHandler } from './errors/errorHandler';
+
+// Store terminal profile manager for cleanup on deactivation
+let terminalProfileManager: WSLTerminalProfileManager | undefined;
 
 /**
  * Activates the WSL Manager extension
@@ -19,7 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize managers
     const wslManager = new WSLManager();
-    const terminalProfileManager = new TerminalProfileManager(context);
+    terminalProfileManager = new WSLTerminalProfileManager();
     const treeDataProvider = new WSLTreeDataProvider(wslManager);
 
     // Register tree view
@@ -33,7 +36,8 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('wsl-manager.refreshDistributions', async () => {
             try {
                 await treeDataProvider.refresh();
-                await terminalProfileManager.updateTerminalProfiles(await wslManager.listDistributions());
+                const distributions = await wslManager.listDistributions();
+                terminalProfileManager?.updateProfiles(distributions);
             } catch (error) {
                 await ErrorHandler.showError(error, 'refresh distributions');
             }
@@ -71,7 +75,8 @@ export function activate(context: vscode.ExtensionContext) {
                 });
 
                 await treeDataProvider.refresh();
-                await terminalProfileManager.updateTerminalProfiles(await wslManager.listDistributions());
+                const distributions = await wslManager.listDistributions();
+                terminalProfileManager?.updateProfiles(distributions);
                 vscode.window.showInformationMessage(`Distribution '${name}' created successfully!`);
             } catch (error) {
                 await ErrorHandler.showError(error, 'create distribution');
@@ -124,7 +129,8 @@ export function activate(context: vscode.ExtensionContext) {
                 });
 
                 await treeDataProvider.refresh();
-                await terminalProfileManager.updateTerminalProfiles(await wslManager.listDistributions());
+                const distributions = await wslManager.listDistributions();
+                terminalProfileManager?.updateProfiles(distributions);
                 vscode.window.showInformationMessage(`Distribution '${name}' imported successfully!`);
             } catch (error) {
                 await ErrorHandler.showError(error, 'import distribution');
@@ -184,7 +190,8 @@ export function activate(context: vscode.ExtensionContext) {
             try {
                 await wslManager.unregisterDistribution(nameValidation.sanitizedValue!);
                 await treeDataProvider.refresh();
-                await terminalProfileManager.updateTerminalProfiles(await wslManager.listDistributions());
+                const distributions = await wslManager.listDistributions();
+                terminalProfileManager?.updateProfiles(distributions);
                 vscode.window.showInformationMessage(`Distribution '${displayName}' deleted successfully!`);
             } catch (error) {
                 await ErrorHandler.showError(error, 'delete distribution');
@@ -211,19 +218,16 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Auto-refresh on activation
     vscode.commands.executeCommand('wsl-manager.refreshDistributions');
+    
+    // Register terminal profiles for all distributions
+    wslManager.listDistributions().then(distributions => {
+        terminalProfileManager?.registerProfiles(distributions);
+    }).catch(error => {
+        console.error('Failed to register terminal profiles:', error);
+    });
 
-    // Watch for terminal profile changes
-    if (vscode.workspace.getConfiguration('wsl-manager').get('autoRegisterProfiles')) {
-        context.subscriptions.push(
-            vscode.workspace.onDidChangeConfiguration(e => {
-                if (e.affectsConfiguration('terminal.integrated.profiles.windows')) {
-                    wslManager.listDistributions().then(distros => {
-                        terminalProfileManager.updateTerminalProfiles(distros);
-                    });
-                }
-            })
-        );
-    }
+    // No need to watch terminal profile changes anymore since we use the Provider API
+    // The terminal profiles are managed by VS Code, not by modifying settings
 }
 
 /**
@@ -236,7 +240,14 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
     try {
         console.log('WSL Manager extension is now deactivated');
-        // Cleanup will be handled by VS Code disposing subscriptions
+        
+        // Dispose terminal profile providers
+        if (terminalProfileManager) {
+            terminalProfileManager.dispose();
+            terminalProfileManager = undefined;
+        }
+        
+        // Other cleanup will be handled by VS Code disposing subscriptions
     } catch (error) {
         console.error('Error during deactivation:', error);
     }

@@ -3,25 +3,29 @@
  * Tests all methods, error handling, and edge cases
  */
 
-import { WSLManager, WSLDistribution } from '../../src/wslManager';
-import { mockExec, mockSpawn, mockFs, mockProcessEnv, commandMockUtils } from '../mocks/systemCommands';
-import { distributionGenerators, pathGenerators, inputGenerators, errorGenerators, assertionHelpers } from '../utils/testDataGenerators';
 import * as vscode from 'vscode';
 
-// Mock dependencies
-jest.mock('child_process', () => ({
-    exec: mockExec,
-    spawn: mockSpawn
-}));
-
+// Mock dependencies first
+jest.mock('vscode');
+jest.mock('child_process', () => {
+    const systemCommands = require('../mocks/systemCommands');
+    return {
+        exec: systemCommands.mockExec,
+        spawn: systemCommands.mockSpawn
+    };
+});
 jest.mock('util', () => ({
     promisify: (fn: Function) => fn
 }));
+jest.mock('fs', () => {
+    const systemCommands = require('../mocks/systemCommands');
+    return systemCommands.mockFs;
+});
 
-jest.mock('fs', () => mockFs);
-
-// Mock vscode
-jest.mock('vscode');
+// Import after mocks
+import { WSLManager, WSLDistribution } from '../../src/wslManager';
+import { commandMockUtils, mockProcessEnv } from '../mocks/systemCommands';
+import { distributionGenerators, pathGenerators, inputGenerators, errorGenerators, assertionHelpers } from '../utils/testDataGenerators';
 
 describe('WSLManager', () => {
     let wslManager: WSLManager;

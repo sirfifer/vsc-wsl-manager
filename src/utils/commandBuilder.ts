@@ -181,7 +181,7 @@ export class CommandBuilder {
         }
         
         // Validate all arguments don't contain shell metacharacters
-        const dangerousChars = /[;&|`$(){}[\]<>\\n\\r]/;
+        const dangerousChars = /[;&|`$(){}\[\]<>\\n\\r]/;
         for (const arg of args) {
             if (dangerousChars.test(arg)) {
                 throw new Error('Command arguments contain potentially dangerous characters');

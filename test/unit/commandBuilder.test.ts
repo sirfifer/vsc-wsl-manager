@@ -244,7 +244,7 @@ describe('CommandBuilder', () => {
                     CommandBuilder.executeWSL(['--list', dangerous])
                 ).rejects.toThrow('potentially dangerous characters');
             }
-        });
+        }, 20000);  // Increase timeout for many iterations
         
         it('should handle process termination by signal', async () => {
             const resultPromise = CommandBuilder.executeWSL(['--list']);

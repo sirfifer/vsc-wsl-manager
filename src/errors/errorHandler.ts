@@ -140,41 +140,41 @@ export class ErrorHandler {
      * Parse error and determine its type
      */
     static determineErrorType(error: any): ErrorType {
-        const errorMessage = error?.message || error?.toString() || '';
+        const errorMessage = (error?.message || error?.toString() || '').toLowerCase();
         const errorCode = error?.code;
 
-        // Check for specific error patterns
+        // Check for specific error patterns (case-insensitive)
         if (errorMessage.includes('wsl.exe') && errorMessage.includes('not found')) {
             return ErrorType.WSL_NOT_INSTALLED;
         }
-        if (errorMessage.includes('Distribution') && errorMessage.includes('not found')) {
+        if (errorMessage.includes('distribution') && errorMessage.includes('not found')) {
             return ErrorType.DISTRIBUTION_NOT_FOUND;
         }
         if (errorMessage.includes('already exists') || errorMessage.includes('already registered')) {
             return ErrorType.DISTRIBUTION_ALREADY_EXISTS;
         }
-        if (errorMessage.includes('Permission denied') || errorMessage.includes('Access denied') || errorCode === 'EACCES') {
+        if (errorMessage.includes('permission denied') || errorMessage.includes('access denied') || errorCode === 'EACCES') {
             return ErrorType.PERMISSION_DENIED;
         }
-        if (errorMessage.includes('ENOENT') || errorCode === 'ENOENT') {
+        if (errorMessage.includes('enoent') || errorCode === 'ENOENT') {
             return ErrorType.FILE_NOT_FOUND;
         }
         if (errorMessage.includes('network') || errorMessage.includes('download') || errorCode === 'ENETUNREACH') {
             return ErrorType.NETWORK_ERROR;
         }
-        if (errorMessage.includes('Rate limit exceeded')) {
+        if (errorMessage.includes('rate limit exceeded')) {
             return ErrorType.RATE_LIMIT_EXCEEDED;
         }
-        if (errorMessage.includes('Security validation failed')) {
+        if (errorMessage.includes('security validation failed')) {
             return ErrorType.SECURITY_VIOLATION;
         }
         if (errorMessage.includes('timed out') || errorMessage.includes('timeout')) {
             return ErrorType.TIMEOUT;
         }
-        if (errorMessage.includes('Invalid') && errorMessage.includes('name')) {
+        if (errorMessage.includes('invalid') && errorMessage.includes('name')) {
             return ErrorType.INVALID_INPUT;
         }
-        if (errorMessage.includes('Command failed') || errorMessage.includes('exit code')) {
+        if (errorMessage.includes('command failed') || errorMessage.includes('exit code')) {
             return ErrorType.COMMAND_FAILED;
         }
 

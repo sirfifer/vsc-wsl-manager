@@ -153,6 +153,15 @@ export const window = {
         };
         return await task(progress, token);
     }),
+    createOutputChannel: jest.fn((name: string) => ({
+        name,
+        append: jest.fn(),
+        appendLine: jest.fn(),
+        clear: jest.fn(),
+        show: jest.fn(),
+        hide: jest.fn(),
+        dispose: jest.fn()
+    })),
     createTreeView: jest.fn((viewId, options) => ({
         visible: true,
         onDidExpandElement: new EventEmitter().event,

@@ -6,17 +6,26 @@
 import * as vscode from 'vscode';
 import { activate } from '../../src/extension';
 import { distributionGenerators, pathGenerators } from '../utils/testDataGenerators';
-import { mockExec, mockFs, commandMockUtils } from '../mocks/systemCommands';
 
-// Mock modules
+// Mock modules first before any imports that might use them
 jest.mock('vscode');
-jest.mock('child_process', () => ({
-    exec: mockExec
-}));
+jest.mock('child_process', () => {
+    const systemCommands = require('../mocks/systemCommands');
+    return {
+        exec: systemCommands.mockExec,
+        spawn: systemCommands.mockSpawn
+    };
+});
 jest.mock('util', () => ({
     promisify: (fn: Function) => fn
 }));
-jest.mock('fs', () => mockFs);
+jest.mock('fs', () => {
+    const systemCommands = require('../mocks/systemCommands');
+    return systemCommands.mockFs;
+});
+
+// Import utilities after mocks are configured
+import { commandMockUtils } from '../mocks/systemCommands';
 
 describe('Command Integration Tests', () => {
     let mockContext: vscode.ExtensionContext;
