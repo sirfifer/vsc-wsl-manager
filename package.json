@@ -74,6 +74,11 @@
         "icon": "$(trash)"
       },
       {
+        "command": "wsl-manager.selectDistributionForImage",
+        "title": "WSL: Create new Image from Distribution",
+        "icon": "$(add)"
+      },
+      {
         "command": "wsl-manager.openTerminal",
         "title": "WSL: Open Terminal",
         "icon": "$(terminal)"
@@ -102,16 +107,6 @@
       "view/title": [
         {
           "command": "wsl-manager.refreshDistributions",
-          "when": "view == wslDistributions",
-          "group": "navigation"
-        },
-        {
-          "command": "wsl-manager.downloadDistribution",
-          "when": "view == wslDistributions",
-          "group": "navigation"
-        },
-        {
-          "command": "wsl-manager.createDistribution",
           "when": "view == wslDistributions",
           "group": "navigation"
         }

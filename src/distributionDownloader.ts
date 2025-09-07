@@ -68,14 +68,20 @@ export class DistributionDownloader {
         logger.info(`Downloading distribution: ${distributionName}`);
         
         try {
+            const errors: string[] = [];
+            
             // Strategy 1: Try wsl --install if we have admin privileges
             if (await this.hasAdminPrivileges()) {
                 logger.debug('Admin privileges detected, trying wsl --install');
                 try {
                     return await this.downloadWithWslInstall(distributionName, options);
                 } catch (error) {
+                    const errorMsg = `WSL install failed: ${error}`;
+                    errors.push(errorMsg);
                     logger.warn('WSL install failed, falling back to URL download', { error: error });
                 }
+            } else {
+                errors.push('WSL install skipped: requires administrator privileges');
             }
             
             // Strategy 2: Try URL download from registry
@@ -85,13 +91,22 @@ export class DistributionDownloader {
                 try {
                     return await this.downloadFromUrl(distInfo, architecture, options);
                 } catch (error) {
+                    const errorMsg = `URL download failed: ${error}`;
+                    errors.push(errorMsg);
                     logger.warn('URL download failed, falling back to rootfs', { error: error });
                 }
+            } else {
+                errors.push('Distribution not found in Microsoft registry');
             }
             
             // Strategy 3: Try alternative rootfs sources
             logger.debug('Trying alternative rootfs sources');
-            return await this.downloadRootfs(distributionName, options);
+            try {
+                return await this.downloadRootfs(distributionName, options);
+            } catch (error) {
+                errors.push(`Rootfs download failed: ${error}`);
+                throw new Error(`All download strategies failed for '${distributionName}':\n${errors.map(e => `  - ${e}`).join('\n')}`);
+            }
             
         } catch (error) {
             throw new Error(`Failed to download distribution '${distributionName}': ${error}`);
@@ -134,9 +149,18 @@ export class DistributionDownloader {
         
         logger.debug(`Downloading from URL: ${downloadUrl}`);
         
-        // Determine file extension and path
-        const fileExtension = downloadUrl.includes('.wsl') ? '.wsl' : 
-                            downloadUrl.includes('.appx') ? '.appx' : '.wsl';
+        // Determine file extension and path (case-insensitive)
+        const urlLower = downloadUrl.toLowerCase();
+        let fileExtension = '.wsl'; // default
+        
+        if (urlLower.includes('.wsl')) {
+            fileExtension = '.wsl';
+        } else if (urlLower.includes('.appxbundle')) {
+            fileExtension = '.appxbundle';
+        } else if (urlLower.includes('.appx')) {
+            fileExtension = '.appx';
+        }
+        
         const downloadPath = path.join(this.tempDir, `${distInfo.Name}${fileExtension}`);
         
         // Download with retry logic
@@ -243,7 +267,7 @@ export class DistributionDownloader {
     private async importPackage(packagePath: string, distributionName: string): Promise<void> {
         const fileExtension = path.extname(packagePath).toLowerCase();
         
-        if (fileExtension === '.appx') {
+        if (fileExtension === '.appx' || fileExtension === '.appxbundle') {
             await this.installAppxPackage(packagePath);
         } else {
             // Default to WSL import for .wsl files
@@ -302,6 +326,9 @@ export class DistributionDownloader {
         const rootfsUrls: { [key: string]: string } = {
             'alpine': 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz',
             'archlinux': 'https://archive.archlinux.org/iso/latest/archlinux-bootstrap-x86_64.tar.gz',
+            // Note: Ubuntu and Debian should use Microsoft's URLs, these are emergency fallbacks
+            'ubuntu': 'https://cloud-images.ubuntu.com/minimal/releases/jammy/release/ubuntu-22.04-minimal-cloudimg-amd64-wsl.rootfs.tar.gz',
+            'debian': 'https://github.com/debuerreotype/docker-debian-artifacts/raw/dist-amd64/bullseye/rootfs.tar.xz',
         };
         
         return rootfsUrls[distributionName.toLowerCase()] || null;

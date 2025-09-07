@@ -26,12 +26,13 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize managers
     const wslManager = new WSLManager();
     terminalProfileManager = new WSLTerminalProfileManager();
-    const treeDataProvider = new WSLTreeDataProvider(wslManager);
     
     // Initialize new distribution and image managers
     const distributionRegistry = new DistributionRegistry();
     const distributionDownloader = new DistributionDownloader(distributionRegistry);
     const imageManager = new WSLImageManager();
+    
+    const treeDataProvider = new WSLTreeDataProvider(wslManager, imageManager);
 
     // Register tree view
     const treeView = vscode.window.createTreeView('wslDistributions', {
@@ -323,6 +324,88 @@ export function activate(context: vscode.ExtensionContext) {
                 });
 
                 vscode.window.showInformationMessage(`Image '${imageName}' created successfully from '${InputValidator.sanitizeForDisplay(item.name)}'!`);
+                
+            } catch (error) {
+                await ErrorHandler.showError(error, 'create image');
+            }
+        }),
+
+        vscode.commands.registerCommand('wsl-manager.selectDistributionForImage', async () => {
+            try {
+                // Get list of available distributions
+                const distributions = await wslManager.listDistributions();
+                
+                if (distributions.length === 0) {
+                    vscode.window.showWarningMessage('No WSL distributions found. Download or create a distribution first.');
+                    return;
+                }
+
+                // Show distributions for selection
+                const distroItems = distributions.map(dist => ({
+                    label: dist.name,
+                    description: dist.state,
+                    detail: `Create image from ${dist.name}`,
+                    distribution: dist
+                }));
+
+                const selectedDistro = await vscode.window.showQuickPick(distroItems, {
+                    placeHolder: 'Select distribution to create image from'
+                });
+
+                if (!selectedDistro) return;
+
+                // Validate distribution name
+                const nameValidation = InputValidator.validateDistributionName(selectedDistro.distribution.name);
+                if (!nameValidation.isValid) {
+                    vscode.window.showErrorMessage(`Invalid distribution name: ${nameValidation.error}`);
+                    return;
+                }
+
+                const imageName = await vscode.window.showInputBox({
+                    prompt: 'Enter image name',
+                    placeHolder: 'my-dev-image',
+                    validateInput: (value) => {
+                        if (!value) return 'Image name is required';
+                        if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(value)) {
+                            return 'Image name must contain only letters, numbers, hyphens, and underscores';
+                        }
+                        return undefined;
+                    }
+                });
+
+                if (!imageName) return;
+
+                const description = await vscode.window.showInputBox({
+                    prompt: 'Enter image description (optional)',
+                    placeHolder: 'Development environment with Node.js and Python'
+                });
+
+                const tags = await vscode.window.showInputBox({
+                    prompt: 'Enter tags separated by commas (optional)',
+                    placeHolder: 'development, nodejs, python'
+                });
+
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Creating image: ${imageName}`,
+                    cancellable: false
+                }, async (progress) => {
+                    progress.report({ increment: 0, message: 'Exporting distribution...' });
+                    
+                    const metadata = {
+                        description,
+                        tags: tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : [],
+                        author: 'VS Code WSL Manager'
+                    };
+                    
+                    await imageManager.createImage(nameValidation.sanitizedValue!, imageName, metadata);
+                    progress.report({ increment: 100, message: 'Complete!' });
+                });
+
+                // Refresh the tree view to show the new image
+                await treeDataProvider.refresh();
+                
+                vscode.window.showInformationMessage(`Image '${imageName}' created successfully from '${InputValidator.sanitizeForDisplay(selectedDistro.distribution.name)}'!`);
                 
             } catch (error) {
                 await ErrorHandler.showError(error, 'create image');

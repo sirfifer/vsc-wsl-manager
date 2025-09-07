@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { WSLManager } from '../../wslManager';
 import { WSLTreeDataProvider } from '../../wslTreeDataProvider';
+import { WSLImageManager } from '../../imageManager';
 
 suite('WSL Manager Extension Test Suite', () => {
     vscode.window.showInformationMessage('Starting WSL Manager tests');
@@ -59,7 +60,8 @@ suite('WSL Manager Extension Test Suite', () => {
 
     test('Tree provider should provide items', async () => {
         const manager = new WSLManager();
-        const provider = new WSLTreeDataProvider(manager);
+        const imageManager = new WSLImageManager();
+        const provider = new WSLTreeDataProvider(manager, imageManager);
         
         const children = await provider.getChildren();
         assert.ok(Array.isArray(children));
