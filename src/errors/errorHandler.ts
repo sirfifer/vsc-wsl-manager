@@ -144,10 +144,16 @@ export class ErrorHandler {
         const errorCode = error?.code;
 
         // Check for specific error patterns (case-insensitive)
+        if (errorMessage.includes('wsl') && errorMessage.includes('not recognized')) {
+            return ErrorType.WSL_NOT_INSTALLED;
+        }
         if (errorMessage.includes('wsl.exe') && errorMessage.includes('not found')) {
             return ErrorType.WSL_NOT_INSTALLED;
         }
         if (errorMessage.includes('distribution') && errorMessage.includes('not found')) {
+            return ErrorType.DISTRIBUTION_NOT_FOUND;
+        }
+        if (errorMessage.includes('distribution') && errorMessage.includes('not installed')) {
             return ErrorType.DISTRIBUTION_NOT_FOUND;
         }
         if (errorMessage.includes('already exists') || errorMessage.includes('already registered')) {
@@ -156,7 +162,10 @@ export class ErrorHandler {
         if (errorMessage.includes('permission denied') || errorMessage.includes('access denied') || errorCode === 'EACCES') {
             return ErrorType.PERMISSION_DENIED;
         }
-        if (errorMessage.includes('enoent') || errorCode === 'ENOENT') {
+        if (errorMessage.includes('enoent') || errorCode === 'ENOENT' || errorMessage.includes('system cannot find')) {
+            return ErrorType.FILE_NOT_FOUND;
+        }
+        if (errorMessage.includes('no such file')) {
             return ErrorType.FILE_NOT_FOUND;
         }
         if (errorMessage.includes('network') || errorMessage.includes('download') || errorCode === 'ENETUNREACH') {

@@ -42,6 +42,7 @@ export class CommandBuilder {
         '--unregister',
         '--terminate',
         '--set-default',
+        '--install',
         '-d',
         '--distribution'
     ];

@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-09-07T05:42:32.433Z",
+  "success": false,
+  "results": [
+    {
+      "step": "Clean Build",
+      "success": true,
+      "message": "Successfully cleaned and compiled"
+    },
+    {
+      "step": "Build Output",
+      "success": true,
+      "message": "Build output structure correct"
+    },
+    {
+      "step": "Unit Tests",
+      "success": false,
+      "message": "unknown tests failing",
+      "details": "\n> vsc-wsl-manager@1.0.0 test:unit\n> jest --testPathPattern=unit\n\n"
+    }
+  ]
+}

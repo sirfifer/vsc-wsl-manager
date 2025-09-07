@@ -2,6 +2,67 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## CRITICAL: Mandatory End-to-End Validation
+
+**YOU MUST COMPLETE ALL THESE STEPS BEFORE DECLARING WORK DONE. NO EXCEPTIONS.**
+
+### Step 1: Clean Build (MANDATORY)
+```bash
+npm run clean
+npm run compile
+```
+
+### Step 2: Verify Build Output (MANDATORY)
+```bash
+ls -la out/
+# Ensure NO old files exist (like terminalProfileManager.js)
+# Verify package.json "main" points to correct file (usually ./out/src/extension.js)
+```
+
+### Step 3: Run All Tests (MANDATORY)
+```bash
+npm run test:unit
+npm run test:integration
+# All tests MUST pass
+```
+
+### Step 4: VS Code Launch Test (MANDATORY)
+```bash
+# Launch extension in VS Code
+code --extensionDevelopmentPath=. --new-window
+# OR press F5 in VS Code
+```
+
+### Step 5: Functional Testing (MANDATORY)
+In the launched VS Code instance:
+1. Open Debug Console (Ctrl+Shift+Y)
+2. Verify "WSL Manager extension is now active!" appears
+3. Verify NO permission errors
+4. Test EVERY command:
+   - Refresh Distributions (Ctrl+Shift+P → "WSL: Refresh")
+   - Create Distribution (should show appropriate error if no base distro)
+   - Import Distribution (should allow file selection)
+   - Open Terminal (if distributions exist)
+
+### Step 6: Error Scenario Testing (MANDATORY)
+1. Try to create distribution with invalid name (e.g., "my distro" with space)
+2. Try to create with non-existent base (e.g., selecting Ubuntu when not installed)
+3. Verify errors show proper type (NOT "UNKNOWN")
+4. Verify error messages are user-friendly
+
+### Step 7: Console Verification (MANDATORY)
+Check Debug Console for:
+- NO permission errors (especially "Failed to update terminal profiles")
+- NO unhandled exceptions
+- Proper error types (DISTRIBUTION_NOT_FOUND, not UNKNOWN)
+- Clean activation without errors
+
+**If ANY step fails:** 
+- Fix the issue
+- Start over from Step 1
+- DO NOT proceed without ALL steps passing
+- DO NOT hand over to user until fully validated
+
 ## Commands
 
 ### Build and Development

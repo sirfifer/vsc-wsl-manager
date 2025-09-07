@@ -246,3 +246,6 @@ export const commandMockUtils = {
         mockFs.promises.writeFile.mockClear();
     }
 };
+
+// Export mocks for direct use in tests
+export { mockExec, mockSpawn, mockFs, mockProcessEnv };

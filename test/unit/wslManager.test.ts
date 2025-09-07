@@ -24,7 +24,7 @@ jest.mock('fs', () => {
 
 // Import after mocks
 import { WSLManager, WSLDistribution } from '../../src/wslManager';
-import { commandMockUtils, mockProcessEnv } from '../mocks/systemCommands';
+import { commandMockUtils, mockProcessEnv, mockExec, mockFs } from '../mocks/systemCommands';
 import { distributionGenerators, pathGenerators, inputGenerators, errorGenerators, assertionHelpers } from '../utils/testDataGenerators';
 
 describe('WSLManager', () => {

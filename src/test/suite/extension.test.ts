@@ -7,11 +7,15 @@ suite('WSL Manager Extension Test Suite', () => {
     vscode.window.showInformationMessage('Starting WSL Manager tests');
 
     test('Extension should be present', () => {
-        assert.ok(vscode.extensions.getExtension('your-publisher-name.vsc-wsl-manager'));
+        const extensions = vscode.extensions.all.map(ext => ext.id);
+        console.log('Available extensions:', extensions.filter(id => id.includes('wsl')));
+        const ext = vscode.extensions.getExtension('wsl-manager.vsc-wsl-manager');
+        console.log('Our extension found:', !!ext);
+        assert.ok(ext);
     });
 
     test('Should activate', async () => {
-        const ext = vscode.extensions.getExtension('your-publisher-name.vsc-wsl-manager');
+        const ext = vscode.extensions.getExtension('wsl-manager.vsc-wsl-manager');
         if (ext) {
             await ext.activate();
             assert.ok(ext.isActive);
@@ -23,16 +27,23 @@ suite('WSL Manager Extension Test Suite', () => {
         
         const expectedCommands = [
             'wsl-manager.refreshDistributions',
+            'wsl-manager.downloadDistribution',
             'wsl-manager.createDistribution',
+            'wsl-manager.createImage',
             'wsl-manager.importDistribution',
             'wsl-manager.exportDistribution',
             'wsl-manager.deleteDistribution',
             'wsl-manager.openTerminal'
         ];
 
+        console.log('WSL commands found:', commands.filter(cmd => cmd.includes('wsl-manager')));
+        console.log('Total commands:', commands.length);
+
         expectedCommands.forEach(cmd => {
+            const found = commands.includes(cmd);
+            console.log(`Command ${cmd}: ${found ? 'FOUND' : 'MISSING'}`);
             assert.ok(
-                commands.includes(cmd),
+                found,
                 `Command ${cmd} not registered`
             );
         });
