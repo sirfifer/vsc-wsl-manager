@@ -69,15 +69,15 @@ describe('Distribution Download Integration', () => {
         
         it('should handle network failure gracefully', async () => {
             // Mock network failure
-            const originalFetch = global.fetch;
-            global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+            const originalFetch = (global as any).fetch;
+            (global as any).fetch = jest.fn().mockRejectedValue(new Error('Network error'));
             
             // Should still work (from cache or return empty)
             const distributions = await registry.fetchAvailableDistributions();
             expect(Array.isArray(distributions)).toBe(true);
             
             // Restore fetch
-            global.fetch = originalFetch;
+            (global as any).fetch = originalFetch;
         });
     });
     
@@ -100,7 +100,7 @@ describe('Distribution Download Integration', () => {
             // Verify progress events have correct structure
             const lastProgress = progressEvents[progressEvents.length - 1];
             expect(lastProgress.percent).toBeLessThanOrEqual(100);
-        }, 120000);
+        });
         
         it('should handle download interruption and retry', async () => {
             // This test simulates network interruption
@@ -127,7 +127,7 @@ describe('Distribution Download Integration', () => {
             
             // Restore original method
             downloader['downloadWithProgress'] = originalDownload;
-        }, 60000);
+        });
     });
     
     describe('Image Creation Integration', () => {

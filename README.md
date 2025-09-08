@@ -5,24 +5,28 @@
 [![GitHub discussions](https://img.shields.io/github/discussions/your-username/vsc-wsl-manager)](https://github.com/your-username/vsc-wsl-manager/discussions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> 🚧 **Pre-Alpha Software**: This project is in active development and **does not yet work**. We're building in public and would love your feedback on our approach and planned features. Star the repo to follow our progress!
+> 🚧 **Alpha Software**: This project is in active development and **partially functional**. We're building in public and would love your feedback on our approach and features. Star the repo to follow our progress!
 
 ## ⚠️ Work in Progress Notice
 
-**This extension is not functional yet.** We're in the very early stages of development, building the foundation with security and quality in mind from day one. 
+**This extension is partially functional.** Core features are working, and we're actively developing the remaining functionality with security and quality in mind. 
 
 ### Current Status
-- 🚧 **Core Functionality**: In development (0% functional)
-- 📝 **Documentation**: Being written (optimistically forward-looking)
-- 🧪 **Testing**: Infrastructure ready, tests pass, but testing non-functional code
-- 🔒 **Security**: Implementing best practices from the start
-- 📦 **Installation**: Don't install this yet - it won't do anything!
+- 🚧 **Core Functionality**: In development (~65% functional)
+- 📝 **Documentation**: Comprehensive and up-to-date
+- 🧪 **Testing**: Full test suite with unit, integration, and E2E tests
+- 🔒 **Security**: Best practices implemented throughout
+- 📦 **Installation**: Testable via F5 in VS Code
 
 ### What Works Right Now
-- ✅ The code compiles (that's something! 🎉)
-- ✅ Tests pass (they test our plans, not working features)
-- ✅ Documentation exists (describing what we're building)
-- ❌ **Actual WSL management**: Nope, not yet!
+- ✅ **Two-World Architecture**: Complete separation of distros (templates) and images (instances)
+- ✅ **Tree Views**: Dual tree views for managing distros and images
+- ✅ **Terminal Integration**: Automatic terminal profile registration
+- ✅ **Extension Activation**: Runs without errors in VS Code
+- ✅ **Command Palette**: All commands registered and functional
+- ✅ **Python E2E Testing**: Comprehensive UI testing framework
+- ✅ **WebdriverIO Testing**: E2E test infrastructure ready
+- ⚠️ **WSL Operations**: Basic operations work, advanced features in progress
 
 ## What We're Building
 

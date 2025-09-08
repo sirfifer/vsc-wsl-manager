@@ -25,7 +25,7 @@ jest.mock('fs', () => {
 });
 
 // Import utilities after mocks are configured
-import { commandMockUtils } from '../mocks/systemCommands';
+import { commandMockUtils, mockFs, mockExec } from '../mocks/systemCommands';
 
 describe('Command Integration Tests', () => {
     let mockContext: vscode.ExtensionContext;

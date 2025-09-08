@@ -1,6 +1,10 @@
-# 🧪 WebdriverIO E2E Test Coverage
+# 🧪 E2E Test Coverage
 
 ## ✅ Complete E2E Test Implementation
+
+### Testing Approaches
+1. **WebdriverIO Testing** - JavaScript/TypeScript based, runs in WSL
+2. **Python E2E Testing** - Python/pywinauto based, runs on Windows from WSL
 
 ### Test Files Created/Updated
 
@@ -147,6 +151,49 @@
 | Path traversal prevention | ✅ | complete-workflows.test.ts |
 | Confirmation for destructive actions | ✅ | complete-workflows.test.ts |
 
+## 🐍 Python E2E Test Coverage
+
+### Python Test Files Created
+
+1. **`test/e2e-python/tests/test_extension_activation.py`**
+   - Extension loads without crashing
+   - Activity bar icon verification
+   - Commands registered properly
+   - No error notifications
+
+2. **`test/e2e-python/tests/test_commands.py`**
+   - Refresh command execution
+   - Help command testing
+   - Error handling verification
+   - VS Code stability checks
+
+3. **`test/e2e-python/tests/test_minimal.py`**
+   - Basic VS Code launch
+   - Extension presence verification
+   - Screenshot capture
+
+4. **`test/e2e-python/tests/test_single.py`**
+   - Comprehensive single test
+   - Process monitoring
+   - Extension load verification
+
+### Python Test Infrastructure
+
+| Component | Purpose | File |
+|-----------|---------|------|
+| Path Converter | WSL to Windows path conversion | `helpers/path_converter.py` |
+| VS Code Helper | Launch and control VS Code | `helpers/vscode_helper.py` |
+| Test Fixtures | Setup/teardown automation | `conftest.py` |
+| Requirements | Python dependencies | `requirements.txt` |
+
+### Python Test Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `run-python-e2e.sh` | Run full Python test suite | `npm run test:e2e:python` |
+| `run-single-python-test.sh` | Run single test for debugging | `./scripts/run-single-python-test.sh` |
+| `debug_launch.py` | Debug VS Code launch issues | `python test/e2e-python/debug_launch.py` |
+
 ## 🚀 Running the E2E Tests
 
 ### Prerequisites
@@ -157,9 +204,22 @@ npm run compile
 # VS Code binary will be downloaded automatically by wdio-vscode-service
 ```
 
-### Run All E2E Tests
+### Run WebdriverIO Tests
 ```bash
 npm run test:e2e
+```
+
+### Run Python E2E Tests
+```bash
+# Run all Python tests
+npm run test:e2e:python
+
+# Run specific test suites
+npm run test:e2e:python:activation
+npm run test:e2e:python:commands
+
+# Clean test artifacts
+npm run test:e2e:python:clean
 ```
 
 ### Run Specific Test File

@@ -6,15 +6,17 @@
 import * as vscode from 'vscode';
 import { activate, deactivate } from '../../src/extension';
 import { WSLManager } from '../../src/wslManager';
+import { WSLImageManager } from '../../src/imageManager';
 import { WSLTreeDataProvider } from '../../src/wslTreeDataProvider';
-import { TerminalProfileManager } from '../../src/terminalProfileManager';
+import { WSLTerminalProfileManager } from '../../src/terminal/wslTerminalProfileProvider';
 import { distributionGenerators } from '../utils/testDataGenerators';
 
 // Mock all modules first
 jest.mock('vscode');
 jest.mock('../../src/wslManager');
 jest.mock('../../src/wslTreeDataProvider');
-jest.mock('../../src/terminalProfileManager');
+jest.mock('../../src/terminal/wslTerminalProfileProvider');
+jest.mock('../../src/imageManager');
 jest.mock('child_process', () => {
     const systemCommands = require('../mocks/systemCommands');
     return {
@@ -33,8 +35,9 @@ describe('Extension Integration Tests', () => {
     let mockContext: vscode.ExtensionContext;
     let mockTreeView: any;
     let mockWSLManager: jest.Mocked<WSLManager>;
+    let mockImageManager: jest.Mocked<WSLImageManager>;
     let mockTreeDataProvider: jest.Mocked<WSLTreeDataProvider>;
-    let mockTerminalProfileManager: jest.Mocked<TerminalProfileManager>;
+    let mockTerminalProfileManager: jest.Mocked<WSLTerminalProfileManager>;
     
     beforeEach(() => {
         // Reset all mocks
@@ -80,13 +83,22 @@ describe('Extension Integration Tests', () => {
         
         // Set up mock implementations
         mockWSLManager = new WSLManager() as jest.Mocked<WSLManager>;
-        mockTreeDataProvider = new WSLTreeDataProvider(mockWSLManager) as jest.Mocked<WSLTreeDataProvider>;
-        mockTerminalProfileManager = new TerminalProfileManager(mockContext) as jest.Mocked<TerminalProfileManager>;
+        mockImageManager = new WSLImageManager('/mock/images/path') as jest.Mocked<WSLImageManager>;
+        mockTreeDataProvider = new WSLTreeDataProvider(mockWSLManager, mockImageManager) as jest.Mocked<WSLTreeDataProvider>;
+        mockTerminalProfileManager = new WSLTerminalProfileManager() as jest.Mocked<WSLTerminalProfileManager>;
+        
+        // Add mock methods to mockTerminalProfileManager
+        mockTerminalProfileManager.updateProfiles = jest.fn();
+        mockTerminalProfileManager.dispose = jest.fn();
+        
+        // Add mock methods to mockImageManager
+        mockImageManager.listImages = jest.fn().mockResolvedValue([]);
         
         // Mock constructors
         (WSLManager as jest.Mock).mockImplementation(() => mockWSLManager);
+        (WSLImageManager as jest.Mock).mockImplementation(() => mockImageManager);
         (WSLTreeDataProvider as jest.Mock).mockImplementation(() => mockTreeDataProvider);
-        (TerminalProfileManager as jest.Mock).mockImplementation(() => mockTerminalProfileManager);
+        (WSLTerminalProfileManager as jest.Mock).mockImplementation(() => mockTerminalProfileManager);
     });
     
     describe('Extension Activation', () => {
@@ -98,8 +110,9 @@ describe('Extension Integration Tests', () => {
             
             // Verify components were created
             expect(WSLManager).toHaveBeenCalled();
-            expect(WSLTreeDataProvider).toHaveBeenCalledWith(mockWSLManager);
-            expect(TerminalProfileManager).toHaveBeenCalledWith(mockContext);
+            expect(WSLImageManager).toHaveBeenCalled();
+            expect(WSLTreeDataProvider).toHaveBeenCalled();
+            expect(WSLTerminalProfileManager).toHaveBeenCalled();
             
             // Verify tree view was created
             expect(vscode.window.createTreeView).toHaveBeenCalledWith('wslDistributions', {
@@ -203,7 +216,7 @@ describe('Extension Integration Tests', () => {
                 
                 expect(mockTreeDataProvider.refresh).toHaveBeenCalled();
                 expect(mockWSLManager.listDistributions).toHaveBeenCalled();
-                expect(mockTerminalProfileManager.updateTerminalProfiles).toHaveBeenCalledWith(mockDistributions);
+                expect(mockTerminalProfileManager.updateProfiles).toHaveBeenCalledWith(mockDistributions, []);
             });
         });
         
@@ -320,7 +333,7 @@ describe('Extension Integration Tests', () => {
             
             expect(changeEvent.affectsConfiguration).toHaveBeenCalledWith('terminal.integrated.profiles.windows');
             expect(mockWSLManager.listDistributions).toHaveBeenCalled();
-            expect(mockTerminalProfileManager.updateTerminalProfiles).toHaveBeenCalledWith(mockDistributions);
+            expect(mockTerminalProfileManager.updateProfiles).toHaveBeenCalledWith(mockDistributions, []);
         });
         
         it('should not update profiles for unrelated configuration changes', async () => {
@@ -344,7 +357,7 @@ describe('Extension Integration Tests', () => {
             await configChangeHandler(changeEvent);
             
             expect(mockWSLManager.listDistributions).not.toHaveBeenCalled();
-            expect(mockTerminalProfileManager.updateTerminalProfiles).not.toHaveBeenCalled();
+            expect(mockTerminalProfileManager.updateProfiles).not.toHaveBeenCalled();
         });
     });
     

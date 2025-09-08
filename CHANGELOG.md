@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2025-09-08
+- **Python E2E Testing Framework**
+  - Complete Python-based UI testing using pywinauto
+  - WSL to Windows test execution bridge
+  - Automatic screenshot capture on test failure
+  - Test fixtures for VS Code automation
+  - Debug launch script for troubleshooting
+  - Multiple test runner scripts for different scenarios
+
+- **WebdriverIO Improvements**
+  - Fixed flag conflicts (--disable-extensions with --extensionDevelopmentPath)
+  - Improved process cleanup between tests
+  - Added Windows-specific configuration (wdio.conf.windows.ts)
+  - Fixed path conversion for Windows execution
+  - Enhanced error handling and logging
+
+- **Test Infrastructure Fixes**
+  - Fixed integration test imports (terminalProfileManager → WSLTerminalProfileManager)
+  - Fixed constructor mismatches (added WSLImageManager parameter)
+  - Added missing mock definitions
+  - Fixed TypeScript compilation errors
+  - Improved test timeout handling
+
+### Fixed
+- Extension now launches properly with F5 debugging
+- Integration tests compile without errors
+- Mock implementations match actual class interfaces
+- Test cleanup properly kills VS Code processes
+- Path handling works correctly across WSL/Windows boundary
+
 ## [1.0.0] - 2025-01-10
 
 ### Added
