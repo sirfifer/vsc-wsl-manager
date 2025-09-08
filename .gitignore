@@ -30,3 +30,9 @@ coverage/
 
 # Claude personas development
 claude-personas/
+
+# WebdriverIO VS Code cache (contains large binaries for testing)
+.wdio-vscode-service/
+
+# Test results
+test-results/
