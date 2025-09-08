@@ -117,14 +117,35 @@ export class CommandBuilder {
                 }, options.timeout);
             }
             
-            // Collect stdout
+            // Collect stdout - WSL.exe outputs UTF-16LE on Windows
             child.stdout?.on('data', (data) => {
-                stdout += data.toString(options.encoding || 'utf8');
+                // Check if this looks like UTF-16 (has null bytes between characters)
+                const buffer = Buffer.from(data);
+                let decoded: string;
+                
+                if (buffer.includes(0x00) && buffer[1] === 0x00) {
+                    // UTF-16LE encoding detected (common for WSL.exe output)
+                    decoded = buffer.toString('utf16le');
+                } else {
+                    decoded = buffer.toString(options.encoding || 'utf8');
+                }
+                
+                stdout += decoded;
             });
             
-            // Collect stderr
+            // Collect stderr - also handle UTF-16 for WSL.exe
             child.stderr?.on('data', (data) => {
-                stderr += data.toString(options.encoding || 'utf8');
+                const buffer = Buffer.from(data);
+                let decoded: string;
+                
+                if (buffer.includes(0x00) && buffer[1] === 0x00) {
+                    // UTF-16LE encoding detected
+                    decoded = buffer.toString('utf16le');
+                } else {
+                    decoded = buffer.toString(options.encoding || 'utf8');
+                }
+                
+                stderr += decoded;
             });
             
             // Handle process exit
@@ -182,7 +203,7 @@ export class CommandBuilder {
         }
         
         // Validate all arguments don't contain shell metacharacters
-        const dangerousChars = /[;&|`$(){}\[\]<>\\n\\r]/;
+        const dangerousChars = /[;&|`$(){}\[\]<>\n\r]/;
         for (const arg of args) {
             if (dangerousChars.test(arg)) {
                 throw new Error('Command arguments contain potentially dangerous characters');

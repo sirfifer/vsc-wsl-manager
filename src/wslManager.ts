@@ -108,22 +108,16 @@ export class WSLManager {
 
             // Parse WSL output format
             const isDefault = line.startsWith('*');
-            let cleanLine = line.replace('*', '').trim();
+            const cleanLine = line.replace('*', '').trim();
             
-            // Handle Unicode spacing issue where WSL outputs spaces between each character
-            // e.g., "A l p i n e - T e s t - M a n u a l" -> "Alpine-Test-Manual"
-            if (cleanLine.includes(' ') && cleanLine.match(/^(\w\s)+/)) {
-                // Remove spaces between single characters (Unicode output issue)
-                cleanLine = cleanLine.replace(/(\S)\s(?=\S)/g, '$1');
-            }
-            
-            const parts = cleanLine.split(/\s+/);
+            // Split by multiple spaces (WSL uses spacing for columns)
+            const parts = cleanLine.split(/\s{2,}/);
             
             if (parts.length >= 3) {
                 distributions.push({
-                    name: parts[0],
-                    state: parts[1] as 'Running' | 'Stopped',
-                    version: parts[2],
+                    name: parts[0].trim(),
+                    state: parts[1].trim() as 'Running' | 'Stopped',
+                    version: parts[2].trim(),
                     default: isDefault
                 });
             }

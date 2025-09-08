@@ -13,6 +13,14 @@ export const config: Options.Testrunner = {
     // ====================
     runner: 'local',
     
+    // Auto compile TypeScript files
+    autoCompileOpts: {
+        tsNodeOpts: {
+            project: './test/e2e/tsconfig.json',
+            transpileOnly: true
+        }
+    },
+    
     //
     // ==================
     // Specify Test Files
@@ -102,8 +110,7 @@ export const config: Options.Testrunner = {
     // Mocha options
     mochaOpts: {
         ui: 'bdd',
-        timeout: 60000, // 1 minute timeout for tests
-        require: ['ts-node/register']
+        timeout: 60000 // 1 minute timeout for tests
     },
     
     //

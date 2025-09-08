@@ -24,9 +24,36 @@
 - ✅ Documentation exists (describing what we're building)
 - ❌ **Actual WSL management**: Nope, not yet!
 
-## 🎯 What We're Building
+## What We're Building
 
 VSC WSL Manager will be a comprehensive VS Code extension for managing Windows Subsystem for Linux (WSL) distributions with enterprise-grade security and seamless terminal integration.
+
+### 🤖 First-Class Support for AI Coding Assistants
+VSCode WSL Manager is designed with AI-powered development workflows in mind. We provide dedicated support for terminal-based AI coding assistants that require WSL on Windows, ensuring each project can have its own isolated environment with the specific tools, dependencies, and configurations needed.
+Explicitly Supported AI Tools
+
+- Claude Code - Anthropic's official CLI tool for agentic coding with Claude models. Perfect for project-specific AI assistance with file editing, bug fixes, and test automation.
+Aider - AI pair programming in your terminal. Works with Claude 3.7 Sonnet, DeepSeek, and OpenAI models. Creates a map of your entire codebase for context-aware assistance. **This will be the first tool fully supported as it was the original motivation for this project!**
+- Cline - Autonomous coding agent with a focus on security and privacy. Runs entirely client-side with your API keys, making it ideal for enterprise environments. **Future Support**
+- Gemini CLI - Google's open-source AI agent bringing Gemini directly to your terminal with a 1 million token context window. **Future Support**
+
+#### Why AI Tools Need Isolated Environments
+
+Project Isolation: Each project can have its own language versions, dependencies, and tool configurations without conflicts
+Safe Experimentation: AI agents can make extensive modifications in isolated environments that won't affect other projects
+Easy Rollback: Quickly restore to a clean state if AI-generated changes cause issues
+Model-Specific Configs: Different projects can use different AI models, API keys, and configurations
+Dependency Management: Prevent cross-contamination between projects with different requirements
+
+#### AI-Optimized Features
+
+Quick Clone: Instantly create a new environment from a template for AI experimentation
+Snapshot & Restore: Save state before letting AI make major changes
+Environment Templates: Pre-configured setups for common AI development scenarios
+Tool Layer System: Add AI tools to any image without rebuilding from scratch
+Manifest Tracking: Complete history of what AI tools have been added and configured
+
+With VSCode WSL Manager, you can confidently use AI coding assistants knowing that each project maintains its own clean, isolated environment. Never worry about an AI tool breaking your main development setup again.
 
 ### Planned Features
 - 🖥️ **Visual WSL Management**: View and manage all WSL distributions in VS Code sidebar

@@ -26,7 +26,7 @@ npm run test:integration
 # All tests MUST pass
 ```
 
-### Step 4: VS Code Launch Test (MANDATORY)
+### Step 4: VS Code Launch Test Using WebdriverIO UI Testing(MANDATORY)
 ```bash
 # Launch extension in VS Code
 code --extensionDevelopmentPath=. --new-window

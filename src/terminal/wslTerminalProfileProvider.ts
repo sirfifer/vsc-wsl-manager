@@ -10,7 +10,7 @@
 
 import * as vscode from 'vscode';
 import { WSLDistribution } from '../wslManager';
-import { ImageInfo, WSLImageManager } from '../imageManager';
+import { ImageMetadata } from '../images/WSLImageManager';
 import { Logger } from '../utils/logger';
 
 const logger = Logger.getInstance();
@@ -80,12 +80,10 @@ export class WSLTerminalProfileProvider implements vscode.TerminalProfileProvide
  */
 export class WSLImageTerminalProfileProvider implements vscode.TerminalProfileProvider {
     private readonly profileId: string;
-    private readonly imageManager: WSLImageManager;
     
-    constructor(private readonly image: ImageInfo) {
+    constructor(private readonly image: ImageMetadata) {
         // Create a unique profile ID for this image
         this.profileId = `wsl-manager.image.${image.name}`;
-        this.imageManager = new WSLImageManager();
     }
     
     /**
@@ -115,24 +113,22 @@ export class WSLImageTerminalProfileProvider implements vscode.TerminalProfilePr
         }
         
         try {
-            // Create a temporary distribution name
-            const tempDistroName = `wsl-img-${this.image.name}-${Date.now()}`;
+            // For the new architecture, images ARE WSL distributions
+            // So we can directly create a terminal to them
+            const name = `WSL: ${this.image.displayName || this.image.name}`;
             
-            // Create distribution from image
-            await this.imageManager.createDistributionFromImage(
-                this.image.name,
-                tempDistroName
-            );
+            logger.info(`Creating terminal profile for image ${this.image.name}`);
             
-            // Create the terminal profile
-            const profile = new vscode.TerminalProfile({
-                name: `WSL: ${this.image.name}`,
-                shellPath: 'wsl.exe',
-                shellArgs: ['-d', tempDistroName]
-            });
-            
-            logger.info(`Terminal profile created for image ${this.image.name}`);
-            return profile;
+            // Return the terminal profile
+            return {
+                options: {
+                    name,
+                    shellPath: 'wsl.exe',
+                    shellArgs: ['-d', this.image.name],
+                    iconPath: new vscode.ThemeIcon('terminal-linux'),
+                    env: {}
+                }
+            };
             
         } catch (error) {
             logger.error(`Failed to create terminal profile for image ${this.image.name}`, error);
@@ -157,7 +153,7 @@ export class WSLTerminalProfileManager {
      * @param images List of WSL images (only enabled ones will be registered)
      * @returns Array of disposables for cleanup
      */
-    registerProfiles(distributions: WSLDistribution[], images: ImageInfo[] = []): vscode.Disposable[] {
+    registerProfiles(distributions: WSLDistribution[], images: ImageMetadata[] = []): vscode.Disposable[] {
         logger.info(`Registering terminal profiles for ${distributions.length} distributions and ${images.length} images`);
         
         // Dispose old profiles
@@ -188,7 +184,7 @@ export class WSLTerminalProfileManager {
      * @param distributions Updated list of distributions
      * @param images Updated list of images
      */
-    updateProfiles(distributions: WSLDistribution[], images: ImageInfo[] = []): void {
+    updateProfiles(distributions: WSLDistribution[], images: ImageMetadata[] = []): void {
         logger.info('Updating terminal profiles');
         this.registerProfiles(distributions, images);
     }
