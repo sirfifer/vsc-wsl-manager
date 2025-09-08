@@ -108,7 +108,15 @@ export class WSLManager {
 
             // Parse WSL output format
             const isDefault = line.startsWith('*');
-            const cleanLine = line.replace('*', '').trim();
+            let cleanLine = line.replace('*', '').trim();
+            
+            // Handle Unicode spacing issue where WSL outputs spaces between each character
+            // e.g., "A l p i n e - T e s t - M a n u a l" -> "Alpine-Test-Manual"
+            if (cleanLine.includes(' ') && cleanLine.match(/^(\w\s)+/)) {
+                // Remove spaces between single characters (Unicode output issue)
+                cleanLine = cleanLine.replace(/(\S)\s(?=\S)/g, '$1');
+            }
+            
             const parts = cleanLine.split(/\s+/);
             
             if (parts.length >= 3) {

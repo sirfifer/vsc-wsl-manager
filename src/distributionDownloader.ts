@@ -26,6 +26,8 @@ export interface DownloadProgress {
     percent: number;
     downloaded: number;
     total: number;
+    message?: string;
+    speed?: string;
 }
 
 /**
@@ -48,93 +50,64 @@ export interface DownloadOptions {
  */
 export class DistributionDownloader {
     private readonly registry: DistributionRegistry;
-    private readonly tempDir: string;
+    private readonly userDistroPath: string;
+    private readonly downloadsDir: string;
+    private readonly instancesDir: string;
     
     constructor(registry: DistributionRegistry) {
         this.registry = registry;
-        this.tempDir = path.join(os.tmpdir(), 'wsl-downloads');
-        this.ensureTempDirectory();
+        // Store everything in user's home directory - NO ADMIN REQUIRED
+        this.userDistroPath = path.join(os.homedir(), 'WSL-Distros');
+        this.downloadsDir = path.join(this.userDistroPath, 'downloads');
+        this.instancesDir = path.join(this.userDistroPath, 'instances');
+        this.ensureDirectories();
     }
     
     /**
-     * Download and install a distribution using the best available method
+     * Download and install a distribution - NO ADMIN REQUIRED
+     * Uses TAR files and wsl --import which work in user space
      */
     async downloadDistribution(
         distributionName: string, 
         options: DownloadOptions = {}
     ): Promise<string> {
-        const { maxRetries = 3, architecture = 'x64' } = options;
+        const { maxRetries = 3 } = options;
         
         logger.info(`Downloading distribution: ${distributionName}`);
         
         try {
-            const errors: string[] = [];
+            // PRIMARY METHOD: Download TAR file and import (NO ADMIN REQUIRED)
+            logger.debug('Using TAR download method (no admin required)');
             
-            // Strategy 1: Try wsl --install if we have admin privileges
-            if (await this.hasAdminPrivileges()) {
-                logger.debug('Admin privileges detected, trying wsl --install');
+            // Try to download rootfs TAR file
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
-                    return await this.downloadWithWslInstall(distributionName, options);
+                    const result = await this.downloadRootfs(distributionName, options);
+                    logger.info(`Successfully downloaded and imported ${distributionName}`);
+                    return result;
                 } catch (error) {
-                    const errorMsg = `WSL install failed: ${error}`;
-                    errors.push(errorMsg);
-                    logger.warn('WSL install failed, falling back to URL download', { error: error });
+                    logger.warn(`Attempt ${attempt} failed:`, { error });
+                    if (attempt === maxRetries) {
+                        throw error;
+                    }
+                    // Wait before retry
+                    await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
                 }
-            } else {
-                errors.push('WSL install skipped: requires administrator privileges');
             }
             
-            // Strategy 2: Try URL download from registry
-            const distInfo = this.registry.getDistributionInfo(distributionName);
-            if (distInfo) {
-                logger.debug('Distribution found in registry, trying URL download');
-                try {
-                    return await this.downloadFromUrl(distInfo, architecture, options);
-                } catch (error) {
-                    const errorMsg = `URL download failed: ${error}`;
-                    errors.push(errorMsg);
-                    logger.warn('URL download failed, falling back to rootfs', { error: error });
-                }
-            } else {
-                errors.push('Distribution not found in Microsoft registry');
-            }
-            
-            // Strategy 3: Try alternative rootfs sources
-            logger.debug('Trying alternative rootfs sources');
-            try {
-                return await this.downloadRootfs(distributionName, options);
-            } catch (error) {
-                errors.push(`Rootfs download failed: ${error}`);
-                throw new Error(`All download strategies failed for '${distributionName}':\n${errors.map(e => `  - ${e}`).join('\n')}`);
-            }
+            throw new Error(`Failed to download ${distributionName} after ${maxRetries} attempts`);
             
         } catch (error) {
             throw new Error(`Failed to download distribution '${distributionName}': ${error}`);
         }
     }
     
-    /**
-     * Download using wsl --install command (requires admin)
-     */
-    private async downloadWithWslInstall(
-        distributionName: string,
-        options: DownloadOptions
-    ): Promise<string> {
-        const { timeout = 600000 } = options; // 10 minutes default
-        
-        await CommandBuilder.executeWSL(
-            ['--install', '-d', distributionName],
-            { timeout } as CommandOptions
-        );
-        
-        logger.info(`Successfully installed ${distributionName} via WSL`);
-        return distributionName;
-    }
     
     /**
+     * DEPRECATED - Keeping for reference only
      * Download from URL using distribution registry information
      */
-    private async downloadFromUrl(
+    private async downloadFromUrl_DEPRECATED(
         distInfo: DistributionInfo,
         architecture: 'x64' | 'arm64',
         options: DownloadOptions
@@ -161,7 +134,7 @@ export class DistributionDownloader {
             fileExtension = '.appx';
         }
         
-        const downloadPath = path.join(this.tempDir, `${distInfo.Name}${fileExtension}`);
+        const downloadPath = path.join(this.downloadsDir, `${distInfo.Name}${fileExtension}`);
         
         // Download with retry logic
         let lastError: Error | null = null;
@@ -183,8 +156,8 @@ export class DistributionDownloader {
                     throw new Error('Insufficient disk space for import');
                 }
                 
-                // Import the downloaded package
-                await this.importPackage(downloadPath, distInfo.Name);
+                // Import the downloaded package (deprecated method)
+                await this.importPackage_DEPRECATED(downloadPath, distInfo.Name);
                 
                 logger.info(`Successfully downloaded and imported ${distInfo.Name}`);
                 return distInfo.Name;
@@ -262,35 +235,126 @@ export class DistributionDownloader {
     }
     
     /**
+     * DEPRECATED - We now use TAR files only
      * Import downloaded package using appropriate method
      */
-    private async importPackage(packagePath: string, distributionName: string): Promise<void> {
+    private async importPackage_DEPRECATED(packagePath: string, distributionName: string): Promise<void> {
         const fileExtension = path.extname(packagePath).toLowerCase();
         
+        logger.info(`Importing package: ${packagePath} (${fileExtension}) as ${distributionName}`);
+        
         if (fileExtension === '.appx' || fileExtension === '.appxbundle') {
-            await this.installAppxPackage(packagePath);
-        } else {
-            // Default to WSL import for .wsl files
+            // For APPX packages, use Add-AppxPackage to install the downloaded file
+            logger.debug('Installing APPX package from downloaded file');
+            await this.installAppxPackage_DEPRECATED(packagePath, distributionName);
+        } else if (fileExtension === '.wsl') {
+            // .wsl files are actually TAR archives, import them directly
             const installPath = path.join(os.homedir(), '.wsl', distributionName);
+            await fs.promises.mkdir(installPath, { recursive: true });
+            
             await CommandBuilder.executeWSL([
                 '--import', 
                 distributionName, 
                 installPath, 
                 packagePath
-            ], { timeout: 300000 } as CommandOptions); // 5 minutes
+            ], { timeout: 300000 } as CommandOptions);
+            
+            // Verify installation
+            await this.verifyInstallation(distributionName);
+        } else {
+            // For TAR/TAR.GZ files, use WSL import
+            const installPath = path.join(os.homedir(), '.wsl', distributionName);
+            await fs.promises.mkdir(installPath, { recursive: true });
+            
+            await CommandBuilder.executeWSL([
+                '--import', 
+                distributionName, 
+                installPath, 
+                packagePath
+            ], { timeout: 300000 } as CommandOptions);
+            
+            // Verify installation
+            await this.verifyInstallation(distributionName);
         }
     }
     
     /**
-     * Install .appx package using PowerShell
+     * DEPRECATED - We don't use APPX anymore
+     * Install .appx package using PowerShell (requires admin)
      */
-    private async installAppxPackage(packagePath: string): Promise<void> {
+    private async installAppxPackage_DEPRECATED(packagePath: string, distributionName: string): Promise<void> {
+        // Check if we have admin privileges
+        if (!await this.hasAdminPrivileges()) {
+            throw new Error(
+                `Administrator privileges required to install ${distributionName}. ` +
+                `Please either:\n` +
+                `1. Run VS Code as Administrator, or\n` +
+                `2. Manually install the downloaded package from: ${packagePath}\n` +
+                `   Run in admin PowerShell: Add-AppxPackage -Path "${packagePath}"`
+            );
+        }
+        
         const command = `Add-AppxPackage -Path "${packagePath}"`;
-        await execAsync(`powershell -Command "${command}"`);
+        logger.debug(`Running PowerShell command: ${command}`);
+        
+        try {
+            await execAsync(`powershell -Command "${command}"`, { timeout: 300000 }); // 5 minutes
+            logger.info(`Successfully installed APPX package for ${distributionName}`);
+            
+            // Wait a bit for Windows to register the package
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            
+            // Verify installation by checking if distribution is now available
+            await this.verifyInstallation(distributionName);
+        } catch (error) {
+            logger.error(`Failed to install APPX package: ${error}`);
+            throw new Error(
+                `Failed to install ${distributionName} from downloaded package. ` +
+                `Error: ${error}. ` +
+                `You can try manually installing from: ${packagePath}`
+            );
+        }
     }
     
     /**
-     * Download from alternative rootfs sources for common distributions
+     * Verify that a distribution was successfully installed
+     */
+    private async verifyInstallation(distributionName: string): Promise<void> {
+        try {
+            // Check if distribution appears in wsl --list
+            const result = await execAsync('wsl.exe --list --quiet', { timeout: 10000 });
+            
+            // Clean up WSL output (remove special characters and empty lines)
+            const distributions = result.stdout
+                .split('\n')
+                .map(line => line.replace(/[^\x20-\x7E]/g, '').trim()) // Remove non-ASCII characters
+                .filter(line => line.length > 0 && line !== '');
+            
+            logger.debug(`Checking for ${distributionName} in: ${distributions.join(', ')}`);
+            
+            const found = distributions.some(dist => {
+                if (!dist || dist === '') return false;
+                // Case-insensitive partial match
+                return dist.toLowerCase().includes(distributionName.toLowerCase()) ||
+                       distributionName.toLowerCase().includes(dist.toLowerCase());
+            });
+            
+            if (!found) {
+                throw new Error(
+                    `Distribution ${distributionName} was not found in WSL after installation. ` +
+                    `Available distributions: ${distributions.join(', ')}`
+                );
+            }
+            
+            logger.info(`Verified: ${distributionName} is now available in WSL`);
+        } catch (error) {
+            logger.error(`Failed to verify installation: ${error}`);
+            throw error;
+        }
+    }
+    
+    /**
+     * Download TAR file and import - NO ADMIN REQUIRED
      */
     private async downloadRootfs(
         distributionName: string,
@@ -298,40 +362,103 @@ export class DistributionDownloader {
     ): Promise<string> {
         const rootfsUrl = this.getRootfsUrl(distributionName);
         if (!rootfsUrl) {
-            throw new Error(`No rootfs source available for ${distributionName}`);
+            throw new Error(`No TAR source available for ${distributionName}`);
         }
         
-        logger.debug(`Downloading rootfs from: ${rootfsUrl}`);
+        logger.debug(`Downloading TAR from: ${rootfsUrl}`);
         
-        const downloadPath = path.join(this.tempDir, `${distributionName.toLowerCase()}.tar.gz`);
-        await this.downloadWithProgress(rootfsUrl, downloadPath, options.onProgress);
+        // Download to user directory (not temp)
+        const downloadPath = path.join(this.downloadsDir, `${distributionName.toLowerCase()}.tar.gz`);
         
-        // Import as WSL distribution
-        const installPath = path.join(os.homedir(), '.wsl', distributionName);
+        // Check if already downloaded
+        if (fs.existsSync(downloadPath) && fs.statSync(downloadPath).size > 0) {
+            logger.info(`Using cached download: ${downloadPath}`);
+        } else {
+            await this.downloadWithProgress(rootfsUrl, downloadPath, options.onProgress);
+        }
+        
+        // Generate unique instance name
+        const instanceName = `${distributionName}-${Date.now()}`;
+        
+        // Import to user directory - NO ADMIN REQUIRED
+        const installPath = path.join(this.instancesDir, instanceName);
+        await fs.promises.mkdir(installPath, { recursive: true });
+        
+        logger.info(`Importing ${instanceName} to ${installPath}`);
+        
         await CommandBuilder.executeWSL([
             '--import',
-            distributionName,
+            instanceName,
             installPath,
-            downloadPath
+            downloadPath,
+            '--version', '2'
         ], { timeout: 300000 } as CommandOptions);
         
-        logger.info(`Successfully imported ${distributionName} from rootfs`);
-        return distributionName;
+        // Verify installation
+        await this.verifyInstallation(instanceName);
+        
+        // Set up default user (optional)
+        await this.setupDefaultUser(instanceName);
+        
+        logger.info(`Successfully imported ${instanceName} from TAR file`);
+        return instanceName;
     }
     
     /**
-     * Get rootfs URL for known distributions
+     * Get TAR file URL for distributions - NO ADMIN REQUIRED
      */
     private getRootfsUrl(distributionName: string): string | null {
+        // Import TAR distributions
+        const { getTarUrl } = require('./tarDistributions');
+        
+        // Try to get URL from our TAR distributions list
+        const tarUrl = getTarUrl(distributionName);
+        if (tarUrl) {
+            return tarUrl;
+        }
+        
+        // Fallback to legacy hardcoded URLs for backward compatibility
         const rootfsUrls: { [key: string]: string } = {
-            'alpine': 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz',
-            'archlinux': 'https://archive.archlinux.org/iso/latest/archlinux-bootstrap-x86_64.tar.gz',
-            // Note: Ubuntu and Debian should use Microsoft's URLs, these are emergency fallbacks
-            'ubuntu': 'https://cloud-images.ubuntu.com/minimal/releases/jammy/release/ubuntu-22.04-minimal-cloudimg-amd64-wsl.rootfs.tar.gz',
-            'debian': 'https://github.com/debuerreotype/docker-debian-artifacts/raw/dist-amd64/bullseye/rootfs.tar.xz',
+            'alpine': 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.0-x86_64.tar.gz',
+            'ubuntu': 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz',
+            'ubuntu-22.04': 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz',
+            'debian': 'https://github.com/debuerreotype/docker-debian-artifacts/raw/dist-amd64/bookworm/rootfs.tar.xz',
+            'archlinux': 'https://mirror.rackspace.com/archlinux/iso/latest/archlinux-bootstrap-x86_64.tar.gz',
         };
         
         return rootfsUrls[distributionName.toLowerCase()] || null;
+    }
+    
+    /**
+     * Setup default user for imported distribution - NO ADMIN REQUIRED
+     */
+    private async setupDefaultUser(distroName: string): Promise<void> {
+        try {
+            const setupScript = `
+                # Create default user if it doesn't exist
+                id -u wsluser &>/dev/null || useradd -m -s /bin/bash wsluser
+                # Add to sudoers
+                echo "wsluser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers 2>/dev/null || true
+                # Set as default user in wsl.conf
+                echo "[user]" > /etc/wsl.conf
+                echo "default=wsluser" >> /etc/wsl.conf
+            `;
+            
+            // Run setup script inside the distribution
+            await CommandBuilder.executeWSL([
+                '-d', distroName,
+                '-u', 'root',
+                'bash', '-c', setupScript
+            ], { timeout: 30000 } as CommandOptions);
+            
+            // Terminate to apply changes
+            await CommandBuilder.executeWSL(['--terminate', distroName], { timeout: 5000 } as CommandOptions);
+            
+            logger.debug(`Set up default user for ${distroName}`);
+        } catch (error) {
+            logger.warn(`Could not setup default user for ${distroName}: ${error}`);
+            // This is optional, so don't fail the import
+        }
     }
     
     /**
@@ -339,7 +466,14 @@ export class DistributionDownloader {
      */
     private async hasAdminPrivileges(): Promise<boolean> {
         if (process.platform !== 'win32') {
-            return false;
+            // In WSL, check if we can run Windows admin commands
+            try {
+                await execAsync('powershell.exe -Command "([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)"', { timeout: 5000 });
+                const result = await execAsync('powershell.exe -Command "([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)"', { timeout: 5000 });
+                return result.stdout.trim().toLowerCase() === 'true';
+            } catch {
+                return false;
+            }
         }
         
         try {
@@ -406,7 +540,7 @@ export class DistributionDownloader {
      */
     private getAvailableDiskSpace(): number {
         try {
-            const stats = fs.statSync(this.tempDir);
+            const stats = fs.statSync(this.downloadsDir);
             // This is a simplified check - in a real implementation,
             // you'd use a proper disk space checking library
             return Number.MAX_SAFE_INTEGER;
@@ -416,11 +550,21 @@ export class DistributionDownloader {
     }
     
     /**
-     * Ensure temp directory exists
+     * Ensure all required directories exist in user space
      */
-    private ensureTempDirectory(): void {
-        if (!fs.existsSync(this.tempDir)) {
-            fs.mkdirSync(this.tempDir, { recursive: true });
-        }
+    private ensureDirectories(): void {
+        const dirs = [
+            this.userDistroPath,
+            this.downloadsDir, 
+            this.instancesDir,
+            path.join(this.userDistroPath, 'exports')
+        ];
+        
+        dirs.forEach(dir => {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+                logger.debug(`Created directory: ${dir}`);
+            }
+        });
     }
 }

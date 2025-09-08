@@ -368,47 +368,101 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('wsl-manager.downloadDistribution', async () => {
             try {
-                // Fetch available distributions from Microsoft
-                const availableDistributions = await distributionRegistry.fetchAvailableDistributions();
+                // Use TAR distributions for no-admin downloads
+                const { TAR_DISTRIBUTIONS } = await import('./tarDistributions');
                 
-                if (availableDistributions.length === 0) {
-                    vscode.window.showWarningMessage('No distributions available. Check your internet connection.');
+                if (TAR_DISTRIBUTIONS.length === 0) {
+                    vscode.window.showWarningMessage('No distributions available.');
                     return;
                 }
 
-                // Show available distributions for selection
-                const distroItems = availableDistributions.map(dist => ({
-                    label: dist.FriendlyName,
-                    description: dist.Name,
-                    detail: `Download and install ${dist.FriendlyName}`
+                // Show available TAR distributions for selection
+                const distroItems = TAR_DISTRIBUTIONS.map(dist => ({
+                    label: dist.friendlyName,
+                    description: dist.name,
+                    detail: `${dist.description} (${dist.size || 'Size unknown'})`
                 }));
 
                 const selectedDistro = await vscode.window.showQuickPick(distroItems, {
-                    placeHolder: 'Select a distribution to download'
+                    placeHolder: 'Select a distribution to download (no admin required)'
                 });
 
                 if (!selectedDistro) return;
 
                 // Find the selected distribution
-                const distribution = availableDistributions.find(d => d.Name === selectedDistro.description);
+                const distribution = TAR_DISTRIBUTIONS.find(d => d.name === selectedDistro.description);
                 if (!distribution) return;
 
-                // Start download with progress
-                await vscode.window.withProgress({
-                    location: vscode.ProgressLocation.Notification,
-                    title: `Downloading ${distribution.FriendlyName}`,
-                    cancellable: false
-                }, async (progress) => {
-                    progress.report({ increment: 0, message: 'Starting download...' });
-                    
-                    await distributionDownloader.downloadDistribution(distribution.Name);
-                    
-                    progress.report({ increment: 100, message: 'Complete!' });
-                });
+                try {
+                    // Start download with progress
+                    await vscode.window.withProgress({
+                        location: vscode.ProgressLocation.Notification,
+                        title: `Downloading ${distribution.friendlyName}`,
+                        cancellable: false
+                    }, async (progress) => {
+                        let lastPercent = 0;
+                        progress.report({ increment: 0, message: 'Starting download...' });
+                        
+                        await distributionDownloader.downloadDistribution(distribution.name, {
+                            onProgress: (downloadProgress) => {
+                                const increment = downloadProgress.percent - lastPercent;
+                                lastPercent = downloadProgress.percent;
+                                progress.report({ 
+                                    increment,
+                                    message: downloadProgress.message || `${downloadProgress.percent}% - ${downloadProgress.speed || ''}` 
+                                });
+                            }
+                        });
+                        
+                        progress.report({ increment: 100 - lastPercent, message: 'Installing...' });
+                        
+                        // Wait for WSL to recognize the new distribution
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                    });
 
-                // Refresh tree view
-                await refreshAll();
-                vscode.window.showInformationMessage(`${distribution.FriendlyName} downloaded and installed successfully!`);
+                    // Force refresh the distribution list
+                    const distributions = await wslManager.listDistributions();
+                    distributionTreeProvider.refresh();
+                    
+                    // Update terminal profiles
+                    const images = await imageManager.listImages();
+                    terminalProfileManager?.updateProfiles(distributions, images);
+                    
+                    vscode.window.showInformationMessage(`${distribution.friendlyName} downloaded and installed successfully!`);
+                } catch (error: any) {
+                    // Provide specific error messages based on the error type
+                    if (error.message?.includes('Administrator privileges required')) {
+                        const action = await vscode.window.showErrorMessage(
+                            error.message,
+                            'Run as Admin',
+                            'Open Terminal'
+                        );
+                        
+                        if (action === 'Open Terminal') {
+                            const terminal = vscode.window.createTerminal('WSL Install');
+                            terminal.show();
+                            terminal.sendText(`wsl --install -d ${distribution.name}`);
+                            terminal.sendText('# Run this command in an administrator terminal');
+                        }
+                    } else if (error.message?.includes('not found in Microsoft registry')) {
+                        vscode.window.showErrorMessage(
+                            `Distribution '${distribution.friendlyName}' is not available for download. ` +
+                            `It may need to be installed from the Microsoft Store.`
+                        );
+                    } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+                        vscode.window.showErrorMessage(
+                            `Network error downloading ${distribution.friendlyName}. ` +
+                            `Please check your internet connection and try again.`
+                        );
+                    } else if (error.message?.includes('disk space')) {
+                        vscode.window.showErrorMessage(
+                            `Insufficient disk space to install ${distribution.friendlyName}. ` +
+                            `Please free up space and try again.`
+                        );
+                    } else {
+                        await ErrorHandler.showError(error, 'download distribution');
+                    }
+                }
             } catch (error) {
                 await ErrorHandler.showError(error, 'download distribution');
             }

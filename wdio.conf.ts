@@ -49,7 +49,8 @@ export const config: Options.Testrunner = {
             
             // VS Code launch args
             vscodeArgs: [
-                '--disable-extensions', // Disable other extensions for isolated testing
+                // Note: Do NOT use --disable-extensions as it prevents our extension from loading!
+                // The extensionPath above ensures our extension is loaded in development mode
                 '--disable-workspace-trust'
             ]
         }
@@ -109,13 +110,7 @@ export const config: Options.Testrunner = {
     // Reporters
     //
     reporters: [
-        'spec',
-        ['junit', {
-            outputDir: './test-results',
-            outputFileFormat: function(options: any) {
-                return `e2e-results-${options.cid}.xml`;
-            }
-        }]
+        'spec'
     ],
     
     //
