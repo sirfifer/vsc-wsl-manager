@@ -36,3 +36,12 @@ claude-personas/
 
 # Test results
 test-results/
+
+# E2E Debug artifacts (CRITICAL - thousands of files!)
+test/e2e-debug/
+test/e2e-debug/crash-dumps/
+test/e2e-debug/logs/
+test/e2e-debug/screenshots/
+test/e2e-debug/process-logs/
+test/e2e-debug/**/*.json
+test/e2e-debug/**/*.log
