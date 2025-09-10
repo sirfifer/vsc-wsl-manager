@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-09-09T02:08:55.180Z",
+  "results": [
+    {
+      "step": "basic-launch",
+      "description": "Launch VS Code without any arguments",
+      "startTime": "2025-09-09T02:08:53.025Z",
+      "success": false,
+      "crashed": true,
+      "error": "VS Code process died while waiting",
+      "duration": 2138,
+      "processInfo": null
+    }
+  ],
+  "summary": {
+    "totalSteps": 1,
+    "passed": 0,
+    "failed": 1,
+    "crashed": 1,
+    "firstFailure": "basic-launch",
+    "firstCrash": "basic-launch"
+  },
+  "recommendation": "VS Code crashes on basic launch. Check VS Code installation and system requirements."
+}
