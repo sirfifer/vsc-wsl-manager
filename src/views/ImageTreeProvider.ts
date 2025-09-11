@@ -67,7 +67,12 @@ export class ImageTreeItem extends vscode.TreeItem {
         
         // Show source
         if (this.image.sourceType === 'distro') {
-            parts.push(`from ${this.image.source}`);
+            // Fix: Show "from distro" when source is unknown
+            if (this.image.source === 'unknown') {
+                parts.push('from distro');
+            } else {
+                parts.push(`from ${this.image.source}`);
+            }
         } else {
             parts.push(`cloned from ${this.image.source}`);
         }

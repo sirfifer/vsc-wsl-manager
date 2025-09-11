@@ -212,35 +212,38 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('wsl-manager.createImage', async (item) => {
             try {
-                let sourceImageName: string | undefined;
+                let sourceDistroName: string | undefined;
                 
-                if (item?.image?.name) {
-                    sourceImageName = item.image.name;
+                if (item?.distro?.name) {
+                    // Called from distribution tree item context menu
+                    sourceDistroName = item.distro.name;
                 } else {
                     // Show picker if not called from tree item
-                    const images = await imageManager.listImages();
-                    if (images.length === 0) {
-                        vscode.window.showWarningMessage('No WSL instances available. Create one from a distribution first.');
+                    const distros = await distroManager.listDistros();
+                    const available = distros.filter(d => d.available);
+                    
+                    if (available.length === 0) {
+                        vscode.window.showWarningMessage('No distributions available. Download a distribution first.');
                         return;
                     }
 
                     const selected = await vscode.window.showQuickPick(
-                        images.map(img => ({
-                            label: img.displayName || img.name,
-                            description: `from ${img.source}`,
-                            detail: img.description,
-                            image: img
+                        available.map(d => ({
+                            label: d.displayName,
+                            description: d.version,
+                            detail: `${d.description} (${formatBytes(d.size || 0)})`,
+                            distro: d
                         })),
-                        { placeHolder: 'Select WSL instance to clone' }
+                        { placeHolder: 'Select distribution to create image from' }
                     );
 
                     if (!selected) return;
-                    sourceImageName = selected.image.name;
+                    sourceDistroName = selected.distro.name;
                 }
 
                 const newName = await vscode.window.showInputBox({
-                    prompt: 'Enter name for the cloned instance',
-                    value: `${sourceImageName}-clone`,
+                    prompt: 'Enter name for the new WSL instance',
+                    value: `${sourceDistroName}-instance`,
                     validateInput: (value) => {
                         if (!value) return 'Name is required';
                         const validation = InputValidator.validateDistributionName(value);
@@ -253,17 +256,17 @@ export function activate(context: vscode.ExtensionContext) {
 
                 const description = await vscode.window.showInputBox({
                     prompt: 'Enter description (optional)',
-                    placeHolder: `Clone of ${sourceImageName}`
+                    placeHolder: `WSL instance from ${sourceDistroName}`
                 });
 
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
-                    title: `Cloning WSL instance: ${newName}`,
+                    title: `Creating WSL instance: ${newName}`,
                     cancellable: false
                 }, async (progress) => {
-                    progress.report({ increment: 0, message: 'Exporting source...' });
+                    progress.report({ increment: 0, message: 'Creating from distribution...' });
                     
-                    await imageManager.cloneImage(sourceImageName!, newName, {
+                    await imageManager.createFromDistro(sourceDistroName!, newName, {
                         displayName: newName,
                         description,
                         enableTerminal: true
@@ -273,7 +276,7 @@ export function activate(context: vscode.ExtensionContext) {
                 });
 
                 await refreshAll();
-                vscode.window.showInformationMessage(`Cloned '${sourceImageName}' to '${newName}' successfully!`);
+                vscode.window.showInformationMessage(`Created WSL instance '${newName}' successfully!`);
                 
             } catch (error) {
                 await ErrorHandler.showError(error, 'clone image');
@@ -282,32 +285,37 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('wsl-manager.deleteDistribution', async (item) => {
             try {
-                let imageName: string | undefined;
+                let distroName: string | undefined;
                 
-                if (item?.image?.name) {
-                    imageName = item.image.name;
+                // Check if called from tree view with a distribution item
+                if (item?.distribution?.name) {
+                    distroName = item.distribution.name;
+                } else if (item?.label) {
+                    // Fallback to label if it's a simple tree item
+                    distroName = item.label;
                 } else {
-                    const images = await imageManager.listImages();
-                    if (images.length === 0) {
-                        vscode.window.showInformationMessage('No WSL instances to delete');
+                    // Show quick pick if no item provided
+                    const distributions = await wslManager.listDistributions();
+                    if (distributions.length === 0) {
+                        vscode.window.showInformationMessage('No WSL distributions to delete');
                         return;
                     }
 
                     const selected = await vscode.window.showQuickPick(
-                        images.map(img => ({
-                            label: img.displayName || img.name,
-                            description: `from ${img.source}`,
-                            image: img
+                        distributions.map(dist => ({
+                            label: dist.name,
+                            description: `WSL ${dist.version} - ${dist.state}`,
+                            distribution: dist
                         })),
-                        { placeHolder: 'Select WSL instance to delete' }
+                        { placeHolder: 'Select distribution to delete' }
                     );
 
                     if (!selected) return;
-                    imageName = selected.image.name;
+                    distroName = selected.distribution.name;
                 }
 
                 const confirmation = await vscode.window.showWarningMessage(
-                    `Are you sure you want to delete WSL instance '${imageName}'? This action cannot be undone.`,
+                    `Are you sure you want to delete distribution '${distroName}'? This action cannot be undone.`,
                     { modal: true },
                     'Delete'
                 );
@@ -316,14 +324,14 @@ export function activate(context: vscode.ExtensionContext) {
 
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
-                    title: `Deleting WSL instance: ${imageName}`,
+                    title: `Deleting distribution: ${distroName}`,
                     cancellable: false
                 }, async () => {
-                    await imageManager.deleteImage(imageName!);
+                    await wslManager.unregisterDistribution(distroName!);
                 });
 
                 await refreshAll();
-                vscode.window.showInformationMessage(`Deleted WSL instance '${imageName}' successfully`);
+                vscode.window.showInformationMessage(`Deleted distribution '${distroName}' successfully`);
                 
             } catch (error) {
                 await ErrorHandler.showError(error, 'delete distribution');
@@ -425,6 +433,225 @@ export function activate(context: vscode.ExtensionContext) {
                 
             } catch (error) {
                 await ErrorHandler.showError(error, 'toggle image enabled');
+            }
+        }),
+
+        vscode.commands.registerCommand('wsl-manager.deleteImage', async (item) => {
+            try {
+                let imageName: string | undefined;
+                
+                // Check if called from tree view with an image item
+                if (item?.image?.name) {
+                    imageName = item.image.name;
+                } else if (item?.label) {
+                    // Fallback to label if it's a simple tree item
+                    imageName = item.label;
+                } else {
+                    // Show quick pick if no item provided
+                    const images = await imageManager.listImages();
+                    if (images.length === 0) {
+                        vscode.window.showInformationMessage('No WSL images to delete');
+                        return;
+                    }
+
+                    const selected = await vscode.window.showQuickPick(
+                        images.map(img => ({
+                            label: img.displayName || img.name,
+                            description: img.source === 'unknown' ? 'from distro' : `from ${img.source}`,
+                            image: img
+                        })),
+                        { placeHolder: 'Select image to delete' }
+                    );
+
+                    if (!selected) return;
+                    imageName = selected.image.name;
+                }
+
+                const confirmation = await vscode.window.showWarningMessage(
+                    `Are you sure you want to delete image '${imageName}'? This will unregister the WSL distribution.`,
+                    { modal: true },
+                    'Delete'
+                );
+
+                if (confirmation !== 'Delete') return;
+
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Deleting image: ${imageName}`,
+                    cancellable: false
+                }, async () => {
+                    await imageManager.deleteImage(imageName!);
+                });
+
+                await refreshAll();
+                vscode.window.showInformationMessage(`Deleted image '${imageName}' successfully`);
+                
+            } catch (error) {
+                await ErrorHandler.showError(error, 'delete image');
+            }
+        }),
+
+        vscode.commands.registerCommand('wsl-manager.createImageFromDistribution', async () => {
+            try {
+                // Get list of available distros (templates)
+                const distros = await distroManager.listDistros();
+                const available = distros.filter(d => d.available);
+                
+                if (available.length === 0) {
+                    vscode.window.showWarningMessage('No distributions available. Download a distribution first.');
+                    return;
+                }
+
+                // Select distribution
+                const selectedDistro = await vscode.window.showQuickPick(
+                    available.map(d => ({
+                        label: d.displayName,
+                        description: d.version,
+                        detail: `${d.description} (${formatBytes(d.size || 0)})`,
+                        distro: d
+                    })),
+                    { placeHolder: 'Select a distribution to create an image from' }
+                );
+
+                if (!selectedDistro) return;
+
+                // Get image name
+                const imageName = await vscode.window.showInputBox({
+                    prompt: 'Enter a name for the new image',
+                    value: `${selectedDistro.distro.name}-image`,
+                    validateInput: (value) => {
+                        if (!value) return 'Name is required';
+                        if (!/^[a-zA-Z0-9-_]+$/.test(value)) {
+                            return 'Name can only contain letters, numbers, hyphens, and underscores';
+                        }
+                        return undefined;
+                    }
+                });
+
+                if (!imageName) return;
+
+                // Create image
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Creating image '${imageName}' from distribution '${selectedDistro.distro.displayName}'...`,
+                    cancellable: false
+                }, async () => {
+                    await imageManager.createFromDistro(selectedDistro.distro.name, imageName);
+                });
+
+                await refreshAll();
+                vscode.window.showInformationMessage(`Created image '${imageName}' successfully`);
+                
+            } catch (error) {
+                await ErrorHandler.showError(error, 'create image from distribution');
+            }
+        }),
+
+        vscode.commands.registerCommand('wsl-manager.createImageFromImage', async () => {
+            try {
+                // Get list of images
+                const images = await imageManager.listImages();
+                if (images.length === 0) {
+                    vscode.window.showInformationMessage('No WSL images available to clone.');
+                    return;
+                }
+
+                // Select source image
+                const selectedImage = await vscode.window.showQuickPick(
+                    images.map(img => ({
+                        label: img.displayName || img.name,
+                        description: img.source === 'unknown' ? 'from distro' : `from ${img.source}`,
+                        detail: img.description,
+                        image: img
+                    })),
+                    { placeHolder: 'Select an image to clone' }
+                );
+
+                if (!selectedImage) return;
+
+                // Get new image name
+                const newImageName = await vscode.window.showInputBox({
+                    prompt: 'Enter a name for the cloned image',
+                    value: `${selectedImage.image.name}-clone`,
+                    validateInput: (value) => {
+                        if (!value) return 'Name is required';
+                        if (!/^[a-zA-Z0-9-_]+$/.test(value)) {
+                            return 'Name can only contain letters, numbers, hyphens, and underscores';
+                        }
+                        return undefined;
+                    }
+                });
+
+                if (!newImageName) return;
+
+                // Clone image
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Cloning image '${selectedImage.image.name}' to '${newImageName}'...`,
+                    cancellable: false
+                }, async () => {
+                    await imageManager.cloneImage(selectedImage.image.name, newImageName);
+                });
+
+                await refreshAll();
+                vscode.window.showInformationMessage(`Cloned image '${newImageName}' successfully`);
+                
+            } catch (error) {
+                await ErrorHandler.showError(error, 'clone image');
+            }
+        }),
+
+        vscode.commands.registerCommand('wsl-manager.createDistributionFromImage', async () => {
+            try {
+                // Get list of images
+                const images = await imageManager.listImages();
+                if (images.length === 0) {
+                    vscode.window.showInformationMessage('No WSL images available to create a distribution from.');
+                    return;
+                }
+
+                // Select image
+                const selectedImage = await vscode.window.showQuickPick(
+                    images.map(img => ({
+                        label: img.displayName || img.name,
+                        description: img.source === 'unknown' ? 'from distro' : `from ${img.source}`,
+                        detail: img.description,
+                        image: img
+                    })),
+                    { placeHolder: 'Select an image to create a distribution from' }
+                );
+
+                if (!selectedImage) return;
+
+                // Get distribution name
+                const distroName = await vscode.window.showInputBox({
+                    prompt: 'Enter a name for the new distribution',
+                    value: `${selectedImage.image.name}-instance`,
+                    validateInput: (value) => {
+                        if (!value) return 'Name is required';
+                        if (!/^[a-zA-Z0-9-_]+$/.test(value)) {
+                            return 'Name can only contain letters, numbers, hyphens, and underscores';
+                        }
+                        return undefined;
+                    }
+                });
+
+                if (!distroName) return;
+
+                // Create distribution (by cloning the image)
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Creating distribution '${distroName}' from image '${selectedImage.image.name}'...`,
+                    cancellable: false
+                }, async () => {
+                    await imageManager.cloneImage(selectedImage.image.name, distroName);
+                });
+
+                await refreshAll();
+                vscode.window.showInformationMessage(`Created distribution '${distroName}' successfully`);
+                
+            } catch (error) {
+                await ErrorHandler.showError(error, 'create distribution from image');
             }
         }),
 

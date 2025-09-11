@@ -23,7 +23,7 @@ export class DistroTreeItem extends vscode.TreeItem {
         
         this.tooltip = this.makeTooltip();
         this.description = this.makeDescription();
-        this.contextValue = this.distro.available ? 'distro-available' : 'distro-unavailable';
+        this.contextValue = 'distribution';
         this.iconPath = this.getIcon();
     }
     

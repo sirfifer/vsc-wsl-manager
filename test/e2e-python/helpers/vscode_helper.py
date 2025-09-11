@@ -6,7 +6,10 @@ from typing import Optional, Dict, Any
 from pywinauto import Application, Desktop
 from pywinauto.findwindows import ElementNotFoundError
 import pyautogui
-from .path_converter import get_project_root, find_vscode_executable
+try:
+    from .path_converter import get_project_root, find_vscode_executable
+except ImportError:
+    from path_converter import get_project_root, find_vscode_executable
 
 
 class VSCodeHelper:
