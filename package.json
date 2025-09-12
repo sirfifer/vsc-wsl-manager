@@ -205,20 +205,20 @@
         },
         {
           "command": "wsl-manager.openTerminal",
-          "when": "view == wslDistributions && viewItem == distribution",
+          "when": "view == wslDistributions && viewItem == distro",
           "group": "inline"
         },
         {
           "command": "wsl-manager.createImage",
-          "when": "view == wslDistributions && viewItem == distribution"
+          "when": "view == wslDistributions && viewItem == distro"
         },
         {
           "command": "wsl-manager.exportDistribution",
-          "when": "view == wslDistributions && viewItem == distribution"
+          "when": "view == wslDistributions && viewItem == distro"
         },
         {
           "command": "wsl-manager.deleteDistribution",
-          "when": "view == wslDistributions && viewItem == distribution"
+          "when": "view == wslDistributions && viewItem == distro"
         }
       ]
     },

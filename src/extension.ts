@@ -279,7 +279,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(`Created WSL instance '${newName}' successfully!`);
                 
             } catch (error) {
-                await ErrorHandler.showError(error, 'clone image');
+                await ErrorHandler.showError(error, 'create image from distribution');
             }
         }),
 
@@ -288,7 +288,11 @@ export function activate(context: vscode.ExtensionContext) {
                 let distroName: string | undefined;
                 
                 // Check if called from tree view with a distribution item
-                if (item?.distribution?.name) {
+                // Note: DistroTreeItem uses 'distro', not 'distribution'
+                if (item?.distro?.name) {
+                    distroName = item.distro.name;
+                } else if (item?.distribution?.name) {
+                    // Legacy support for old structure
                     distroName = item.distribution.name;
                 } else if (item?.label) {
                     // Fallback to label if it's a simple tree item
