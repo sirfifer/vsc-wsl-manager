@@ -156,6 +156,12 @@ export class ErrorHandler {
         if (errorMessage.includes('distribution') && errorMessage.includes('not installed')) {
             return ErrorType.DISTRIBUTION_NOT_FOUND;
         }
+        if (errorMessage.includes('not available locally')) {
+            return ErrorType.FILE_NOT_FOUND;
+        }
+        if (errorMessage.includes('distro not found')) {
+            return ErrorType.DISTRIBUTION_NOT_FOUND;
+        }
         if (errorMessage.includes('already exists') || errorMessage.includes('already registered')) {
             return ErrorType.DISTRIBUTION_ALREADY_EXISTS;
         }
@@ -168,7 +174,7 @@ export class ErrorHandler {
         if (errorMessage.includes('no such file')) {
             return ErrorType.FILE_NOT_FOUND;
         }
-        if (errorMessage.includes('network') || errorMessage.includes('download') || errorCode === 'ENETUNREACH') {
+        if (errorMessage.includes('network') || errorMessage.includes('enetunreach') || errorCode === 'ENETUNREACH' || errorMessage.includes('econnrefused')) {
             return ErrorType.NETWORK_ERROR;
         }
         if (errorMessage.includes('rate limit exceeded')) {

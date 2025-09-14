@@ -320,18 +320,30 @@ export class DistroManager {
             logger.debug(`Deleted distro file: ${filePath}`);
         }
         
-        // Update catalog
+        // Update catalog - mark as unavailable but keep in list
         if (!this.catalog) {
             this.loadCatalog();
         }
         
-        this.catalog!.distributions = this.catalog!.distributions.filter(
-            d => d.name !== name
-        );
-        this.catalog!.updated = new Date().toISOString();
+        // Find the distro and mark it as unavailable
+        const distro = this.catalog!.distributions.find(d => d.name === name);
+        if (distro) {
+            distro.available = false;
+            distro.filePath = undefined;
+            logger.info(`Marked distro ${name} as unavailable in catalog`);
+        }
         
+        // If it's not a default distro and was custom added, remove it
+        const defaultDistroNames = this.getDefaultDistros().map(d => d.name);
+        if (!defaultDistroNames.includes(name)) {
+            this.catalog!.distributions = this.catalog!.distributions.filter(
+                d => d.name !== name
+            );
+            logger.info(`Removed custom distro ${name} from catalog`);
+        }
+        
+        this.catalog!.updated = new Date().toISOString();
         this.saveCatalog();
-        logger.info(`Removed distro ${name} from catalog`);
     }
     
     /**

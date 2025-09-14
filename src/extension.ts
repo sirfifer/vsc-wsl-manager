@@ -524,9 +524,8 @@ export function activate(context: vscode.ExtensionContext) {
                     value: `${selectedDistro.distro.name}-image`,
                     validateInput: (value) => {
                         if (!value) return 'Name is required';
-                        if (!/^[a-zA-Z0-9-_]+$/.test(value)) {
-                            return 'Name can only contain letters, numbers, hyphens, and underscores';
-                        }
+                        const validation = InputValidator.validateDistributionName(value);
+                        if (!validation.isValid) return validation.error;
                         return undefined;
                     }
                 });
@@ -550,37 +549,44 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }),
 
-        vscode.commands.registerCommand('wsl-manager.createImageFromImage', async () => {
+        vscode.commands.registerCommand('wsl-manager.createImageFromImage', async (item) => {
             try {
-                // Get list of images
-                const images = await imageManager.listImages();
-                if (images.length === 0) {
-                    vscode.window.showInformationMessage('No WSL images available to clone.');
-                    return;
+                let sourceImage: any;
+                
+                // Check if called from context menu
+                if (item?.image) {
+                    sourceImage = item.image;
+                } else {
+                    // Get list of images
+                    const images = await imageManager.listImages();
+                    if (images.length === 0) {
+                        vscode.window.showInformationMessage('No WSL images available to clone.');
+                        return;
+                    }
+
+                    // Select source image
+                    const selectedImage = await vscode.window.showQuickPick(
+                        images.map(img => ({
+                            label: img.displayName || img.name,
+                            description: img.source === 'unknown' ? 'from distro' : `from ${img.source}`,
+                            detail: img.description,
+                            image: img
+                        })),
+                        { placeHolder: 'Select an image to clone' }
+                    );
+
+                    if (!selectedImage) return;
+                    sourceImage = selectedImage.image;
                 }
-
-                // Select source image
-                const selectedImage = await vscode.window.showQuickPick(
-                    images.map(img => ({
-                        label: img.displayName || img.name,
-                        description: img.source === 'unknown' ? 'from distro' : `from ${img.source}`,
-                        detail: img.description,
-                        image: img
-                    })),
-                    { placeHolder: 'Select an image to clone' }
-                );
-
-                if (!selectedImage) return;
 
                 // Get new image name
                 const newImageName = await vscode.window.showInputBox({
                     prompt: 'Enter a name for the cloned image',
-                    value: `${selectedImage.image.name}-clone`,
+                    value: `${sourceImage.name}-clone`,
                     validateInput: (value) => {
                         if (!value) return 'Name is required';
-                        if (!/^[a-zA-Z0-9-_]+$/.test(value)) {
-                            return 'Name can only contain letters, numbers, hyphens, and underscores';
-                        }
+                        const validation = InputValidator.validateDistributionName(value);
+                        if (!validation.isValid) return validation.error;
                         return undefined;
                     }
                 });
@@ -590,10 +596,10 @@ export function activate(context: vscode.ExtensionContext) {
                 // Clone image
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
-                    title: `Cloning image '${selectedImage.image.name}' to '${newImageName}'...`,
+                    title: `Cloning image '${sourceImage.name}' to '${newImageName}'...`,
                     cancellable: false
                 }, async () => {
-                    await imageManager.cloneImage(selectedImage.image.name, newImageName);
+                    await imageManager.cloneImage(sourceImage.name, newImageName);
                 });
 
                 await refreshAll();
@@ -632,9 +638,8 @@ export function activate(context: vscode.ExtensionContext) {
                     value: `${selectedImage.image.name}-instance`,
                     validateInput: (value) => {
                         if (!value) return 'Name is required';
-                        if (!/^[a-zA-Z0-9-_]+$/.test(value)) {
-                            return 'Name can only contain letters, numbers, hyphens, and underscores';
-                        }
+                        const validation = InputValidator.validateDistributionName(value);
+                        if (!validation.isValid) return validation.error;
                         return undefined;
                     }
                 });

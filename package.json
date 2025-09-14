@@ -189,6 +189,16 @@
       ],
       "view/item/context": [
         {
+          "command": "wsl-manager.createImageFromImage",
+          "when": "view == wslImages && viewItem =~ /^image/",
+          "group": "0_create@1"
+        },
+        {
+          "command": "wsl-manager.openTerminal",
+          "when": "view == wslImages && viewItem =~ /^image/",
+          "group": "0_create@2"
+        },
+        {
           "command": "wsl-manager.editImageProperties",
           "when": "view == wslImages && viewItem =~ /^image/",
           "group": "1_modify@1"
