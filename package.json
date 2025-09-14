@@ -204,21 +204,17 @@
           "group": "2_dangerous@1"
         },
         {
-          "command": "wsl-manager.openTerminal",
-          "when": "view == wslDistributions && viewItem == distro",
-          "group": "inline"
-        },
-        {
           "command": "wsl-manager.createImage",
-          "when": "view == wslDistributions && viewItem == distro"
-        },
-        {
-          "command": "wsl-manager.exportDistribution",
-          "when": "view == wslDistributions && viewItem == distro"
+          "when": "view == wslDistributions && viewItem == distribution"
         },
         {
           "command": "wsl-manager.deleteDistribution",
-          "when": "view == wslDistributions && viewItem == distro"
+          "when": "view == wslDistributions && viewItem == distribution"
+        },
+        {
+          "command": "wsl-manager.openTerminal",
+          "when": "view == wslImages && viewItem =~ /^image/",
+          "group": "inline"
         }
       ]
     },
@@ -289,6 +285,8 @@
     "lint:fix": "eslint src --ext ts --fix",
     "test": "jest",
     "test:node22": "node scripts/run-tests-node22.js",
+    "test:comprehensive": "node scripts/comprehensive-test-runner.js",
+    "test:commands": "node test/comprehensive/command-handlers.test.js",
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
     "test:coverage": "jest --coverage",

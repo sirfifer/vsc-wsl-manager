@@ -10,7 +10,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { Logger } from '../utils/logger';
-import { WSLDistroAdapter } from './WSLDistroAdapter';
 
 const logger = Logger.getInstance();
 
@@ -76,7 +75,6 @@ export class DistroManager {
     private readonly distroStorePath: string;
     private readonly catalogPath: string;
     private catalog: DistroCatalog | null = null;
-    private wslAdapter: WSLDistroAdapter;
     
     constructor(storePath?: string) {
         // Use %USERPROFILE%/.vscode-wsl-manager/distros
@@ -87,7 +85,6 @@ export class DistroManager {
         
         this.distroStorePath = path.join(baseDir, 'distros');
         this.catalogPath = path.join(this.distroStorePath, 'catalog.json');
-        this.wslAdapter = new WSLDistroAdapter();
         
         this.ensureStorageExists();
         this.loadCatalog();
@@ -221,8 +218,8 @@ export class DistroManager {
             this.loadCatalog();
         }
         
-        // Get catalog distros and update availability status
-        const catalogDistros = this.catalog!.distributions.map(distro => {
+        // Update availability status
+        const distros = this.catalog!.distributions.map(distro => {
             const filePath = this.getDistroPath(distro.name);
             return {
                 ...distro,
@@ -231,42 +228,7 @@ export class DistroManager {
             };
         });
         
-        // Also include existing WSL distributions as available sources
-        try {
-            const wslDistros = await this.wslAdapter.getWSLDistributionsAsDistros();
-            
-            // Merge with catalog, WSL distributions take precedence
-            const mergedDistros = [...catalogDistros];
-            
-            for (const wslDistro of wslDistros) {
-                // Check if this WSL distro is already in catalog
-                const existingIndex = mergedDistros.findIndex(d => 
-                    d.name === wslDistro.name || 
-                    d.displayName === wslDistro.displayName
-                );
-                
-                if (existingIndex >= 0) {
-                    // Update existing entry to show it's available
-                    mergedDistros[existingIndex] = {
-                        ...mergedDistros[existingIndex],
-                        available: true,
-                        filePath: wslDistro.filePath || mergedDistros[existingIndex].filePath
-                    };
-                } else {
-                    // Add as new distro
-                    mergedDistros.push({
-                        ...wslDistro,
-                        filePath: wslDistro.filePath || '',
-                        available: wslDistro.available ?? true
-                    });
-                }
-            }
-            
-            return mergedDistros;
-        } catch (error) {
-            logger.warn('Failed to get WSL distributions, using catalog only:', error as Error);
-            return catalogDistros;
-        }
+        return distros;
     }
     
     /**

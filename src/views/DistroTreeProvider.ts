@@ -23,7 +23,7 @@ export class DistroTreeItem extends vscode.TreeItem {
         
         this.tooltip = this.makeTooltip();
         this.description = this.makeDescription();
-        this.contextValue = 'distro'; // Changed to 'distro' to distinguish from WSL distributions
+        this.contextValue = 'distribution';
         this.iconPath = this.getIcon();
     }
     

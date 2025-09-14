@@ -288,38 +288,36 @@ export function activate(context: vscode.ExtensionContext) {
                 let distroName: string | undefined;
                 
                 // Check if called from tree view with a distribution item
-                // Note: DistroTreeItem uses 'distro', not 'distribution'
+                // DistroTreeItem has 'distro' property
                 if (item?.distro?.name) {
                     distroName = item.distro.name;
-                } else if (item?.distribution?.name) {
-                    // Legacy support for old structure
-                    distroName = item.distribution.name;
                 } else if (item?.label) {
                     // Fallback to label if it's a simple tree item
                     distroName = item.label;
                 } else {
                     // Show quick pick if no item provided
-                    const distributions = await wslManager.listDistributions();
-                    if (distributions.length === 0) {
-                        vscode.window.showInformationMessage('No WSL distributions to delete');
+                    const distros = await distroManager.listDistros();
+                    if (distros.length === 0) {
+                        vscode.window.showInformationMessage('No distributions to delete');
                         return;
                     }
 
                     const selected = await vscode.window.showQuickPick(
-                        distributions.map(dist => ({
-                            label: dist.name,
-                            description: `WSL ${dist.version} - ${dist.state}`,
-                            distribution: dist
+                        distros.map(dist => ({
+                            label: dist.displayName,
+                            description: dist.version,
+                            detail: dist.available ? '✓ Downloaded' : 'Not downloaded',
+                            distro: dist
                         })),
                         { placeHolder: 'Select distribution to delete' }
                     );
 
                     if (!selected) return;
-                    distroName = selected.distribution.name;
+                    distroName = selected.distro.name;
                 }
 
                 const confirmation = await vscode.window.showWarningMessage(
-                    `Are you sure you want to delete distribution '${distroName}'? This action cannot be undone.`,
+                    `Are you sure you want to delete distribution template '${distroName}'? This will not affect any images created from it.`,
                     { modal: true },
                     'Delete'
                 );
@@ -328,17 +326,18 @@ export function activate(context: vscode.ExtensionContext) {
 
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
-                    title: `Deleting distribution: ${distroName}`,
+                    title: `Deleting distribution template: ${distroName}`,
                     cancellable: false
                 }, async () => {
-                    await wslManager.unregisterDistribution(distroName!);
+                    // Use distroManager to remove the distro template
+                    await distroManager.removeDistro(distroName!);
                 });
 
                 await refreshAll();
-                vscode.window.showInformationMessage(`Deleted distribution '${distroName}' successfully`);
+                vscode.window.showInformationMessage(`Deleted distribution template '${distroName}' successfully`);
                 
             } catch (error) {
-                await ErrorHandler.showError(error, 'delete distribution');
+                await ErrorHandler.showError(error, 'delete distribution template');
             }
         }),
 
