@@ -109,6 +109,9 @@ export class DistroManager {
                 const content = fs.readFileSync(this.catalogPath, 'utf8');
                 this.catalog = JSON.parse(content);
                 logger.debug(`Loaded distro catalog with ${this.catalog?.distributions.length} entries`);
+                
+                // Ensure all default distros are present
+                this.mergeDefaultDistros();
             } else {
                 // Create initial catalog
                 this.catalog = {
@@ -130,6 +133,35 @@ export class DistroManager {
     }
     
     /**
+     * Merge default distros into catalog if missing
+     */
+    private mergeDefaultDistros(): void {
+        if (!this.catalog) return;
+        
+        const defaultDistros = this.getDefaultDistros();
+        const existingNames = new Set(this.catalog.distributions.map(d => d.name));
+        let added = 0;
+        
+        for (const defaultDistro of defaultDistros) {
+            if (!existingNames.has(defaultDistro.name)) {
+                // Add missing default distro
+                this.catalog.distributions.push({
+                    ...defaultDistro,
+                    available: false // Not downloaded yet
+                });
+                added++;
+                logger.info(`Restored missing default distro: ${defaultDistro.name}`);
+            }
+        }
+        
+        if (added > 0) {
+            this.catalog.updated = new Date().toISOString();
+            this.saveCatalog();
+            logger.info(`Restored ${added} missing default distributions to catalog`);
+        }
+    }
+    
+    /**
      * Save the catalog to disk
      */
     private saveCatalog(): void {
@@ -147,16 +179,7 @@ export class DistroManager {
      */
     private getDefaultDistros(): DistroInfo[] {
         return [
-            {
-                name: 'ubuntu-22.04',
-                displayName: 'Ubuntu 22.04 LTS',
-                description: 'Ubuntu 22.04 LTS (Jammy Jellyfish) - Long Term Support',
-                version: '22.04.3',
-                architecture: 'x64',
-                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz',
-                tags: ['ubuntu', 'lts', 'stable'],
-                size: 650 * 1024 * 1024 // Approximate
-            },
+            // Ubuntu Family
             {
                 name: 'ubuntu-24.04',
                 displayName: 'Ubuntu 24.04 LTS',
@@ -168,6 +191,38 @@ export class DistroManager {
                 size: 700 * 1024 * 1024
             },
             {
+                name: 'ubuntu-22.04',
+                displayName: 'Ubuntu 22.04 LTS',
+                description: 'Ubuntu 22.04 LTS (Jammy Jellyfish) - Long Term Support',
+                version: '22.04.3',
+                architecture: 'x64',
+                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz',
+                tags: ['ubuntu', 'lts', 'stable'],
+                size: 650 * 1024 * 1024
+            },
+            {
+                name: 'ubuntu-20.04',
+                displayName: 'Ubuntu 20.04 LTS',
+                description: 'Ubuntu 20.04 LTS (Focal Fossa) - Previous LTS',
+                version: '20.04.6',
+                architecture: 'x64',
+                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/focal/current/ubuntu-focal-wsl-amd64-wsl.rootfs.tar.gz',
+                tags: ['ubuntu', 'lts', 'legacy'],
+                size: 500 * 1024 * 1024
+            },
+            {
+                name: 'ubuntu-23.10',
+                displayName: 'Ubuntu 23.10',
+                description: 'Ubuntu 23.10 (Mantic Minotaur) - Latest non-LTS',
+                version: '23.10',
+                architecture: 'x64',
+                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/mantic/current/ubuntu-mantic-wsl-amd64-wsl.rootfs.tar.gz',
+                tags: ['ubuntu', 'latest', 'non-lts'],
+                size: 680 * 1024 * 1024
+            },
+            
+            // Debian Family
+            {
                 name: 'debian-12',
                 displayName: 'Debian 12',
                 description: 'Debian 12 (Bookworm) - Stable and reliable',
@@ -178,15 +233,49 @@ export class DistroManager {
                 size: 50 * 1024 * 1024
             },
             {
-                name: 'alpine-3.19',
-                displayName: 'Alpine Linux 3.19',
-                description: 'Alpine Linux - Lightweight and secure',
-                version: '3.19.0',
+                name: 'debian-11',
+                displayName: 'Debian 11',
+                description: 'Debian 11 (Bullseye) - Previous stable',
+                version: '11',
                 architecture: 'x64',
-                sourceUrl: 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.0-x86_64.tar.gz',
-                tags: ['alpine', 'minimal', 'lightweight'],
-                size: 3 * 1024 * 1024
+                sourceUrl: 'https://github.com/debuerreotype/docker-debian-artifacts/raw/dist-amd64/bullseye/rootfs.tar.xz',
+                tags: ['debian', 'oldstable'],
+                size: 48 * 1024 * 1024
             },
+            
+            // Enterprise Linux
+            {
+                name: 'rocky-9',
+                displayName: 'Rocky Linux 9',
+                description: 'Rocky Linux 9 - Enterprise Linux, RHEL compatible',
+                version: '9',
+                architecture: 'x64',
+                sourceUrl: 'https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-Container-Base.latest.x86_64.tar.xz',
+                tags: ['rocky', 'enterprise', 'rhel-compatible'],
+                size: 90 * 1024 * 1024
+            },
+            {
+                name: 'almalinux-9',
+                displayName: 'AlmaLinux 9',
+                description: 'AlmaLinux 9 - Enterprise Linux, RHEL compatible',
+                version: '9',
+                architecture: 'x64',
+                sourceUrl: 'https://repo.almalinux.org/almalinux/9/cloud/x86_64/images/AlmaLinux-9-GenericCloud-latest.x86_64.tar.xz',
+                tags: ['alma', 'enterprise', 'rhel-compatible'],
+                size: 95 * 1024 * 1024
+            },
+            {
+                name: 'oracle-9',
+                displayName: 'Oracle Linux 9',
+                description: 'Oracle Linux 9 - Enterprise Linux from Oracle',
+                version: '9',
+                architecture: 'x64',
+                sourceUrl: 'https://yum.oracle.com/templates/OracleLinux/OL9/u0/x86_64/oraclelinux-9-amd64.tar.xz',
+                tags: ['oracle', 'enterprise'],
+                size: 100 * 1024 * 1024
+            },
+            
+            // Fedora Family
             {
                 name: 'fedora-39',
                 displayName: 'Fedora 39',
@@ -198,6 +287,18 @@ export class DistroManager {
                 size: 70 * 1024 * 1024
             },
             {
+                name: 'fedora-40',
+                displayName: 'Fedora 40',
+                description: 'Fedora 40 - Latest Fedora release',
+                version: '40',
+                architecture: 'x64',
+                sourceUrl: 'https://github.com/fedora-cloud/docker-brew-fedora/raw/40/x86_64/fedora-40-x86_64.tar.xz',
+                tags: ['fedora', 'latest', 'bleeding-edge'],
+                size: 75 * 1024 * 1024
+            },
+            
+            // Arch Family
+            {
                 name: 'archlinux',
                 displayName: 'Arch Linux',
                 description: 'Arch Linux - Rolling release for advanced users',
@@ -206,6 +307,124 @@ export class DistroManager {
                 sourceUrl: 'https://mirror.rackspace.com/archlinux/iso/latest/archlinux-bootstrap-x86_64.tar.gz',
                 tags: ['arch', 'rolling', 'advanced'],
                 size: 150 * 1024 * 1024
+            },
+            {
+                name: 'manjaro',
+                displayName: 'Manjaro Linux',
+                description: 'Manjaro - User-friendly Arch-based distribution',
+                version: 'latest',
+                architecture: 'x64',
+                sourceUrl: 'https://github.com/manjaro/docker/raw/master/manjaro-base.tar.xz',
+                tags: ['manjaro', 'arch-based', 'user-friendly'],
+                size: 200 * 1024 * 1024
+            },
+            
+            // openSUSE Family
+            {
+                name: 'opensuse-leap-15.5',
+                displayName: 'openSUSE Leap 15.5',
+                description: 'openSUSE Leap 15.5 - Stable release',
+                version: '15.5',
+                architecture: 'x64',
+                sourceUrl: 'https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.5/images/openSUSE-Leap-15.5.x86_64-rootfs.tar.xz',
+                tags: ['opensuse', 'leap', 'stable'],
+                size: 80 * 1024 * 1024
+            },
+            {
+                name: 'opensuse-tumbleweed',
+                displayName: 'openSUSE Tumbleweed',
+                description: 'openSUSE Tumbleweed - Rolling release',
+                version: 'latest',
+                architecture: 'x64',
+                sourceUrl: 'https://download.opensuse.org/tumbleweed/appliances/openSUSE-Tumbleweed-rootfs.x86_64.tar.xz',
+                tags: ['opensuse', 'tumbleweed', 'rolling'],
+                size: 85 * 1024 * 1024
+            },
+            
+            // Security Distributions
+            {
+                name: 'kali-linux',
+                displayName: 'Kali Linux',
+                description: 'Kali Linux - Penetration testing and security',
+                version: '2024.1',
+                architecture: 'x64',
+                sourceUrl: 'https://cdimage.kali.org/kali-2024.1/kali-linux-2024.1-rootfs-amd64.tar.xz',
+                tags: ['kali', 'security', 'pentesting'],
+                size: 300 * 1024 * 1024
+            },
+            {
+                name: 'parrot-security',
+                displayName: 'Parrot Security OS',
+                description: 'Parrot Security OS - Security and privacy focused',
+                version: '6.0',
+                architecture: 'x64',
+                sourceUrl: 'https://download.parrot.sh/parrot/iso/6.0/Parrot-rootfs-6.0_amd64.tar.xz',
+                tags: ['parrot', 'security', 'privacy'],
+                size: 350 * 1024 * 1024
+            },
+            
+            // Lightweight
+            {
+                name: 'alpine-3.19',
+                displayName: 'Alpine Linux 3.19',
+                description: 'Alpine Linux 3.19 - Lightweight and secure',
+                version: '3.19.0',
+                architecture: 'x64',
+                sourceUrl: 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.0-x86_64.tar.gz',
+                tags: ['alpine', 'minimal', 'lightweight'],
+                size: 3 * 1024 * 1024
+            },
+            {
+                name: 'alpine-3.20',
+                displayName: 'Alpine Linux 3.20',
+                description: 'Alpine Linux 3.20 - Latest Alpine release',
+                version: '3.20.0',
+                architecture: 'x64',
+                sourceUrl: 'https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/x86_64/alpine-minirootfs-3.20.0-x86_64.tar.gz',
+                tags: ['alpine', 'minimal', 'latest'],
+                size: 3 * 1024 * 1024
+            },
+            
+            // Developer Focused
+            {
+                name: 'centos-stream-9',
+                displayName: 'CentOS Stream 9',
+                description: 'CentOS Stream 9 - Upstream for RHEL',
+                version: '9',
+                architecture: 'x64',
+                sourceUrl: 'https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-Container-Base-9.tar.xz',
+                tags: ['centos', 'stream', 'development'],
+                size: 85 * 1024 * 1024
+            },
+            {
+                name: 'void-linux',
+                displayName: 'Void Linux',
+                description: 'Void Linux - Independent distribution with runit',
+                version: 'latest',
+                architecture: 'x64',
+                sourceUrl: 'https://repo-default.voidlinux.org/live/current/void-x86_64-rootfs.tar.xz',
+                tags: ['void', 'independent', 'runit'],
+                size: 60 * 1024 * 1024
+            },
+            {
+                name: 'gentoo',
+                displayName: 'Gentoo Linux',
+                description: 'Gentoo - Source-based meta-distribution',
+                version: 'latest',
+                architecture: 'x64',
+                sourceUrl: 'https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64/stage3-amd64.tar.xz',
+                tags: ['gentoo', 'source-based', 'advanced'],
+                size: 250 * 1024 * 1024
+            },
+            {
+                name: 'clear-linux',
+                displayName: 'Clear Linux',
+                description: 'Clear Linux - Intel optimized distribution',
+                version: 'latest',
+                architecture: 'x64',
+                sourceUrl: 'https://cdn.download.clearlinux.org/releases/current/clear/clear-rootfs.tar.xz',
+                tags: ['clear', 'intel', 'optimized'],
+                size: 120 * 1024 * 1024
             }
         ];
     }
