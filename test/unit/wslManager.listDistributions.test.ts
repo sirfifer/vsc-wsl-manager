@@ -15,33 +15,34 @@
  * - Performance requirements
  */
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { WSLManager, WSLDistribution } from '../../src/wslManager';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as vscode from 'vscode';
 
 // Mock dependencies
-jest.mock('child_process');
-jest.mock('util', () => ({
-    promisify: jest.fn((fn) => fn)
+vi.mock('child_process');
+vi.mock('util', () => ({
+    promisify: vi.fn((fn) => fn)
 }));
-jest.mock('vscode');
+vi.mock('vscode');
 
 describe('WSL List Distributions (WSL-001)', () => {
     let wslManager: WSLManager;
-    let mockExec: jest.Mock;
+    let mockExec: any;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
 
         // Setup exec mock
-        mockExec = exec as unknown as jest.Mock;
+        mockExec = vi.mocked(exec);
         wslManager = new WSLManager();
 
         // Mock VS Code configuration
-        (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-            get: jest.fn().mockReturnValue('')
-        });
+        vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+            get: vi.fn().mockReturnValue('')
+        } as any);
     });
 
     describe('Parse WSL Output', () => {

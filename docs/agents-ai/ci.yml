@@ -1,0 +1,264 @@
+name: CI - Test Coverage and Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-coverage:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Needed for commit history analysis
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Compile TypeScript
+      run: npm run compile
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Check for security violations (no exec usage)
+      run: |
+        echo "Checking for forbidden exec() usage..."
+        if grep -r "\.exec(" src/ --exclude-dir=test; then
+          echo "❌ ERROR: exec() usage detected! Use spawn() instead for security."
+          exit 1
+        fi
+        echo "✅ No exec() usage found"
+    
+    - name: Verify TDD workflow (check test files exist)
+      run: |
+        echo "Verifying test files exist for all source files..."
+        for file in src/**/*.ts; do
+          if [[ ! "$file" =~ test && ! "$file" =~ spec ]]; then
+            testfile="${file/.ts/.test.ts}"
+            testfile="${testfile/src/src\/test}"
+            if [ ! -f "$testfile" ]; then
+              echo "❌ Missing test file for: $file"
+              echo "Expected: $testfile"
+              exit 1
+            fi
+          fi
+        done
+        echo "✅ All source files have corresponding test files"
+    
+    - name: Run unit tests
+      run: npm run test:unit
+    
+    - name: Run integration tests
+      run: npm run test:integration
+      env:
+        CI: true
+    
+    - name: Generate coverage report
+      run: npm run coverage
+    
+    - name: Check coverage threshold (100% required)
+      run: |
+        echo "Checking test coverage..."
+        COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+        echo "Current coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 100" | bc -l) )); then
+          echo "❌ ERROR: Test coverage is below 100%!"
+          echo "This project requires 100% test coverage."
+          echo "Please add tests for all uncovered code."
+          cat coverage/coverage-summary.json | jq '.total'
+          exit 1
+        fi
+        echo "✅ Test coverage is 100%"
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/coverage-final.json
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
+    
+    - name: Check documentation completeness
+      run: |
+        echo "Checking JSDoc documentation..."
+        npm run docs:check || {
+          echo "❌ ERROR: Missing or incomplete documentation"
+          echo "All exported functions must have JSDoc comments"
+          exit 1
+        }
+        echo "✅ Documentation check passed"
+    
+    - name: Verify commit follows TDD
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "Analyzing commit history for TDD compliance..."
+        # Check if test files were committed before implementation files
+        git diff --name-only origin/${{ github.base_ref }}...HEAD | while read file; do
+          if [[ "$file" =~ \.test\.ts$ ]]; then
+            echo "✅ Found test file: $file"
+          fi
+        done
+    
+    - name: Bundle size check
+      run: |
+        npm run build
+        SIZE=$(du -sk dist | cut -f1)
+        if [ $SIZE -gt 5120 ]; then
+          echo "❌ ERROR: Bundle size exceeds 5MB (current: ${SIZE}KB)"
+          exit 1
+        fi
+        echo "✅ Bundle size: ${SIZE}KB"
+    
+    - name: Performance check
+      run: |
+        START=$(date +%s)
+        npm run test
+        END=$(date +%s)
+        DURATION=$((END - START))
+        if [ $DURATION -gt 30 ]; then
+          echo "⚠️ WARNING: Tests took ${DURATION} seconds (threshold: 30s)"
+        fi
+        echo "✅ Test execution time: ${DURATION} seconds"
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: TypeScript strict mode check
+      run: |
+        echo "Checking TypeScript strict mode compliance..."
+        npx tsc --noEmit --strict
+    
+    - name: Check for console.log statements
+      run: |
+        echo "Checking for console.log statements..."
+        if grep -r "console\.log" src/ --exclude-dir=test; then
+          echo "❌ ERROR: console.log statements found in production code"
+          exit 1
+        fi
+        echo "✅ No console.log statements in production code"
+    
+    - name: Cyclomatic complexity check
+      run: |
+        npm run complexity:check || {
+          echo "⚠️ WARNING: High cyclomatic complexity detected"
+          echo "Consider refactoring complex functions"
+        }
+
+  markdown-lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Lint Markdown files
+      uses: articulate/actions-markdownlint@v1
+      with:
+        config: .markdownlint.json
+        files: '**/*.md'
+        ignore: node_modules
+    
+    - name: Check AGENTS.md exists and is current
+      run: |
+        if [ ! -f "AGENTS.md" ]; then
+          echo "❌ ERROR: AGENTS.md file not found"
+          exit 1
+        fi
+        # Check if AGENTS.md was updated recently (within last 30 days)
+        LAST_MODIFIED=$(git log -1 --format=%ct AGENTS.md)
+        CURRENT=$(date +%s)
+        DAYS_OLD=$(( (CURRENT - LAST_MODIFIED) / 86400 ))
+        if [ $DAYS_OLD -gt 30 ]; then
+          echo "⚠️ WARNING: AGENTS.md hasn't been updated in ${DAYS_OLD} days"
+        fi
+
+  pr-comment:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: [test-and-coverage, code-quality]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Generate coverage report
+      run: npm run coverage
+    
+    - name: Create coverage comment
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      with:
+        filename: coverage/cobertura-coverage.xml
+        badge: true
+        fail_below_min: true
+        format: markdown
+        hide_branch_rate: false
+        hide_complexity: false
+        indicators: true
+        output: both
+        thresholds: '100 100'  # Require 100% coverage
+    
+    - name: Add Coverage PR Comment
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        recreate: true
+        path: code-coverage-results.md
+        header: coverage
+
+  # Matrix test for different VS Code versions
+  vscode-compatibility:
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        vscode-version: ['1.74.0', 'stable', 'insiders']
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run VS Code tests
+      uses: coactions/setup-xvfb@v1
+      with:
+        run: npm run test:vscode
+      env:
+        VSCODE_VERSION: ${{ matrix.vscode-version }}

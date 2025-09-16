@@ -21,39 +21,41 @@ import { WSLTreeDataProvider } from '../../src/providers/wslTreeDataProvider';
 import { TerminalProfileManager } from '../../src/services/terminalProfileManager';
 import { SecurityValidator } from '../../src/security/securityValidator';
 
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 // Mock VS Code API
-jest.mock('vscode');
+vi.mock('vscode');
 
 // Mock internal dependencies
-jest.mock('../../src/wslManager');
-jest.mock('../../src/providers/wslTreeDataProvider');
-jest.mock('../../src/services/terminalProfileManager');
-jest.mock('../../src/security/securityValidator');
+vi.mock('../../src/wslManager');
+vi.mock('../../src/providers/wslTreeDataProvider');
+vi.mock('../../src/services/terminalProfileManager');
+vi.mock('../../src/security/securityValidator');
 
 describe('Extension Activation (EXT-001)', () => {
     let context: vscode.ExtensionContext;
-    let mockWslManager: jest.Mocked<WSLManager>;
-    let mockTreeProvider: jest.Mocked<WSLTreeDataProvider>;
-    let mockTerminalManager: jest.Mocked<TerminalProfileManager>;
-    let mockSecurityValidator: jest.Mocked<SecurityValidator>;
+    let mockWslManager: any;
+    let mockTreeProvider: any;
+    let mockTerminalManager: any;
+    let mockSecurityValidator: any;
 
     beforeEach(() => {
         // Reset all mocks
-        jest.clearAllMocks();
+        vi.clearAllMocks();
 
         // Create mock context
         context = {
             subscriptions: [],
             workspaceState: {
-                get: jest.fn(),
-                update: jest.fn(),
-                keys: jest.fn()
+                get: vi.fn(),
+                update: vi.fn(),
+                keys: vi.fn()
             },
             globalState: {
-                get: jest.fn(),
-                update: jest.fn(),
-                keys: jest.fn(),
-                setKeysForSync: jest.fn()
+                get: vi.fn(),
+                update: vi.fn(),
+                keys: vi.fn(),
+                setKeysForSync: vi.fn()
             },
             extensionPath: '/test/extension',
             storagePath: '/test/storage',
@@ -67,34 +69,52 @@ describe('Extension Activation (EXT-001)', () => {
             globalStorageUri: vscode.Uri.file('/test/global'),
             logUri: vscode.Uri.file('/test/logs'),
             extension: {} as any,
-            asAbsolutePath: jest.fn(p => `/test/extension/${p}`)
+            asAbsolutePath: vi.fn(p => `/test/extension/${p}`)
         } as unknown as vscode.ExtensionContext;
 
         // Setup mocks
-        mockWslManager = new WSLManager() as jest.Mocked<WSLManager>;
-        mockTreeProvider = new WSLTreeDataProvider(mockWslManager) as jest.Mocked<WSLTreeDataProvider>;
-        mockTerminalManager = new TerminalProfileManager(mockWslManager) as jest.Mocked<TerminalProfileManager>;
-        mockSecurityValidator = SecurityValidator.getInstance() as jest.Mocked<SecurityValidator>;
+        mockWslManager = {
+            listDistributions: vi.fn(),
+            createDistribution: vi.fn(),
+            deleteDistribution: vi.fn(),
+            dispose: vi.fn()
+        };
+        mockTreeProvider = {
+            refresh: vi.fn(),
+            dispose: vi.fn()
+        };
+        mockTerminalManager = {
+            registerProfiles: vi.fn().mockResolvedValue(undefined),
+            dispose: vi.fn()
+        };
+        mockSecurityValidator = {
+            setStrictMode: vi.fn(),
+            dispose: vi.fn()
+        };
 
         // Mock constructors
-        (WSLManager as jest.Mock).mockReturnValue(mockWslManager);
-        (WSLTreeDataProvider as jest.Mock).mockReturnValue(mockTreeProvider);
-        (TerminalProfileManager as jest.Mock).mockReturnValue(mockTerminalManager);
-        (SecurityValidator.getInstance as jest.Mock).mockReturnValue(mockSecurityValidator);
+        vi.mocked(WSLManager).mockReturnValue(mockWslManager);
+        vi.mocked(WSLTreeDataProvider).mockReturnValue(mockTreeProvider);
+        vi.mocked(TerminalProfileManager).mockReturnValue(mockTerminalManager);
+        vi.mocked(SecurityValidator.getInstance).mockReturnValue(mockSecurityValidator);
 
         // Mock VS Code API methods
-        (vscode.window.createTreeView as jest.Mock).mockReturnValue({
-            dispose: jest.fn()
+        vi.mocked(vscode.window.createTreeView).mockReturnValue({
+            dispose: vi.fn()
         });
-        (vscode.commands.registerCommand as jest.Mock).mockReturnValue({
-            dispose: jest.fn()
+        vi.mocked(vscode.commands.registerCommand).mockReturnValue({
+            dispose: vi.fn()
         });
-        (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
-        (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+        vi.mocked(vscode.window.showInformationMessage).mockResolvedValue(undefined);
+        vi.mocked(vscode.window.showErrorMessage).mockResolvedValue(undefined);
+        vi.mocked(vscode.window.showWarningMessage).mockResolvedValue(undefined);
+        vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+            get: vi.fn()
+        } as any);
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     describe('Activation Lifecycle', () => {
@@ -160,7 +180,7 @@ describe('Extension Activation (EXT-001)', () => {
 
         it('should register terminal profiles', async () => {
             // Given: Terminal profile manager mock
-            mockTerminalManager.registerProfiles = jest.fn().mockResolvedValue(undefined);
+            mockTerminalManager.registerProfiles = vi.fn().mockResolvedValue(undefined);
 
             // When: Extension is activated
             await activate(context);
@@ -179,7 +199,7 @@ describe('Extension Activation (EXT-001)', () => {
 
         it('should log activation message', async () => {
             // Given: Console log mock
-            const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+            const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
             // When: Extension is activated
             await activate(context);
@@ -194,7 +214,7 @@ describe('Extension Activation (EXT-001)', () => {
     describe('Error Handling During Activation', () => {
         it('should handle WSL not installed error gracefully', async () => {
             // Given: WSL Manager throws error
-            (WSLManager as jest.Mock).mockImplementation(() => {
+            vi.mocked(WSLManager).mockImplementation(() => {
                 throw new Error('WSL is not installed');
             });
 
@@ -209,7 +229,7 @@ describe('Extension Activation (EXT-001)', () => {
 
         it('should handle tree view creation failure', async () => {
             // Given: Tree view creation fails
-            (vscode.window.createTreeView as jest.Mock).mockImplementation(() => {
+            vi.mocked(vscode.window.createTreeView).mockImplementation(() => {
                 throw new Error('Failed to create tree view');
             });
 
@@ -223,7 +243,7 @@ describe('Extension Activation (EXT-001)', () => {
 
         it('should handle terminal profile registration failure', async () => {
             // Given: Terminal profile registration fails
-            mockTerminalManager.registerProfiles = jest.fn().mockRejectedValue(
+            mockTerminalManager.registerProfiles = vi.fn().mockRejectedValue(
                 new Error('Failed to register profiles')
             );
 
@@ -238,7 +258,7 @@ describe('Extension Activation (EXT-001)', () => {
 
         it('should handle security validator initialization failure', async () => {
             // Given: Security validator fails
-            (SecurityValidator.getInstance as jest.Mock).mockImplementation(() => {
+            vi.mocked(SecurityValidator.getInstance).mockImplementation(() => {
                 throw new Error('Security initialization failed');
             });
 
@@ -255,11 +275,11 @@ describe('Extension Activation (EXT-001)', () => {
     describe('Command Handlers', () => {
         it('should execute refresh command successfully', async () => {
             // Given: Extension is activated
-            mockTreeProvider.refresh = jest.fn();
+            mockTreeProvider.refresh = vi.fn();
             await activate(context);
 
             // When: Refresh command is executed
-            const refreshHandler = (vscode.commands.registerCommand as jest.Mock)
+            const refreshHandler = vi.mocked(vscode.commands.registerCommand)
                 .mock.calls.find(call => call[0] === 'wsl-manager.refreshDistributions')[1];
             await refreshHandler();
 
@@ -269,13 +289,13 @@ describe('Extension Activation (EXT-001)', () => {
 
         it('should handle command execution errors', async () => {
             // Given: Extension is activated
-            mockTreeProvider.refresh = jest.fn().mockImplementation(() => {
+            mockTreeProvider.refresh = vi.fn().mockImplementation(() => {
                 throw new Error('Refresh failed');
             });
             await activate(context);
 
             // When: Command fails
-            const refreshHandler = (vscode.commands.registerCommand as jest.Mock)
+            const refreshHandler = vi.mocked(vscode.commands.registerCommand)
                 .mock.calls.find(call => call[0] === 'wsl-manager.refreshDistributions')[1];
             await refreshHandler();
 
@@ -303,7 +323,7 @@ describe('Extension Activation (EXT-001)', () => {
         it('should handle deactivation errors gracefully', async () => {
             // Given: Extension is activated and disposal fails
             await activate(context);
-            mockWslManager.dispose = jest.fn().mockImplementation(() => {
+            mockWslManager.dispose = vi.fn().mockImplementation(() => {
                 throw new Error('Disposal failed');
             });
 

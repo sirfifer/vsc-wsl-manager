@@ -1,0 +1,71 @@
+{
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "test:unit": "npm run compile && mocha out/test/unit/**/*.test.js",
+    "test:integration": "npm run compile && mocha out/test/integration/**/*.test.js",
+    "test:agent-compliance": "npm run compile && mocha out/test/agent-compliance.test.js",
+    "automate": "npm run compile && node ./out/scripts/automate-testing.js",
+    "fix-iteration": "npm run automate",
+    "coverage": "nyc --reporter=html --reporter=text --reporter=json-summary npm test",
+    "coverage:check": "nyc --check-coverage --lines 100 --functions 100 --branches 100 npm test",
+    "lint": "eslint src --ext ts",
+    "security": "grep -r '\\.exec(' src/ --exclude-dir=test && exit 1 || exit 0",
+    "security:check": "npm run security",
+    "docs:check": "jsdoc -c .jsdoc.json --pedantic",
+    "complexity:check": "complexity-report src/**/*.ts --max 10",
+    "build": "vsce package",
+    "pre-commit": "npm run lint && npm run test:agent-compliance && npm run coverage:check",
+    "setup:hooks": "husky install"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/test-cli": "^0.0.4",
+    "mocha": "^10.0.0",
+    "@types/mocha": "^10.0.0",
+    "chai": "^4.3.0",
+    "@types/chai": "^4.3.0",
+    "glob": "^10.0.0",
+    "rimraf": "^5.0.0",
+    "nyc": "^15.1.0",
+    "eslint": "^8.40.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.0",
+    "@typescript-eslint/parser": "^5.59.0",
+    "husky": "^8.0.0",
+    "jsdoc": "^4.0.0",
+    "complexity-report": "^2.0.0",
+    "vsce": "^2.15.0",
+    "typescript": "^5.0.0"
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "exclude": [
+      "**/*.d.ts",
+      "**/*.test.ts",
+      "**/test/**",
+      "out/test/**"
+    ],
+    "reporter": [
+      "html",
+      "text",
+      "json-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "check-coverage": true,
+    "lines": 100,
+    "functions": 100,
+    "branches": 100,
+    "statements": 100
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run pre-commit",
+      "pre-push": "npm run coverage:check"
+    }
+  }
+}
