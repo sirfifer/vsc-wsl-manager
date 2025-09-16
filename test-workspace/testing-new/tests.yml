@@ -1,0 +1,357 @@
+name: Test Suite
+
+# Trigger conditions
+on:
+  push:
+    branches: [ main, develop, 'feature/*', 'release/*' ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+  pull_request:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - e2e
+
+# Environment variables
+env:
+  NODE_VERSION: '18'
+  VSCODE_VERSION: 'stable'
+  COVERAGE_THRESHOLD: 80
+
+jobs:
+  # Linting and code quality checks
+  lint:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint
+        run: npm run lint
+      
+      - name: Check formatting with Prettier
+        run: npm run format:check
+      
+      - name: Compile TypeScript
+        run: npm run compile
+      
+      - name: Upload lint results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: lint-results
+          path: |
+            eslint-report.json
+
+  # Unit and Integration tests
+  test:
+    name: Tests - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Compile TypeScript
+        run: npm run compile
+      
+      - name: Run unit tests with coverage
+        run: npm run coverage
+      
+      - name: Run integration tests
+        if: matrix.os == 'ubuntu-latest'  # Only run on Linux for VS Code tests
+        run: xvfb-run -a npm run test:integration
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            coverage/
+            test-results.xml
+      
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-${{ matrix.os }}
+          fail_ci_if_error: true
+      
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          lcov-file: ./coverage/lcov.info
+          minimum-coverage: ${{ env.COVERAGE_THRESHOLD }}
+
+  # E2E UI tests with WebdriverIO
+  e2e-tests:
+    name: E2E Tests - VS Code ${{ matrix.vscode-version }}
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        vscode-version: ['stable', 'insiders']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Compile TypeScript
+        run: npm run compile
+      
+      - name: Build VS Code extension
+        run: npm run package
+      
+      - name: Install VS Code
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          
+          # Download and install VS Code
+          if [ "${{ matrix.vscode-version }}" == "insiders" ]; then
+            wget -q https://update.code.visualstudio.com/latest/linux-deb-x64/insider -O vscode.deb
+          else
+            wget -q https://update.code.visualstudio.com/latest/linux-deb-x64/stable -O vscode.deb
+          fi
+          sudo dpkg -i vscode.deb || sudo apt-get install -f -y
+      
+      - name: Run E2E tests
+        run: |
+          # Start virtual display for headless testing
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          
+          # Run E2E tests with WebdriverIO
+          npm run test:e2e
+      
+      - name: Generate Allure report
+        if: always()
+        run: |
+          npm install -g allure-commandline
+          allure generate e2e/allure-results --clean -o e2e/allure-report
+      
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-results-${{ matrix.vscode-version }}
+          path: |
+            e2e/allure-report/
+            e2e/screenshots/
+            e2e/logs/
+
+  # Update feature coverage documentation
+  update-coverage-docs:
+    name: Update Coverage Documentation
+    runs-on: ubuntu-latest
+    needs: [test, e2e-tests]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Download all test results
+        uses: actions/download-artifact@v3
+        with:
+          path: test-artifacts/
+      
+      - name: Aggregate coverage results
+        run: |
+          # Combine coverage from all test runs
+          npx nyc merge test-artifacts coverage-combined
+          npx nyc report --reporter=json --temp-dir=coverage-combined --report-dir=.
+      
+      - name: Update feature coverage table
+        run: |
+          npm run compile
+          node scripts/update-feature-coverage.js \
+            --coverage-file coverage-final.json \
+            --output docs/test-coverage/feature-coverage.md
+      
+      - name: Update coverage badge in README
+        run: |
+          # Extract coverage percentage
+          COVERAGE=$(node -p "require('./coverage-final.json').total.lines.pct")
+          
+          # Update README badge
+          sed -i "s/coverage-[0-9]*%25/coverage-${COVERAGE}%25/g" README.md
+      
+      - name: Commit coverage updates
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add docs/test-coverage/feature-coverage.md
+          git add README.md
+          
+          if git diff --staged --quiet; then
+            echo "No coverage changes to commit"
+          else
+            git commit -m "chore: update test coverage documentation [skip ci]"
+            git push
+          fi
+
+  # Final status check
+  test-status:
+    name: Test Suite Status
+    runs-on: ubuntu-latest
+    needs: [lint, test, e2e-tests]
+    if: always()
+    
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.e2e-tests.result }}" != "success" ]; then
+            echo "❌ Test suite failed"
+            exit 1
+          else
+            echo "✅ All tests passed"
+          fi
+      
+      - name: Create test summary
+        run: |
+          echo "# Test Suite Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit & Integration Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Tests | ${{ needs.e2e-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✨ Coverage Threshold: ${{ env.COVERAGE_THRESHOLD }}%" >> $GITHUB_STEP_SUMMARY
+
+  # Deploy test reports to GitHub Pages (optional)
+  deploy-reports:
+    name: Deploy Test Reports
+    runs-on: ubuntu-latest
+    needs: [test, e2e-tests]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download coverage reports
+        uses: actions/download-artifact@v3
+        with:
+          name: test-results-ubuntu-latest
+          path: reports/
+      
+      - name: Download E2E reports
+        uses: actions/download-artifact@v3
+        with:
+          name: e2e-results-stable
+          path: reports/e2e/
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: reports/
+      
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v2
+
+  # Security scanning (optional but recommended)
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true  # Don't fail build on audit issues
+      
+      - name: Run Snyk security scan
+        if: github.event_name == 'pull_request'
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high

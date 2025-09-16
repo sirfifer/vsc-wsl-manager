@@ -47,33 +47,16 @@ jobs:
         }
         Write-Host "Build successful: extension.js exists"
 
-    - name: Run unit tests
-      run: npm run test:unit
-      timeout-minutes: 10
-
-    - name: Run integration tests
-      run: npm run test:integration
-      timeout-minutes: 10
-
-    - name: Run security tests
-      run: npm run test:security
-      timeout-minutes: 5
-
-    - name: Run functional tests
-      run: npx jest test/functional
-      timeout-minutes: 5
-
-    - name: Run validation tests
-      run: npx jest test/validation
-      timeout-minutes: 5
-
-    - name: Run real output tests
-      run: npx jest test/real-output-tests
-      timeout-minutes: 5
-
-    - name: Generate coverage report
-      run: npm run test:coverage
+    - name: Run Tests with Unified Runner
+      run: npm run test:ci
       timeout-minutes: 15
+      env:
+        CI: true
+        NODE_OPTIONS: --max-old-space-size=4096
+
+    - name: Generate and Check Coverage
+      run: npm run coverage:check
+      timeout-minutes: 10
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -141,6 +124,12 @@ jobs:
     - name: Security audit
       run: npm audit --production --audit-level=moderate
       continue-on-error: true
+
+    - name: Update Feature Coverage
+      run: |
+        if (Test-Path "scripts/coverage-report.ts") {
+          npm run coverage:features
+        }
 
   e2e-tests:
     runs-on: windows-latest

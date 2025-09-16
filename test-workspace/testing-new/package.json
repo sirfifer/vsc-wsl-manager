@@ -1,0 +1,274 @@
+{
+  "name": "vsc-wsl-manager",
+  "displayName": "VSC WSL Manager",
+  "description": "Comprehensive VS Code extension for managing WSL distributions with AI coding assistant support",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:wslDistributions",
+    "onView:wslImages",
+    "onCommand:vsc-wsl-manager.refreshDistros",
+    "onCommand:vsc-wsl-manager.createDistro"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vsc-wsl-manager.refreshDistros",
+        "title": "WSL: Refresh Distributions",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vsc-wsl-manager.createDistro",
+        "title": "WSL: Create Distribution",
+        "icon": "$(add)"
+      },
+      {
+        "command": "vsc-wsl-manager.deleteDistro",
+        "title": "WSL: Delete Distribution",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "vsc-wsl-manager.openTerminal",
+        "title": "WSL: Open Terminal",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "vsc-wsl-manager.importDistro",
+        "title": "WSL: Import Distribution",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "vsc-wsl-manager.exportDistro",
+        "title": "WSL: Export Distribution",
+        "icon": "$(cloud-upload)"
+      }
+    ],
+    "views": {
+      "wsl-manager": [
+        {
+          "id": "wslDistributions",
+          "name": "Distributions (Templates)",
+          "icon": "$(layers)",
+          "contextualTitle": "WSL Distributions"
+        },
+        {
+          "id": "wslImages",
+          "name": "Images (Instances)",
+          "icon": "$(package)",
+          "contextualTitle": "WSL Images"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "wsl-manager",
+          "title": "WSL Manager",
+          "icon": "$(server-environment)"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "WSL Manager",
+      "properties": {
+        "vsc-wsl-manager.defaultDistroPath": {
+          "type": "string",
+          "default": "",
+          "description": "Default path for storing WSL distributions"
+        },
+        "vsc-wsl-manager.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh distribution list"
+        },
+        "vsc-wsl-manager.refreshInterval": {
+          "type": "number",
+          "default": 5000,
+          "description": "Refresh interval in milliseconds"
+        },
+        "vsc-wsl-manager.enableAuditLog": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable audit logging for all WSL operations"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    
+    "// Test Commands": "Unified testing approach",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:unit": "jest --config jest.config.js --testPathPattern=test/unit",
+    "test:integration": "node ./out/test/runTest.js",
+    "test:e2e": "wdio run ./e2e/wdio.conf.ts",
+    "test:watch": "jest --watch --testPathPattern=test/unit",
+    "test:debug": "jest --runInBand --testPathPattern=test/unit",
+    
+    "// Coverage Commands": "Generate coverage reports",
+    "coverage": "jest --coverage --testPathPattern=test/unit",
+    "coverage:report": "jest --coverage --testPathPattern=test/unit && open coverage/lcov-report/index.html",
+    
+    "// Test Runner": "Unified test runner for CI/CD consistency",
+    "test:runner": "ts-node scripts/test-runner.ts",
+    "test:runner:unit": "ts-node scripts/test-runner.ts --type unit",
+    "test:runner:integration": "ts-node scripts/test-runner.ts --type integration",
+    "test:runner:e2e": "ts-node scripts/test-runner.ts --type e2e",
+    "test:runner:ci": "ts-node scripts/test-runner.ts --ci --threshold 80",
+    
+    "// WebdriverIO Commands": "E2E testing with VS Code",
+    "wdio": "wdio run ./e2e/wdio.conf.ts",
+    "wdio:debug": "wdio run ./e2e/wdio.conf.ts --logLevel=debug",
+    "wdio:spec": "wdio run ./e2e/wdio.conf.ts --spec",
+    
+    "// Development": "Development utilities",
+    "clean": "rimraf out coverage .nyc_output",
+    "rebuild": "npm run clean && npm run compile",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    
+    "// Pre-commit hooks": "Run before committing",
+    "pre-commit": "npm run lint && npm run format:check && npm run test:unit"
+  },
+  "devDependencies": {
+    "// TypeScript & Build Tools": "",
+    "@types/vscode": "^1.85.0",
+    "@types/node": "20.x",
+    "@types/jest": "^29.5.11",
+    "@types/mocha": "^10.0.6",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "rimraf": "^5.0.5",
+    
+    "// Testing - Unit & Integration": "",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "@jest/globals": "^29.7.0",
+    "jest-mock-vscode": "^3.0.2",
+    "@vscode/test-electron": "^2.3.8",
+    "mocha": "^10.2.0",
+    
+    "// Testing - E2E with WebdriverIO": "",
+    "@wdio/cli": "^8.27.0",
+    "@wdio/local-runner": "^8.27.0",
+    "@wdio/mocha-framework": "^8.27.0",
+    "@wdio/spec-reporter": "^8.27.0",
+    "@wdio/allure-reporter": "^8.27.0",
+    "@wdio/vscode-service": "^5.2.0",
+    "@wdio/globals": "^8.27.0",
+    "@wdio/types": "^8.27.0",
+    "wdio-vscode-service": "^5.2.0",
+    "allure-commandline": "^2.25.0",
+    
+    "// Code Quality": "",
+    "@typescript-eslint/parser": "^6.19.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    
+    "// Coverage": "",
+    "nyc": "^15.1.0",
+    "c8": "^9.0.0",
+    
+    "// Utilities": "",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    
+    "// VS Code Extension": "",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "// No runtime dependencies yet": "Add as needed"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/test"
+    ],
+    "testMatch": [
+      "**/test/unit/**/*.test.ts"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/test/**",
+      "!src/extension.ts"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html",
+      "json-summary"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1",
+      "vscode": "<rootDir>/test/mocks/vscode.ts"
+    },
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/setup.ts"
+    ]
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "exclude": [
+      "**/*.d.ts",
+      "**/*.test.ts",
+      "**/test/**",
+      "out/**",
+      "coverage/**"
+    ],
+    "reporter": [
+      "html",
+      "text",
+      "lcov"
+    ],
+    "all": true
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "printWidth": 100,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "parser": "@typescript-eslint/parser",
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 2020,
+      "sourceType": "module"
+    },
+    "rules": {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_"
+        }
+      ]
+    }
+  }
+}
