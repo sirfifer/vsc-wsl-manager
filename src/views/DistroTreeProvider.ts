@@ -104,19 +104,19 @@ export class DistroTreeProvider implements vscode.TreeDataProvider<DistroTreeIte
             // No children for distro items
             return [];
         }
-        
+
         try {
             const distros = await this.distroManager.listDistros();
-            
-            // Sort: available first, then by name
-            distros.sort((a, b) => {
-                if (a.available !== b.available) {
-                    return a.available ? -1 : 1;
-                }
-                return a.displayName.localeCompare(b.displayName);
-            });
-            
-            return distros.map(distro => 
+
+            // CRITICAL FIX: Only show downloaded distros (available = true)
+            const availableDistros = distros.filter(d => d.available);
+
+            // Sort by name
+            availableDistros.sort((a, b) =>
+                a.displayName.localeCompare(b.displayName)
+            );
+
+            return availableDistros.map(distro =>
                 new DistroTreeItem(distro, vscode.TreeItemCollapsibleState.None)
             );
         } catch (error) {
