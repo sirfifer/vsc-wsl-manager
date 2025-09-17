@@ -319,23 +319,25 @@ export class ImageTreeItem extends vscode.TreeItem {
 }
 ```
 
-## View Testing
+## View Testing (Three-Level Real Testing - NO MOCKS)
 
-### Testing TreeDataProvider
+### Real Testing for TreeDataProvider (NO MOCKS ALLOWED)
 ```typescript
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MyTreeProvider } from '../../src/views/myTreeProvider';
+import { execSync } from 'child_process';
+import * as fs from 'fs';
 
-describe('MyTreeProvider', () => {
+// NO vi.mock() - NO MOCKS - Real testing only!
+
+describe('MyTreeProvider - REAL TESTS', () => {
   let provider: MyTreeProvider;
-  let mockManager: any;
+  let manager: MyManager; // REAL manager, not mocked
 
   beforeEach(() => {
-    mockManager = {
-      getItems: vi.fn().mockResolvedValue([]),
-      onDidChange: vi.fn()
-    };
-    provider = new MyTreeProvider(mockManager);
+    // Use REAL manager instance
+    manager = new MyManager();
+    provider = new MyTreeProvider(manager);
   });
 
   describe('getChildren', () => {
@@ -698,9 +700,20 @@ Before implementing any view:
 - **Use theme colors** - Respect light/dark themes
 - **Cache when appropriate** - Don't reload unnecessarily
 - **Clean up resources** - Dispose of watchers and timers
+- **NO MOCKS** - All tests must use real implementations
 
 ---
 
 **Parent Document**: [/AGENTS.md](../../AGENTS.md)
 **Pattern**: VS Code TreeDataProvider
-**Testing**: 100% coverage required
+**Testing**: 100% coverage required with REAL tests (NO MOCKS)
+
+### Three-Level Testing for Views
+- **Level 1 (Unit)**: Test tree logic with real WSL data (5 seconds)
+- **Level 2 (API)**: Test VS Code tree integration with real Extension Host (30 seconds)
+- **Level 3 (E2E)**: Test actual tree UI interactions on Windows (2 minutes)
+
+**Critical Testing Documents**:
+- [docs/testing/TESTING-ARCHITECTURE.md](../../docs/testing/TESTING-ARCHITECTURE.md) - Three-level architecture
+- [docs/testing/TESTING-RULES.md](../../docs/testing/TESTING-RULES.md) - NO MOCKS mandate
+- [docs/testing/TESTING.md](../../docs/testing/TESTING.md) - Comprehensive guide

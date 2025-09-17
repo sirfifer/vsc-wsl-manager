@@ -19,11 +19,21 @@ ls -la out/
 # Verify package.json "main" points to correct file (usually ./out/src/extension.js)
 ```
 
-### Step 3: Run All Tests (MANDATORY)
+### Step 3: Run All Tests (MANDATORY - Three-Level Architecture)
 ```bash
+# Level 1: Unit tests with real system calls (2-5 seconds)
 npm run test:unit
+
+# Level 2: VS Code API tests with real Extension Host (20-30 seconds)
 npm run test:integration
-# All tests MUST pass
+
+# Level 3: E2E UI tests on Windows (optional but recommended)
+npm run test:e2e
+
+# Or run all three levels:
+npm run test:all
+
+# All tests MUST pass - NO MOCKS allowed
 ```
 
 ### Step 4: VS Code Launch Test (MANDATORY)
@@ -102,13 +112,14 @@ Check Debug Console for:
 - **Lint**: `npm run lint` - Runs ESLint on TypeScript files
 - **Pre-publish**: `npm run vscode:prepublish` - Runs before publishing to marketplace
 
-### Testing
-- **All tests**: `npm test` - Runs all Jest tests
-- **Unit tests only**: `npm run test:unit` - Runs tests in test/unit/
-- **Integration tests only**: `npm run test:integration` - Runs tests in test/integration/
-- **Coverage**: `npm run test:coverage` - Generates coverage report
-- **Watch mode**: `npm run test:watch` - Runs tests in watch mode
-- **Single test file**: `npx jest path/to/test.ts` - Run specific test file
+### Testing (Three-Level Architecture - NO MOCKS)
+- **Level 1 - Unit Tests**: `npm run test:unit` - Real system calls with Vitest (2-5 seconds)
+- **Level 2 - API Tests**: `npm run test:integration` - Real VS Code instance with Xvfb (20-30 seconds)
+- **Level 3 - E2E Tests**: `npm run test:e2e` - Full UI testing on Windows (1-2 minutes)
+- **All Levels**: `npm run test:all` - Complete three-level validation
+- **Coverage**: `npm run test:coverage` - Real test coverage (80% min, 100% critical)
+- **Watch mode**: `npm run test:unit:watch` - TDD mode with real tests
+- **Security**: `npm run test:security` - Real security validation
 
 ### Documentation
 - **Generate docs**: `npm run docs` - Generates TypeDoc API documentation
@@ -139,12 +150,20 @@ All WSL commands follow this secure pattern:
 4. Execution with timeouts and proper error handling
 5. User-friendly error display via ErrorHandler
 
-## Testing Strategy
+## Testing Strategy (Three-Level Real Testing)
 
-- **Mocks**: VS Code API is mocked in `test/mocks/vscode.ts`
-- **Test data generators**: Use `test/utils/testDataGenerators.ts` for consistent test data
-- **Coverage threshold**: 80% for all metrics (branches, functions, lines, statements)
-- **Security tests**: Dedicated security test suite in `test/security/`
+- **NO MOCKS**: All tests use real implementations - no mocking allowed
+- **Three-Level Architecture**: Unit (5s) → API (30s) → E2E (2min)
+- **Real test data**: Use actual WSL distributions and real file operations
+- **Coverage threshold**: 80% minimum (branches, functions, lines, statements), 100% for critical paths
+- **Security tests**: Real security validation in `test/security/`
+- **Test documentation**: Complete guides in `docs/testing/`
+
+### Testing Documentation
+- **Main Guide**: [docs/testing/TESTING.md](docs/testing/TESTING.md)
+- **Architecture**: [docs/testing/TESTING-ARCHITECTURE.md](docs/testing/TESTING-ARCHITECTURE.md)
+- **Mandatory Rules**: [docs/testing/TESTING-RULES.md](docs/testing/TESTING-RULES.md)
+- **Cross-Platform**: [docs/testing/cross-platform-testing-strategy.md](docs/testing/cross-platform-testing-strategy.md)
 
 ## Important Context
 

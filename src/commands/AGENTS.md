@@ -223,66 +223,86 @@ export async function handleRefresh(): Promise<void> {
 }
 ```
 
-## Testing Requirements
+## Testing Requirements (Three-Level Real Testing - NO MOCKS)
 
-### Unit Test Template for Commands
+### Real Test Template for Commands - NO MOCKS ALLOWED
 ```typescript
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { handleCommandName } from '../../src/commands/commandName';
-import * as vscode from 'vscode';
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
-vi.mock('vscode');
+// NO vi.mock() - NO MOCKS - Real testing only!
 
-describe('Command: CommandName', () => {
+describe('Command: CommandName - REAL TESTS', () => {
+  const testDistro = 'test-cmd-distro';
+  const testPath = path.join('/tmp', 'test-command-' + Date.now());
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    // Clean up any existing test artifacts with REAL commands
+    try {
+      execSync(`wsl.exe --unregister ${testDistro}`, { stdio: 'ignore' });
+    } catch { /* Ignore if doesn't exist */ }
   });
 
-  it('should execute successfully with valid input', async () => {
-    // Mock user input
-    vi.mocked(vscode.window.showInputBox).mockResolvedValue('test-input');
-
-    // Execute command
-    await handleCommandName();
-
-    // Verify behavior
-    expect(vscode.window.showInputBox).toHaveBeenCalled();
-    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-      expect.stringContaining('success')
-    );
+  afterEach(() => {
+    // Clean up with REAL operations
+    if (fs.existsSync(testPath)) {
+      fs.rmSync(testPath, { recursive: true });
+    }
   });
 
-  it('should handle user cancellation', async () => {
-    // Mock cancellation
-    vi.mocked(vscode.window.showInputBox).mockResolvedValue(undefined);
+  it('should execute successfully with REAL WSL', async () => {
+    // Execute command with REAL implementation
+    await handleCommandName(testDistro);
 
-    // Execute command
-    await handleCommandName();
-
-    // Should exit gracefully
-    expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
+    // Verify with ACTUAL wsl.exe output
+    const output = execSync('wsl.exe --list --quiet', { encoding: 'utf16le' });
+    expect(output).toContain(testDistro);
   });
 
-  it('should show error on failure', async () => {
-    // Mock error scenario
-    vi.mocked(vscode.window.showInputBox).mockResolvedValue('invalid');
+  it('should handle REAL user cancellation', async () => {
+    // Test with undefined input (simulating cancellation)
+    const result = await handleCommandName(undefined);
 
-    // Execute command
-    await handleCommandName();
-
-    // Should show error
-    expect(vscode.window.showErrorMessage).toHaveBeenCalled();
+    // Should handle gracefully
+    expect(result).toBeUndefined();
+    // Verify no distribution was created
+    const output = execSync('wsl.exe --list --quiet', { encoding: 'utf16le' });
+    expect(output).not.toContain('undefined');
   });
 
-  it('should show progress for long operations', async () => {
-    // Execute command
-    await handleCommandName();
+  it('should show error on REAL failure', async () => {
+    // Test with invalid name that WSL will reject
+    const invalidName = 'invalid name!';
 
-    // Verify progress was shown
-    expect(vscode.window.withProgress).toHaveBeenCalled();
+    // Should throw real error
+    await expect(handleCommandName(invalidName))
+      .rejects
+      .toThrow(/invalid|failed/i);
+  });
+
+  it('should handle REAL long operations', async () => {
+    // Test actual long-running operation
+    const largeFile = path.join(testPath, 'large.tar');
+
+    // This will take real time
+    const startTime = Date.now();
+    await handleCommandName(largeFile);
+    const duration = Date.now() - startTime;
+
+    // Verify it actually took time
+    expect(duration).toBeGreaterThan(100); // At least 100ms
   });
 });
 ```
+
+### Three-Level Testing for Commands
+
+See [docs/testing/TESTING-ARCHITECTURE.md](../../docs/testing/TESTING-ARCHITECTURE.md) for complete details.
+
+**CRITICAL**: NO MOCKS at any level - all tests use real implementations!
 
 ## Error Handling Patterns
 

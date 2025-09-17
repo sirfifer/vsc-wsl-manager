@@ -12,43 +12,74 @@ VSC WSL Manager is a Visual Studio Code extension for managing Windows Subsystem
 
 ## Related Documentation
 - **[CLAUDE.md](./CLAUDE.md)** - Claude-specific optimizations and configurations
-- **[TESTING-RULES.md](./TESTING-RULES.md)** - Mandatory testing rules that MUST be followed
-- **[TESTING.md](./TESTING.md)** - Comprehensive testing guide with detailed examples
+- **[docs/testing/TESTING-RULES.md](./docs/testing/TESTING-RULES.md)** - Mandatory testing rules (NO MOCKS - HARD STOP)
+- **[docs/testing/TESTING.md](./docs/testing/TESTING.md)** - Comprehensive testing guide
+- **[docs/testing/TESTING-ARCHITECTURE.md](./docs/testing/TESTING-ARCHITECTURE.md)** - Three-level testing architecture
+- **[docs/testing/cross-platform-testing-strategy.md](./docs/testing/cross-platform-testing-strategy.md)** - Platform adaptation strategy
 - **Hierarchical AGENTS.md** - See subdirectory-specific guidelines:
-  - `/src/test/AGENTS.md` - Test-specific patterns and guidelines
   - `/src/commands/AGENTS.md` - Command handler implementation patterns
   - `/src/views/AGENTS.md` - Tree view provider patterns
 
 ## Development Principles
 
-### Test-Driven Development (TDD)
-**MANDATORY**: Follow strict TDD workflow for ALL changes:
-1. **RED**: Write failing test(s) FIRST that define expected behavior
+### Test-Driven Development (TDD) with Real Testing
+**MANDATORY**: Follow strict TDD workflow with NO MOCKS for ALL changes:
+1. **RED**: Write failing test(s) FIRST using real system calls
 2. **GREEN**: Write MINIMAL code to make tests pass
 3. **REFACTOR**: Improve code while keeping tests green
 4. **NEVER** write implementation code before tests
+5. **NEVER** use mocks - all tests must use real implementations
 
-Example TDD workflow with Vitest:
+### Three-Level Testing Architecture
+**CRITICAL**: All tests follow our three-level architecture (NO MOCKS at any level):
+
+1. **Level 1 (Unit Tests)** - 2-5 seconds
+   - Framework: Vitest
+   - Real system calls to wsl.exe
+   - Real file operations
+   - Run: `npm run test:unit`
+
+2. **Level 2 (VS Code API Tests)** - 20-30 seconds
+   - Framework: @vscode/test-electron with Xvfb
+   - Real VS Code instance (headless in WSL)
+   - Full Extension Host access
+   - Run: `npm run test:integration`
+
+3. **Level 3 (E2E UI Tests)** - 1-2 minutes
+   - Framework: WebdriverIO MCP
+   - Real VS Code on Windows
+   - Visible UI testing
+   - Run: `npm run test:e2e`
+
+Example TDD workflow with Vitest (NO MOCKS):
 ```typescript
-// Step 1: Write failing test
+// Step 1: Write failing test with REAL implementation
 import { describe, it, expect } from 'vitest';
+import { execSync } from 'child_process';
 
 describe('WSLManager.listDistributions', () => {
-  it('should return array of distributions', async () => {
+  it('should return actual WSL distributions', async () => {
     const manager = new WSLManager();
     const result = await manager.listDistributions();
-    expect(result).toBeInstanceOf(Array);
+
+    // Verify against REAL wsl.exe output
+    const actualWsl = execSync('wsl.exe --list --quiet', { encoding: 'utf16le' });
+    const actualCount = actualWsl.split('\n').filter(line => line.trim()).length;
+
+    expect(result.length).toBe(actualCount);
   });
 });
 
-// Step 2: Minimal implementation
+// Step 2: Minimal implementation with REAL WSL calls
 class WSLManager {
   async listDistributions(): Promise<Distribution[]> {
-    return []; // Just enough to pass
+    const output = execSync('wsl.exe --list --verbose', { encoding: 'utf16le' });
+    // Parse real output
+    return this.parseWslOutput(output);
   }
 }
 
-// Step 3: Refactor with actual logic
+// Step 3: Refactor while maintaining real testing
 ```
 
 ### Code Coverage Requirements
