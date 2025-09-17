@@ -271,6 +271,32 @@ export function activate(context: vscode.ExtensionContext) {
                     placeHolder: `WSL instance from ${sourceDistroName}`
                 });
 
+                // Ask about scope
+                const currentWorkspace = vscode.workspace.workspaceFolders?.[0];
+                const scopeChoice = await vscode.window.showQuickPick([
+                    {
+                        label: '$(globe) Global',
+                        value: 'global',
+                        description: 'Available in all projects (default)',
+                        detail: 'This image will appear in terminal profiles across all VS Code windows'
+                    },
+                    {
+                        label: '$(folder) Current Project Only',
+                        value: 'workspace',
+                        description: currentWorkspace ? `Only for ${currentWorkspace.name}` : 'Only for this workspace',
+                        detail: currentWorkspace ? `Only visible in: ${currentWorkspace.uri.fsPath}` : 'Only visible in this workspace'
+                    }
+                ], {
+                    placeHolder: 'Where should this image be available?',
+                    title: 'Image Visibility Scope'
+                });
+
+                const scope = scopeChoice ? {
+                    type: scopeChoice.value as 'global' | 'workspace',
+                    workspacePath: scopeChoice.value === 'workspace' ? currentWorkspace?.uri.fsPath : undefined,
+                    workspaceName: scopeChoice.value === 'workspace' ? currentWorkspace?.name : undefined
+                } : { type: 'global' as const };
+
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
                     title: `Creating WSL instance: ${newName}`,
@@ -281,7 +307,8 @@ export function activate(context: vscode.ExtensionContext) {
                     await imageManager.createFromDistro(sourceDistroName!, newName, {
                         displayName: newName,
                         description,
-                        enableTerminal: true
+                        enableTerminal: true,
+                        scope: scope
                     });
                     
                     progress.report({ increment: 100, message: 'Complete!' });
@@ -544,13 +571,42 @@ export function activate(context: vscode.ExtensionContext) {
 
                 if (!imageName) return;
 
+                // Ask about scope
+                const currentWorkspace = vscode.workspace.workspaceFolders?.[0];
+                const scopeChoice = await vscode.window.showQuickPick([
+                    {
+                        label: '$(globe) Global',
+                        value: 'global',
+                        description: 'Available in all projects (default)',
+                        detail: 'This image will appear in terminal profiles across all VS Code windows'
+                    },
+                    {
+                        label: '$(folder) Current Project Only',
+                        value: 'workspace',
+                        description: currentWorkspace ? `Only for ${currentWorkspace.name}` : 'Only for this workspace',
+                        detail: currentWorkspace ? `Only visible in: ${currentWorkspace.uri.fsPath}` : 'Only visible in this workspace'
+                    }
+                ], {
+                    placeHolder: 'Where should this image be available?',
+                    title: 'Image Visibility Scope'
+                });
+
+                const scope = scopeChoice ? {
+                    type: scopeChoice.value as 'global' | 'workspace',
+                    workspacePath: scopeChoice.value === 'workspace' ? currentWorkspace?.uri.fsPath : undefined,
+                    workspaceName: scopeChoice.value === 'workspace' ? currentWorkspace?.name : undefined
+                } : { type: 'global' as const };
+
                 // Create image
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
                     title: `Creating image '${imageName}' from distribution '${selectedDistro.distro.displayName}'...`,
                     cancellable: false
                 }, async () => {
-                    await imageManager.createFromDistro(selectedDistro.distro.name, imageName);
+                    await imageManager.createFromDistro(selectedDistro.distro.name, imageName, {
+                        enableTerminal: true,
+                        scope: scope
+                    });
                 });
 
                 await refreshAll();
@@ -605,13 +661,42 @@ export function activate(context: vscode.ExtensionContext) {
 
                 if (!newImageName) return;
 
+                // Ask about scope
+                const currentWorkspace = vscode.workspace.workspaceFolders?.[0];
+                const scopeChoice = await vscode.window.showQuickPick([
+                    {
+                        label: '$(globe) Global',
+                        value: 'global',
+                        description: 'Available in all projects (default)',
+                        detail: 'This image will appear in terminal profiles across all VS Code windows'
+                    },
+                    {
+                        label: '$(folder) Current Project Only',
+                        value: 'workspace',
+                        description: currentWorkspace ? `Only for ${currentWorkspace.name}` : 'Only for this workspace',
+                        detail: currentWorkspace ? `Only visible in: ${currentWorkspace.uri.fsPath}` : 'Only visible in this workspace'
+                    }
+                ], {
+                    placeHolder: 'Where should this image be available?',
+                    title: 'Image Visibility Scope'
+                });
+
+                const scope = scopeChoice ? {
+                    type: scopeChoice.value as 'global' | 'workspace',
+                    workspacePath: scopeChoice.value === 'workspace' ? currentWorkspace?.uri.fsPath : undefined,
+                    workspaceName: scopeChoice.value === 'workspace' ? currentWorkspace?.name : undefined
+                } : { type: 'global' as const };
+
                 // Clone image
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
                     title: `Cloning image '${sourceImage.name}' to '${newImageName}'...`,
                     cancellable: false
                 }, async () => {
-                    await imageManager.cloneImage(sourceImage.name, newImageName);
+                    await imageManager.cloneImage(sourceImage.name, newImageName, {
+                        enableTerminal: true,
+                        scope: scope
+                    });
                 });
 
                 await refreshAll();

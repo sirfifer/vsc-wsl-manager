@@ -2,43 +2,68 @@
 
 **THESE RULES ARE NON-NEGOTIABLE. ALL CODE MUST COMPLY.**
 
-## 🛑 STOP! Before You Write Any Code
+## 🛑 CRITICAL UPDATE: Three-Level Real Testing Architecture
+
+### Rule #0: NO MOCKS - Real Testing Only
+**ALL TESTS MUST USE REAL IMPLEMENTATIONS**
+```typescript
+// ❌ FORBIDDEN: Mocking
+jest.mock('./wslManager');
+vi.mock('vscode');
+const mockExec = jest.fn();
+
+// ✅ REQUIRED: Real Testing
+import { execSync } from 'child_process';
+const output = execSync('wsl.exe --list', { encoding: 'utf16le' });
+```
 
 ### Rule #1: Test First, Always
 **NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST**
 ```typescript
 // ❌ WRONG: Writing code first
-function cloneDistribution(source, target) { 
+function cloneDistribution(source, target) {
     // Implementation
 }
 
-// ✅ RIGHT: Writing test first
-it('should clone distribution', () => {
-    expect(cloneDistribution('Ubuntu', 'MyProject')).toBe(/* expected */);
+// ✅ RIGHT: Writing test first (with REAL testing)
+it('should clone distribution', async () => {
+    const result = await cloneDistribution('Ubuntu', 'MyProject');
+    // Verify with actual WSL command
+    const distros = execSync('wsl.exe --list --quiet');
+    expect(distros).toContain('MyProject');
 });
 // THEN implement to make test pass
 ```
 
-### Rule #2: Coverage Gates Are Mandatory
+### Rule #2: Three-Level Testing Required
+**Every feature MUST have tests at appropriate levels:**
+- **Level 1 (Unit)**: Real system calls, 2-5 seconds
+- **Level 2 (API)**: Real VS Code APIs, 20-30 seconds
+- **Level 3 (E2E)**: Real UI interaction, 1-2 minutes
+
+### Rule #3: Coverage Gates Are Mandatory
 **Code will be REJECTED if coverage drops below thresholds:**
 - Global: 80% minimum
 - Critical Path: 100% required
 - Security Code: 100% required
 - New Code: 90% minimum
+- **Coverage must be from REAL tests, not mocks**
 
-### Rule #3: All Tests Must Pass Locally AND in CI
-**If it works on your machine but fails in CI, it's BROKEN**
+### Rule #4: All Tests Must Pass Locally AND in CI
+**Tests must pass in WSL, with Xvfb, and on Windows**
 
 ## 📋 Pre-Commit Checklist
 
 Before EVERY commit, you MUST:
 
-- [ ] Run `npm test` - ALL tests must pass
+- [ ] Run `npm run test:unit` - Level 1 tests must pass (5 seconds)
+- [ ] Run `npm run test:integration` - Level 2 tests must pass (30 seconds)
 - [ ] Run `npm run test:coverage` - Coverage must meet thresholds
 - [ ] Run `npm run lint` - No linting errors
 - [ ] Run `npm run compile` - TypeScript must compile
-- [ ] Update feature coverage if adding features
-- [ ] Add tests for ANY new code
+- [ ] Verify NO MOCKS in new tests
+- [ ] Update feature coverage with test levels
+- [ ] Add REAL tests for ANY new code
 
 ## 🔴 Critical Path Features - 100% Coverage Required
 
@@ -266,18 +291,25 @@ Reviewers MUST verify:
 ## ⚡ Quick Test Commands
 
 ```bash
-# Before EVERY commit
-npm test                    # Run all tests
-npm run test:coverage       # Check coverage
-npm run test:security       # Security tests
+# THREE-LEVEL TESTING
+npm run test:unit           # Level 1: Unit tests (5 seconds)
+npm run test:integration    # Level 2: API tests (30 seconds)
+npm run test:e2e           # Level 3: UI tests (2 minutes)
+npm run test:all           # All three levels sequentially
 
-# During development
-npm run test:watch          # TDD mode
-npm run test:debug          # Debug tests
+# BEFORE EVERY COMMIT
+npm run test:unit          # Minimum requirement
+npm run test:coverage      # Check coverage (real tests only)
+npm run test:security      # Security validation
 
-# Before PR
-npm run test:ci            # Same as CI/CD
-npm run test:comprehensive  # Full validation
+# DURING DEVELOPMENT
+npm run test:unit:watch    # TDD mode for Level 1
+npm run test:debug         # Debug with logs
+npm run test:real-output   # Test actual outputs
+
+# BEFORE PR
+npm run test:comprehensive # Full real test validation
+npm run test:ci           # Exact CI environment test
 ```
 
 ## 🔒 Security Testing Requirements

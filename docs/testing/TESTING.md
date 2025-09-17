@@ -2,16 +2,19 @@
 
 ## Overview
 
-This document defines the testing standards, practices, and workflows for the VSC WSL Manager extension. We follow **Test-Driven Development (TDD)** principles with a focus on achieving **100% coverage for critical paths** and maintaining **99.9% test reliability**.
+This document defines the testing standards, practices, and workflows for the VSC WSL Manager extension. We follow **Test-Driven Development (TDD)** principles with **real testing** (no mocks) achieving **100% coverage for critical paths** and maintaining **99.9% test reliability**.
 
 **QA Manager:** Marcus Johnson
 **Last Updated:** September 2024
 **Coverage Target:** 80% minimum (100% for critical paths)
+**Architecture:** Three-level WSL-orchestrated testing with Windows UI execution
+
+**Cross-Platform Strategy:** While currently optimized for WSL on Windows, our architecture is designed for future cross-platform support. See [Cross-Platform Testing Strategy](cross-platform-testing-strategy.md) for details on adapting to other environments.
 
 ## Table of Contents
 
 1. [Core Testing Principles](#core-testing-principles)
-2. [Testing Architecture](#testing-architecture)
+2. [Three-Level Testing Architecture](#three-level-testing-architecture)
 3. [Test Categories](#test-categories)
 4. [TDD Workflow](#tdd-workflow)
 5. [Running Tests](#running-tests)
@@ -25,8 +28,8 @@ This document defines the testing standards, practices, and workflows for the VS
 ### 1. Test First, Code Second
 Every feature begins with a failing test. No production code is written until there's a test that requires it.
 
-### 2. Build to Test
-Design decisions prioritize testability. If it's hard to test, it's probably poorly designed.
+### 2. Build to Test with Real Testing
+Design decisions prioritize testability. **NO MOCKS** - we test real functionality with actual system calls.
 
 ### 3. Coverage as Confidence
 100% coverage on critical paths isn't a goal—it's a requirement. It's our confidence that the software works.
@@ -34,68 +37,109 @@ Design decisions prioritize testability. If it's hard to test, it's probably poo
 ### 4. Same Tests Everywhere
 Tests that pass locally MUST pass in CI. No environment-specific test behaviors.
 
-### 5. Fast Feedback Loops
-Unit tests complete in seconds, integration in minutes, E2E within 10 minutes total.
+### 5. Fast Feedback with Three Levels
+- Level 1 (Unit): Complete in seconds
+- Level 2 (API): Complete in under 1 minute
+- Level 3 (E2E): Complete in under 5 minutes
 
-## Testing Architecture
+## Three-Level Testing Architecture
+
+Our sophisticated architecture enables AI-driven iterative development while maintaining real testing:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                   Test Pyramid                      │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│                    E2E Tests                        │
-│              (WebdriverIO - 10%)                   │
-│         ┌───────────────────────────┐              │
-│                                                     │
-│              Integration Tests                      │
-│            (VS Code API - 30%)                     │
-│      ┌────────────────────────────────┐            │
-│                                                     │
-│                Unit Tests                           │
-│             (Jest - 60%)                           │
-│  ┌──────────────────────────────────────┐          │
-│                                                     │
+│                   WSL (Ubuntu)                      │
+│                                                      │
+│  ┌─────────────────────────────────────────────┐   │
+│  │       Test Orchestrator (Claude Code)        │   │
+│  │                                               │   │
+│  │  Level 1: Unit Tests ✓                       │   │
+│  │  • Vitest framework                          │   │
+│  │  • Direct execution in WSL                   │   │
+│  │  • Real system calls to wsl.exe              │   │
+│  │  • 2-5 seconds execution                     │   │
+│  │                                               │   │
+│  │  Level 2: VS Code API Tests ✓               │   │
+│  │  • @vscode/test-electron                     │   │
+│  │  • Headless VS Code via Xvfb                │   │
+│  │  • Full Extension Host access                │   │
+│  │  • 20-30 seconds execution                   │   │
+│  │                                               │   │
+│  │  Level 3: E2E UI Tests ──────────┐          │   │
+│  └─────────────────────────────────┘│          │   │
+│                                      │          │   │
+└──────────────────────────────────────┼──────────┘   │
+                                       │              │
+                                       ▼              │
+┌─────────────────────────────────────────────────────┐
+│                Windows Host                          │
+│  ┌─────────────────────────────────────────────┐   │
+│  │       WebdriverIO MCP Server                 │   │
+│  │  • Executes UI tests on real VS Code         │   │
+│  │  • Full visibility and observability         │   │
+│  │  • Screen recording capability               │   │
+│  │  • 1-2 minutes execution                     │   │
+│  └─────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────┘
 ```
 
+### Key Distinction: WebdriverIO vs @vscode/test-electron
+
+These tools serve **completely different purposes**:
+
+#### @vscode/test-electron (Level 2)
+- **Purpose**: Testing VS Code API calls
+- **How**: Runs test code *inside* the Extension Host process
+- **Access**: Full `vscode.*` API access
+- **Location**: Runs in WSL with Xvfb (headless)
+
+#### WebdriverIO (Level 3)
+- **Purpose**: E2E UI testing as a user would
+- **How**: Controls VS Code *from outside*
+- **Access**: UI elements and user interactions
+- **Location**: Runs on Windows with visible UI
+
 ## Test Categories
 
-### 🔷 Unit Tests (`test/unit/`)
-- **Purpose:** Test individual functions and classes in isolation
-- **Framework:** Jest with TypeScript
-- **Mock Strategy:** All external dependencies mocked
-- **Execution Time:** < 5 seconds for entire suite
+### 🔷 Level 1: Unit Tests (`test/unit/`)
+- **Purpose:** Test individual functions and classes with real system calls
+- **Framework:** Vitest with TypeScript
+- **Test Strategy:** NO MOCKS - Real wsl.exe calls, real file system
+- **Execution:** Direct in WSL
+- **Execution Time:** 2-5 seconds for entire suite
 - **Coverage Target:** 80% minimum, 100% for critical functions
-- **Current Files:**
-  - `commandBuilder.test.ts` - Command construction and security
-  - `errorHandler.test.ts` - Error handling and user messages
-  - `inputValidator.test.ts` - Input validation and sanitization
-  - `securityValidator.test.ts` - Security checks and rate limiting
-  - `terminalProfileManager.test.ts` - Terminal profile registration
-  - `wslManager.test.ts` - Core WSL operations
-  - `wslTreeDataProvider.test.ts` - Tree view data provider
+- **Key Tests:**
+  - `commandBuilder.test.ts` - Command construction with real validation
+  - `errorHandler.test.ts` - Real error scenarios
+  - `inputValidator.test.ts` - Actual input sanitization
+  - `securityValidator.test.ts` - Real security checks
+  - `wslManager.test.ts` - Actual WSL operations
+  - Real output tests in `test/real-output-tests/`
 
-### 🔗 Integration Tests (`test/integration/`)
-- **Purpose:** Test component interactions with VS Code API
-- **Framework:** Jest + VS Code Extension Testing API
-- **Mock Strategy:** Real VS Code API, mocked system calls
-- **Execution Time:** < 2 minutes
-- **Coverage Target:** 70% of integration points
-- **Current Files:**
-  - `extension.test.ts` - Extension activation and lifecycle
-  - `commandHandlers.test.ts` - Command execution flow
-  - `treeView.test.ts` - Tree view integration
+### 🔗 Level 2: VS Code API Tests (`test/integration/`)
+- **Purpose:** Test extension interaction with VS Code APIs
+- **Framework:** @vscode/test-electron
+- **Test Strategy:** Real VS Code instance (headless via Xvfb in WSL)
+- **Execution:** Inside Extension Host process
+- **Execution Time:** 20-30 seconds
+- **Coverage Target:** 90% of VS Code API interactions
+- **Key Tests:**
+  - `extension.test.ts` - Real activation and lifecycle
+  - `commandHandlers.test.ts` - Actual command execution
+  - `treeView.test.ts` - Real tree view updates
+  - `terminalProfiles.test.ts` - Actual terminal registration
 
-### 🌐 E2E Tests (`test/e2e/`)
-- **Purpose:** Test complete user workflows through UI
-- **Framework:** WebdriverIO with VS Code Service
-- **Mock Strategy:** No mocks, real VS Code instance
-- **Execution Time:** < 10 minutes
+### 🌐 Level 3: E2E UI Tests (`test/e2e/`)
+- **Purpose:** Test complete user workflows through actual UI
+- **Framework:** WebdriverIO with MCP Server
+- **Test Strategy:** Real VS Code on Windows, visible UI
+- **Execution:** WSL orchestrates, Windows executes
+- **Execution Time:** 1-2 minutes
 - **Coverage Target:** All critical user journeys
 - **Test Types:**
-  - WebdriverIO tests (`test/e2e/`)
+  - WebdriverIO UI tests (`test/e2e/`)
   - Python E2E tests (`test/e2e-python/`)
+  - User workflow validation
 
 ### 🔒 Security Tests (`test/security/`)
 - **Purpose:** Validate input sanitization and security boundaries
@@ -185,25 +229,45 @@ it('should prevent duplicate names');
 
 ## Running Tests
 
-### Quick Commands
+### Prerequisites Setup
 
 ```bash
-# Run all tests with coverage
-npm test
+# One-time WSL setup for Level 2 testing
+sudo apt-get update
+sudo apt-get install -y xvfb libgtk-3-0 libx11-xcb1 libasound2
 
-# Run specific test type
-npm run test:unit          # Unit tests only
-npm run test:integration   # Integration tests
-npm run test:e2e           # E2E UI tests (WebdriverIO)
-npm run test:e2e:python    # Python E2E tests
-npm run test:security      # Security tests
-npm run test:validation    # Validation tests
+# Windows setup for Level 3 (run in Windows terminal)
+# Install WebdriverIO MCP server (details in TESTING-ARCHITECTURE.md)
+```
 
-# Run in watch mode (TDD)
-npm run test:watch
+### Test Execution by Level
 
-# Run specific file
-npm test -- wslService.test.ts
+```bash
+# LEVEL 1: Unit Tests (2-5 seconds, runs in WSL)
+npm run test:unit              # Run all unit tests with Vitest
+npm run test:unit:watch        # Watch mode for TDD
+npm run test:unit:coverage     # With coverage report
+
+# LEVEL 2: VS Code API Tests (20-30 seconds, headless in WSL)
+npm run test:integration       # Run with Xvfb automatically
+xvfb-run -a npm run test:integration  # Explicit Xvfb command
+npm run test:integration:debug # Debug mode with logs
+
+# LEVEL 3: E2E UI Tests (1-2 minutes, visible on Windows)
+npm run test:e2e               # Orchestrate Windows UI tests
+npm run test:e2e:visible       # Force visible UI on Windows
+npm run test:e2e:python        # Python-based E2E tests
+npm run test:e2e:record        # With screen recording
+
+# COMPREHENSIVE TESTING
+npm run test:all               # Run all three levels sequentially
+npm run test:ci                # CI-appropriate test suite
+npm run test:comprehensive     # Full validation with real tests
+
+# SPECIALIZED TESTS
+npm run test:security          # Security validation tests
+npm run test:real-download     # Test actual distro downloads
+npm run test:real-output       # Test actual command outputs
 
 # Run tests matching pattern
 npm test -- --testNamePattern="clone"

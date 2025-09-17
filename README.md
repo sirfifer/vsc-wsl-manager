@@ -165,6 +165,21 @@ If you somehow get it doing something useful, **please tell us how!** We'd love 
 
 See [docs/SETUP.md](docs/SETUP.md) for detailed setup instructions (also forward-looking).
 
+## 🧪 Testing
+
+This extension employs a sophisticated three-level testing architecture optimized for WSL on Windows environments. Our testing strategy prioritizes real testing with no mocks, ensuring high confidence in code reliability.
+
+**Current Focus:** Testing is currently optimized for WSL environments on Windows, leveraging the unique capabilities of this setup for comprehensive validation.
+
+**Testing Levels:**
+- **Level 1 (Unit):** Fast component tests with real system calls (2-5 seconds)
+- **Level 2 (API):** VS Code integration tests using headless instances (20-30 seconds)
+- **Level 3 (E2E):** Full UI workflow validation on Windows (1-2 minutes)
+
+For details on our cross-platform testing strategy and future platform support, see [Cross-Platform Testing Strategy](docs/testing/cross-platform-testing-strategy.md).
+
+For complete testing documentation, see [docs/testing/](docs/testing/).
+
 ## 📊 Project Transparency
 
 We believe in radical transparency. Here's exactly where we are:

@@ -42,29 +42,47 @@ export class ImageTreeItem extends vscode.TreeItem {
             `Source: ${this.image.source} (${this.image.sourceType})`,
             `WSL Version: ${this.image.wslVersion}`
         ];
-        
+
         if (this.image.description) {
             lines.push(this.image.description);
         }
-        
+
+        // Show scope
+        if (this.image.scope) {
+            if (this.image.scope.type === 'workspace') {
+                lines.push(`📁 Project-specific: ${this.image.scope.workspaceName || 'current workspace'}`);
+            } else {
+                lines.push('🌍 Global: Available in all projects');
+            }
+        } else {
+            lines.push('🌍 Global: Available in all projects');
+        }
+
         if (this.image.hasManifest) {
             lines.push('✓ Has manifest');
         }
-        
+
         if (this.image.tags && this.image.tags.length > 0) {
             lines.push(`Tags: ${this.image.tags.join(', ')}`);
         }
-        
+
         if (!this.image.enabled) {
             lines.push('⚠ Terminal profile disabled');
         }
-        
+
         return lines.join('\n');
     }
     
     private makeDescription(): string {
         const parts = [];
-        
+
+        // Show scope indicator first
+        if (this.image.scope?.type === 'workspace') {
+            parts.push('📁');  // Project-specific indicator
+        } else {
+            parts.push('🌍');  // Global indicator
+        }
+
         // Show source
         if (this.image.sourceType === 'distro') {
             // Fix: Show "from distro" when source is unknown
@@ -76,7 +94,7 @@ export class ImageTreeItem extends vscode.TreeItem {
         } else {
             parts.push(`cloned from ${this.image.source}`);
         }
-        
+
         // Show state if available
         if (this.image.state) {
             parts.push(this.image.state.toLowerCase());

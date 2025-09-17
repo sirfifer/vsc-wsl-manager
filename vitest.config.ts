@@ -31,13 +31,15 @@ export default defineConfig({
     teardownTimeout: 10000,
     isolate: true,
     threads: false, // Disable threads for better debugging
-    mockReset: true,
-    clearMocks: true,
-    restoreMocks: true
+    // NO MOCK CONFIGURATION - Real testing only
+    mockReset: false,
+    clearMocks: false,
+    restoreMocks: false
   },
   resolve: {
     alias: {
-      'vscode': path.resolve(__dirname, './test/mocks/vscode.ts'),
+      // NO MOCK ALIASES - Direct imports only for real testing
+      // VS Code API mocking removed - use @vscode/test-electron for Level 2 tests
       '@': path.resolve(__dirname, './src')
     }
   },

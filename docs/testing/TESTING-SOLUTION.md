@@ -1,34 +1,49 @@
 # 🎯 Testing Solution - VSC WSL Manager
 
-## Problem Solved
-The Jest timeout issue with Node.js v22 has been resolved by implementing a dual-strategy testing approach.
+## Current Three-Level Testing Architecture
 
-## Current Testing Setup
+We've evolved from mock-based testing to a sophisticated three-level real testing architecture that enables AI-driven development while maintaining 100% real testing.
 
-### 1. Primary: Vitest Configuration (Recommended)
-- **Config File**: `vitest.config.ts`
-- **Mock File**: `test/mocks/vscode-vitest.ts`
-- **Status**: Ready to use once dependencies are installed
+## Testing Levels Overview
 
+### Level 1: Unit Tests (Vitest)
+- **Purpose**: Fast feedback on individual components
+- **Location**: WSL
+- **Execution Time**: 2-5 seconds
+- **Strategy**: Real system calls, no mocks
+
+### Level 2: VS Code API Tests (@vscode/test-electron)
+- **Purpose**: Validate extension integration
+- **Location**: WSL with Xvfb (headless)
+- **Execution Time**: 20-30 seconds
+- **Strategy**: Real VS Code instance, actual APIs
+
+### Level 3: E2E UI Tests (WebdriverIO)
+- **Purpose**: User workflow validation
+- **Location**: Windows (orchestrated from WSL)
+- **Execution Time**: 1-2 minutes
+- **Strategy**: Visible UI, real user interactions
+
+## Implementation Status
+
+### ✅ Working Now
+
+#### Level 1: Unit Testing with Vitest
 ```bash
-# Install Vitest (when npm issues are resolved)
-npm install -D vitest @vitest/ui c8 --legacy-peer-deps
-
-# Run tests
-npm test              # Run all tests
-npm run test:watch    # Watch mode
-npm run test:ui       # Interactive UI
-npm run test:coverage # With coverage
+# Already configured and working
+npm run test:unit              # Run all unit tests
+npm run test:unit:watch        # TDD mode
+npm run test:unit:coverage     # Coverage report
 ```
 
-### 2. Fallback: Simple Test Runner (Working Now!)
-- **File**: `test-runner-simple.js`
-- **Status**: ✅ Working - No dependencies required
-- **Usage**: Direct Node.js execution, bypasses all package manager issues
+**Config**: `vitest.config.ts` (NO mock aliases)
+**Tests**: `/test/unit/*.test.ts` (being migrated to real tests)
 
+#### Fallback Runner (Always Works)
 ```bash
-# Run tests immediately (no installation needed)
-node test-runner-simple.js
+# Direct execution, no dependencies
+node test-runner-simple.js     # Simple runner
+node scripts/comprehensive-test-runner.js  # Full suite
 ```
 
 ## Test Files Ready
@@ -89,15 +104,46 @@ vsc-wsl-manager/
 │       └── wslManager.listDistributions.test.ts # ✅ Complete
 ```
 
-## Next Steps
+## Setup Requirements
 
-### Option 1: Continue with Vitest (Recommended)
-1. Resolve npm installation issues
-2. Install Vitest dependencies
-3. Convert remaining tests to Vitest format
-4. Full testing capability restored
+### Level 2: VS Code API Testing Setup
+```bash
+# Install Xvfb for headless testing in WSL
+sudo apt-get update
+sudo apt-get install -y xvfb libgtk-3-0 libx11-xcb1 libasound2 libgbm1
 
-### Option 2: Use Simple Runner (Working Now)
+# Test that Xvfb works
+xvfb-run -a echo "Xvfb is working"
+
+# Install @vscode/test-electron
+npm install -D @vscode/test-electron
+```
+
+### Level 3: E2E UI Testing Setup
+```bash
+# In WSL: Install WebdriverIO client
+npm install -D webdriverio @wdio/cli @wdio/local-runner
+
+# In Windows: Setup MCP Server
+# 1. Create C:\mcp-server directory
+# 2. Install dependencies (see TESTING-ARCHITECTURE.md)
+# 3. Run MCP server on port 4444
+```
+
+## Migration Path from Mocked to Real Tests
+
+### Phase 1: Identify and Mark (Current)
+- ✅ Identified 29 test files with mocks
+- ✅ Created `/test/real-output-tests/` for real testing examples
+- ✅ Documented three-level architecture
+
+### Phase 2: Gradual Migration (Next)
+1. Keep mocked tests temporarily (mark as deprecated)
+2. Write new real tests alongside
+3. Verify real tests provide same or better coverage
+4. Delete mocked tests once verified
+
+### Phase 3: Full Real Testing (Target)
 1. Continue using `node test-runner-simple.js`
 2. Add more test files as needed
 3. Basic but functional testing

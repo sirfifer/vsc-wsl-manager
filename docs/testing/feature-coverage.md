@@ -2,38 +2,46 @@
 
 **Last Updated:** September 2024
 **QA Manager:** Marcus Johnson
+**Architecture:** Three-Level Real Testing (No Mocks)
 **Target:** 100% coverage for critical paths, 80% overall
 
-## Coverage Summary
+## Coverage Summary by Test Level
 
-| Category | Features | Completed | In Progress | Not Started | Coverage |
-|----------|----------|-----------|-------------|-------------|----------|
-| **Critical Path** | 8 | 8 | 0 | 0 | **100%** ✅ |
-| **High Priority** | 7 | 0 | 0 | 7 | **0%** |
-| **Medium Priority** | 6 | 0 | 0 | 6 | **0%** |
-| **Low Priority** | 3 | 0 | 0 | 3 | **0%** |
-| **TOTAL** | **24** | **8** | **0** | **16** | **33.3%** |
+| Test Level | Purpose | Framework | Execution Time | Coverage |
+|------------|---------|-----------|----------------|----------|
+| **Level 1 (Unit)** | Component testing | Vitest | 2-5 seconds | 60% |
+| **Level 2 (API)** | VS Code integration | @vscode/test-electron | 20-30 seconds | 30% |
+| **Level 3 (E2E)** | User workflows | WebdriverIO | 1-2 minutes | 10% |
 
-## Quick Stats
-- 🟢 **Completed:** 8 features (33.3%)
-- 🟡 **In Progress:** 0 features (0%)
-- 🔴 **Not Started:** 16 features (66.7%)
-- ✅ **Critical Path Coverage:** 100% (TARGET ACHIEVED!)
+## Overall Coverage Summary
 
-## Feature Coverage Matrix
+| Category | Features | L1 Tests | L2 Tests | L3 Tests | Real Tests | Mocked | Coverage |
+|----------|----------|----------|----------|----------|------------|--------|----------|
+| **Critical Path** | 8 | 6/8 | 2/8 | 1/8 | 3/8 | 5/8 | **60%** ⚠️ |
+| **High Priority** | 7 | 0/7 | 0/7 | 0/7 | 0/7 | 0/7 | **0%** |
+| **Medium Priority** | 6 | 0/6 | 0/6 | 0/6 | 0/6 | 0/6 | **0%** |
+| **Low Priority** | 3 | 0/3 | 0/3 | 0/3 | 0/3 | 0/3 | **0%** |
+| **TOTAL** | **24** | **6** | **2** | **1** | **3** | **5** | **25%** |
 
-### 🔴 Critical Path Features (MUST be 100%)
+## Migration Status
+- 🔴 **Mocked Tests:** 5 features (need migration)
+- 🟡 **Partial Real:** 3 features (in progress)
+- 🟢 **Full Real Testing:** 0 features (target state)
 
-| Feature ID | Feature Name | Status | Unit Tests | Integration | E2E | Coverage | Owner | Notes |
-|------------|--------------|--------|------------|-------------|-----|----------|-------|-------|
-| **EXT-001** | Extension Activation | 🟢 | 15/5 | 3/3 | 2/2 | 100% | Marcus | ✅ Complete with 15 comprehensive tests, Vitest converted |
-| **WSL-001** | List Distributions | 🟢 | 20/8 | 4/4 | 3/3 | 100% | Marcus | ✅ Complete with extensive edge cases, Vitest converted |
-| **WSL-002** | Clone Distribution | 🟢 | 25/10 | 0/5 | 0/3 | 71% | Marcus | ✅ Unit tests complete with 25 comprehensive scenarios |
-| **SEC-001** | Input Sanitization | 🟢 | 30/15 | 5/5 | 2/2 | 100% | Marcus | ✅ Already existed in inputValidator.test.ts |
-| **TERM-001** | Open Terminal | 🟢 | 20/6 | 0/4 | 0/3 | 60% | Marcus | ✅ Complete with 20 comprehensive tests |
-| **UI-001** | Distribution Tree View | 🟢 | 25/8 | 0/4 | 0/4 | 75% | Marcus | ✅ Complete with 25 tests covering all UI aspects |
-| **CMD-001** | Command Registration | 🟢 | 30/10 | 0/5 | 0/2 | 85% | Marcus | ✅ Complete with 30 tests for all 17 commands |
-| **ERR-001** | Error Handling | 🟢 | 18/12 | 0/6 | 0/3 | 60% | Marcus | ✅ Partial tests exist in errorHandler.test.ts |
+## Feature Coverage Matrix with Test Levels
+
+### 🔴 Critical Path Features (MUST be 100% REAL tests)
+
+| Feature ID | Feature Name | L1 | L2 | L3 | Real/Mock | Coverage | Migration Status |
+|------------|--------------|----|----|----|-----------|-----------| --------|----------------|
+| **EXT-001** | Extension Activation | ✅ | ⚠️ | ❌ | Mocked | 70% | 🔴 Needs real tests |
+| **WSL-001** | List Distributions | ✅ | ❌ | ❌ | Partial | 60% | 🟡 Real in progress |
+| **WSL-002** | Clone Distribution | ✅ | ❌ | ❌ | Mocked | 50% | 🔴 Needs real tests |
+| **SEC-001** | Input Sanitization | ✅ | ✅ | ❌ | Partial | 80% | 🟡 Some real tests |
+| **TERM-001** | Open Terminal | ✅ | ❌ | ❌ | Mocked | 40% | 🔴 Needs real tests |
+| **UI-001** | Distribution Tree View | ✅ | ⚠️ | ❌ | Real | 85% | 🟢 Real output tests |
+| **CMD-001** | Command Registration | ✅ | ❌ | ❌ | Mocked | 60% | 🔴 Needs real tests |
+| **ERR-001** | Error Handling | ⚠️ | ❌ | ❌ | Partial | 45% | 🟡 Some real tests |
 
 ### 🟠 High Priority Features (Target: 90%)
 

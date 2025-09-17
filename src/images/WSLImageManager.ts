@@ -58,10 +58,17 @@ export interface ImageMetadata {
     
     /** Whether terminal profile is enabled */
     enabled: boolean;
-    
+
+    /** Scope determines where the image is visible */
+    scope?: {
+        type: 'global' | 'workspace';
+        workspacePath?: string;  // Path to workspace folder (only for workspace scope)
+        workspaceName?: string;  // Display name of workspace
+    };
+
     /** Installation path */
     installPath?: string;
-    
+
     /** Current state */
     state?: 'Running' | 'Stopped';
 }
@@ -72,24 +79,31 @@ export interface ImageMetadata {
 export interface CreateFromDistroOptions {
     /** Display name for the image */
     displayName?: string;
-    
+
     /** Description */
     description?: string;
-    
+
     /** Installation path (defaults to %USERPROFILE%\.wsl\{name}) */
     installPath?: string;
-    
+
     /** Tags to apply */
     tags?: string[];
-    
+
     /** Author information */
     author?: string;
-    
+
     /** WSL version (defaults to 2) */
     wslVersion?: number;
-    
+
     /** Whether to enable terminal profile */
     enableTerminal?: boolean;
+
+    /** Scope for image visibility */
+    scope?: {
+        type: 'global' | 'workspace';
+        workspacePath?: string;
+        workspaceName?: string;
+    };
 }
 
 /**
@@ -110,6 +124,13 @@ export interface CloneImageOptions {
     
     /** Whether to enable terminal profile */
     enableTerminal?: boolean;
+
+    /** Scope for image visibility */
+    scope?: {
+        type: 'global' | 'workspace';
+        workspacePath?: string;
+        workspaceName?: string;
+    };
 }
 
 /**
@@ -259,6 +280,7 @@ export class WSLImageManager {
                 author: options.author,
                 hasManifest: true,
                 enabled: options.enableTerminal !== false,
+                scope: options.scope,
                 installPath
             };
             
@@ -382,6 +404,7 @@ export class WSLImageManager {
                 author: sourceMetadata?.author,
                 hasManifest: sourceManifest !== null,
                 enabled: options.enableTerminal !== false,
+                scope: options.scope || sourceMetadata?.scope,  // Use provided scope or inherit from source
                 installPath
             };
             

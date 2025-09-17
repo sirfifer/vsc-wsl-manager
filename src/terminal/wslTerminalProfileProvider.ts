@@ -165,11 +165,29 @@ export class WSLTerminalProfileManager {
             this.disposables.push(provider.register());
         }
         
-        // Register image profiles (only enabled images)
-        const enabledImages = images.filter(img => img.enabled !== false);
-        logger.info(`Registering ${enabledImages.length} enabled image profiles`);
-        
-        for (const image of enabledImages) {
+        // Register image profiles (only enabled images and respecting scope)
+        const currentWorkspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+        const visibleImages = images.filter(img => {
+            // Check if enabled
+            if (img.enabled === false) return false;
+
+            // Check scope
+            if (!img.scope || img.scope.type === 'global') {
+                return true;  // Global images are always visible
+            }
+
+            if (img.scope.type === 'workspace') {
+                // Only show if we're in the matching workspace
+                return img.scope.workspacePath === currentWorkspace;
+            }
+
+            return true;
+        });
+
+        logger.info(`Registering ${visibleImages.length} visible image profiles (filtered from ${images.length} total)`);
+
+        for (const image of visibleImages) {
             const provider = new WSLImageTerminalProfileProvider(image);
             this.disposables.push(provider.register());
         }
