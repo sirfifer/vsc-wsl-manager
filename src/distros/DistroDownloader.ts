@@ -162,12 +162,22 @@ export class DistroDownloader {
             await this.distroManager.addDistro(distro, targetPath);
             
             logger.info(`Successfully downloaded distro: ${distroName}`);
-        } catch (error) {
+        } catch (error: any) {
             // Clean up temp file on error
             if (fs.existsSync(tempPath)) {
                 fs.unlinkSync(tempPath);
             }
-            throw error;
+            logger.error(`Failed to download ${distroName}: ${error.message}`);
+            // Enhance error message for better user feedback
+            if (error.message.includes('ENOTFOUND')) {
+                throw new Error(`Cannot reach download server. Check your internet connection.`);
+            } else if (error.message.includes('ETIMEDOUT')) {
+                throw new Error(`Download timed out. The server may be slow or your connection may be unstable.`);
+            } else if (error.message.includes('HTTP')) {
+                throw error; // Already formatted
+            } else {
+                throw new Error(`Failed to download ${distroName}: ${error.message}`);
+            }
         } finally {
             this.activeDownloads.delete(distroName);
         }
@@ -185,14 +195,21 @@ export class DistroDownloader {
             const parsedUrl = new URL(url);
             const client = parsedUrl.protocol === 'https:' ? https : http;
             
-            // Prepare request options
+            // Prepare request options - extract only needed properties from URL
             const requestOptions: https.RequestOptions = {
-                ...parsedUrl,
+                hostname: parsedUrl.hostname,
+                port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+                path: parsedUrl.pathname + parsedUrl.search,
+                method: 'GET',
                 timeout: options.timeout || 300000, // 5 minutes default
                 headers: {
-                    'User-Agent': 'vscode-wsl-manager/1.0.0'
+                    'User-Agent': 'vscode-wsl-manager/1.0.0',
+                    'Accept': '*/*'
                 }
             };
+
+            logger.debug(`Downloading from: ${url}`);
+            logger.debug(`Request options: ${JSON.stringify({ hostname: requestOptions.hostname, path: requestOptions.path })}`);
             
             // Create write stream
             const fileStream = fs.createWriteStream(destPath);
@@ -219,8 +236,12 @@ export class DistroDownloader {
                 // Check status code
                 if (response.statusCode !== 200) {
                     fileStream.close();
-                    fs.unlinkSync(destPath);
-                    reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+                    if (fs.existsSync(destPath)) {
+                        fs.unlinkSync(destPath);
+                    }
+                    const errorMsg = `HTTP ${response.statusCode}: ${response.statusMessage} for URL: ${url}`;
+                    logger.error(errorMsg);
+                    reject(new Error(errorMsg));
                     return;
                 }
                 
@@ -283,12 +304,13 @@ export class DistroDownloader {
             });
             
             // Handle errors
-            request.on('error', (error) => {
+            request.on('error', (error: any) => {
                 fileStream.close();
                 if (fs.existsSync(destPath)) {
                     fs.unlinkSync(destPath);
                 }
-                reject(error);
+                logger.error(`Download request failed for ${url}: ${error.message}`);
+                reject(new Error(`Download failed: ${error.message}`));
             });
             
             request.on('timeout', () => {
@@ -297,7 +319,8 @@ export class DistroDownloader {
                 if (fs.existsSync(destPath)) {
                     fs.unlinkSync(destPath);
                 }
-                reject(new Error('Download timeout'));
+                logger.error(`Download timeout for ${url} after ${options.timeout || 300000}ms`);
+                reject(new Error(`Download timeout after ${(options.timeout || 300000) / 1000} seconds`));
             });
             
             // Handle abort signal

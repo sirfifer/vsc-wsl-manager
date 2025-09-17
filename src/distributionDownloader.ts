@@ -8,15 +8,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 // Use global fetch (Node 18+) or polyfill for older versions
 declare const fetch: any;
 import { DistributionRegistry, DistributionInfo } from './distributionRegistry';
 import { CommandBuilder, CommandOptions } from './utils/commandBuilder';
 import { Logger } from './utils/logger';
-
-const execAsync = promisify(exec);
 const logger = Logger.getInstance();
 
 /**
@@ -298,7 +294,11 @@ export class DistributionDownloader {
         logger.debug(`Running PowerShell command: ${command}`);
         
         try {
-            await execAsync(`powershell -Command "${command}"`, { timeout: 300000 }); // 5 minutes
+            // Use CommandBuilder to execute PowerShell command safely
+            const result = await CommandBuilder.executePowerShell(command, { timeout: 300000 } as CommandOptions);
+            if (result.exitCode !== 0) {
+                throw new Error(`PowerShell command failed: ${result.stderr}`);
+            }
             logger.info(`Successfully installed APPX package for ${distributionName}`);
             
             // Wait a bit for Windows to register the package
@@ -322,7 +322,7 @@ export class DistributionDownloader {
     private async verifyInstallation(distributionName: string): Promise<void> {
         try {
             // Check if distribution appears in wsl --list
-            const result = await execAsync('wsl.exe --list --quiet', { timeout: 10000 });
+            const result = await CommandBuilder.executeWSL(['--list', '--quiet'], { timeout: 10000 } as CommandOptions);
             
             // Clean up WSL output (remove special characters and empty lines)
             const distributions = result.stdout
@@ -468,8 +468,10 @@ export class DistributionDownloader {
         if (process.platform !== 'win32') {
             // In WSL, check if we can run Windows admin commands
             try {
-                await execAsync('powershell.exe -Command "([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)"', { timeout: 5000 });
-                const result = await execAsync('powershell.exe -Command "([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)"', { timeout: 5000 });
+                const result = await CommandBuilder.executePowerShell(
+                    '([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)',
+                    { timeout: 5000 } as CommandOptions
+                );
                 return result.stdout.trim().toLowerCase() === 'true';
             } catch {
                 return false;
@@ -478,8 +480,8 @@ export class DistributionDownloader {
         
         try {
             // Try to run a command that requires admin privileges
-            await execAsync('fsutil fsinfo driveType C:', { timeout: 5000 });
-            return true;
+            const result = await CommandBuilder.executeSystem('fsutil', ['fsinfo', 'driveType', 'C:'], { timeout: 5000 } as CommandOptions);
+            return result.exitCode === 0;
         } catch {
             return false;
         }

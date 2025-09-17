@@ -14,6 +14,7 @@ export enum ErrorType {
     DISTRIBUTION_ALREADY_EXISTS = 'DISTRIBUTION_ALREADY_EXISTS',
     PERMISSION_DENIED = 'PERMISSION_DENIED',
     NETWORK_ERROR = 'NETWORK_ERROR',
+    DOWNLOAD_FAILED = 'DOWNLOAD_FAILED',
     FILE_NOT_FOUND = 'FILE_NOT_FOUND',
     INVALID_INPUT = 'INVALID_INPUT',
     COMMAND_FAILED = 'COMMAND_FAILED',
@@ -62,6 +63,10 @@ export class ErrorHandler {
         [ErrorType.NETWORK_ERROR, {
             title: 'Network Error',
             description: 'Failed to download required resources.'
+        }],
+        [ErrorType.DOWNLOAD_FAILED, {
+            title: 'Download Failed',
+            description: 'Failed to download the distribution.'
         }],
         [ErrorType.FILE_NOT_FOUND, {
             title: 'File Not Found',
@@ -119,6 +124,12 @@ export class ErrorHandler {
             'Verify proxy settings if behind a firewall',
             'Try again later'
         ]],
+        [ErrorType.DOWNLOAD_FAILED, [
+            'Check your internet connection',
+            'Verify the distribution is available',
+            'Try downloading a different distribution',
+            'Check available disk space'
+        ]],
         [ErrorType.FILE_NOT_FOUND, [
             'Verify the file path is correct',
             'Check if the file exists',
@@ -175,6 +186,30 @@ export class ErrorHandler {
             return ErrorType.FILE_NOT_FOUND;
         }
         if (errorMessage.includes('network') || errorMessage.includes('enetunreach') || errorCode === 'ENETUNREACH' || errorMessage.includes('econnrefused')) {
+            return ErrorType.NETWORK_ERROR;
+        }
+        if (errorMessage.includes('download') && (errorMessage.includes('failed') || errorMessage.includes('error'))) {
+            return ErrorType.DOWNLOAD_FAILED;
+        }
+        if (errorMessage.includes('no download url') || errorMessage.includes('no tar source')) {
+            return ErrorType.DOWNLOAD_FAILED;
+        }
+        if (errorMessage.includes('http') && errorMessage.includes(':')) {
+            return ErrorType.DOWNLOAD_FAILED;
+        }
+        if (errorMessage.includes('enotfound') || errorMessage.includes('getaddrinfo')) {
+            return ErrorType.NETWORK_ERROR;
+        }
+        if (errorMessage.includes('econnrefused') || errorMessage.includes('econnreset')) {
+            return ErrorType.NETWORK_ERROR;
+        }
+        if (errorMessage.includes('unable to verify') || errorMessage.includes('self signed')) {
+            return ErrorType.NETWORK_ERROR;
+        }
+        if (errorMessage.includes('download failed') || errorMessage.includes('download timeout')) {
+            return ErrorType.DOWNLOAD_FAILED;
+        }
+        if (errorMessage.includes('cannot reach download server')) {
             return ErrorType.NETWORK_ERROR;
         }
         if (errorMessage.includes('rate limit exceeded')) {

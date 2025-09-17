@@ -61,6 +61,35 @@ export class CommandBuilder {
     }
     
     /**
+     * Execute a PowerShell command safely
+     * @param command PowerShell command to execute
+     * @param options Execution options
+     * @returns Command result
+     */
+    static async executePowerShell(command: string, options: CommandOptions = {}): Promise<CommandResult> {
+        // PowerShell commands should be passed as arguments, not as shell commands
+        return this.execute('powershell.exe', ['-Command', command], options);
+    }
+
+    /**
+     * Execute a system command safely (Windows utilities)
+     * @param command Command executable name
+     * @param args Command arguments
+     * @param options Execution options
+     * @returns Command result
+     */
+    static async executeSystem(command: string, args: string[], options: CommandOptions = {}): Promise<CommandResult> {
+        // Whitelist of allowed system commands
+        const allowedCommands = ['fsutil', 'where', 'which', 'cmd.exe'];
+
+        if (!allowedCommands.includes(command.toLowerCase()) && !command.toLowerCase().endsWith('.exe')) {
+            throw new Error(`Command not allowed for security reasons: ${command}`);
+        }
+
+        return this.execute(command, args, options);
+    }
+
+    /**
      * Execute a command in a specific WSL distribution
      * @param distribution Distribution name
      * @param command Command to execute
@@ -76,10 +105,10 @@ export class CommandBuilder {
         if (!distribution || typeof distribution !== 'string') {
             throw new Error('Invalid distribution name');
         }
-        
+
         // Build safe command arguments
         const args = ['-d', distribution, '--', 'sh', '-c', command];
-        
+
         return this.execute(this.WSL_COMMAND, args, options);
     }
     

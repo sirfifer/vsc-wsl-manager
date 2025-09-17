@@ -321,6 +321,8 @@
     "test:e2e:python:install": "cmd.exe /c \"pip install -r test\\e2e-python\\requirements.txt\"",
     "test:e2e:python:clean": "rm -rf test/e2e-python/reports test/e2e-python/screenshots test/e2e-python/__pycache__",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e:windows",
+    "test:real-download": "node scripts/test-real-download.js",
+    "test:real": "REAL_TESTS=true npm run test:integration",
     "test:complete": "node out/scripts/automation/complete-test-runner.js",
     "automate:full": "npm run compile && npm run test:complete",
     "dev": "concurrently -n \"compile,test\" -c \"blue,green\" \"npm run watch\" \"npm run test:watch:verbose\"",
