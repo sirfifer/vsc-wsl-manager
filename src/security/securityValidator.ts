@@ -64,12 +64,14 @@ export class SecurityValidator {
         'import',
         'export',
         'unregister',
-        'delete',  // Added to match getCommandType
+        'delete',
         'terminate',
         'set-default',
-        'command',  // Added for distribution commands
-        'create',  // Added for testing
-        'unknown'  // Added for other valid commands in testing
+        'command',
+        'create',
+        'run',  // For running commands in distributions
+        'exec'  // For executing commands in distributions
+        // Note: 'unknown' removed - unmatched commands are properly blocked
     ]);
     
     /**

@@ -8,8 +8,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
-// Use global fetch (Node 18+) or polyfill for older versions
-declare const fetch: any;
 import { DistributionRegistry, DistributionInfo } from './distributionRegistry';
 import { CommandBuilder, CommandOptions } from './utils/commandBuilder';
 import { Logger } from './utils/logger';
@@ -180,35 +178,52 @@ export class DistributionDownloader {
     
     /**
      * Download file with progress tracking
+     * Note: This uses http/https modules for Node 16 compatibility
      */
     private async downloadWithProgress(
         url: string,
         destinationPath: string,
         onProgress?: (progress: DownloadProgress) => void
     ): Promise<string> {
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const totalSize = parseInt(response.headers.get('content-length') || '0');
-        let downloadedSize = 0;
-        
-        const writeStream = fs.createWriteStream(destinationPath);
-        
-        if (response.body) {
-            const reader = response.body.getReader();
-            
-            try {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    
-                    if (done) break;
-                    
-                    downloadedSize += value.length;
-                    writeStream.write(Buffer.from(value));
-                    
+        const https = require('https');
+        const http = require('http');
+        const { URL } = require('url');
+
+        return new Promise((resolve, reject) => {
+            const parsedUrl = new URL(url);
+            const client = parsedUrl.protocol === 'https:' ? https : http;
+
+            const writeStream = fs.createWriteStream(destinationPath);
+            let downloadedSize = 0;
+            let totalSize = 0;
+
+            const request = client.get(url, (response: any) => {
+                // Handle redirects
+                if (response.statusCode === 301 || response.statusCode === 302) {
+                    const redirectUrl = response.headers.location;
+                    if (redirectUrl) {
+                        writeStream.close();
+                        this.downloadWithProgress(redirectUrl, destinationPath, onProgress)
+                            .then(resolve)
+                            .catch(reject);
+                        return;
+                    }
+                }
+
+                // Check status
+                if (response.statusCode !== 200) {
+                    writeStream.close();
+                    fs.unlinkSync(destinationPath);
+                    reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+                    return;
+                }
+
+                totalSize = parseInt(response.headers['content-length'] || '0', 10);
+
+                response.on('data', (chunk: Buffer) => {
+                    downloadedSize += chunk.length;
+                    writeStream.write(chunk);
+
                     if (onProgress && totalSize > 0) {
                         const percent = Math.round((downloadedSize / totalSize) * 100);
                         onProgress({
@@ -217,15 +232,23 @@ export class DistributionDownloader {
                             total: totalSize
                         });
                     }
-                }
-            } finally {
-                reader.releaseLock();
-                writeStream.end();
-            }
-        }
-        
-        return new Promise((resolve, reject) => {
-            writeStream.on('finish', () => resolve(destinationPath));
+                });
+
+                response.on('end', () => {
+                    writeStream.end();
+                });
+            });
+
+            request.on('error', (error: any) => {
+                writeStream.close();
+                fs.unlinkSync(destinationPath);
+                reject(error);
+            });
+
+            writeStream.on('finish', () => {
+                resolve(destinationPath);
+            });
+
             writeStream.on('error', reject);
         });
     }

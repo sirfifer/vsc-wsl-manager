@@ -32,7 +32,7 @@ let imageTreeProvider: ImageTreeProvider | undefined;
  * It initializes all managers, registers commands, and sets up the two tree views.
  */
 export function activate(context: vscode.ExtensionContext) {
-    console.log('WSL Manager extension is now active!');
+    logger.info('WSL Manager extension is now active!');
 
     // Initialize core managers
     const wslManager = new WSLManager();
@@ -63,19 +63,31 @@ export function activate(context: vscode.ExtensionContext) {
     async function refreshAll() {
         distroTreeProvider?.refresh();
         imageTreeProvider?.refresh();
-        
-        // Update terminal profiles with active images
-        const images = await imageManager.listImages();
-        const wslDistributions = images
-            .filter(img => img.enabled)
-            .map(img => ({
+
+        try {
+            // Get real WSL distributions
+            const distributions = await wslManager.listDistributions();
+
+            // Get images (treat enabled !== false as enabled)
+            const images = await imageManager.listImages();
+            const enabledImages = images.filter(img => img.enabled !== false);
+
+            // Combine real distributions with enabled images
+            const imageDistributions = enabledImages.map(img => ({
                 name: img.name,
                 default: false,
                 state: 'Stopped' as const,
                 version: String(img.wslVersion || 2)
             }));
-        
-        terminalProfileManager?.updateProfiles(wslDistributions, images);
+
+            // Merge all distributions (real WSL + images)
+            const allDistributions = [...distributions, ...imageDistributions];
+
+            // Update terminal profiles with all distributions
+            terminalProfileManager?.updateProfiles(allDistributions, images);
+        } catch (error) {
+            logger.error('Failed to update terminal profiles:', error);
+        }
     }
 
     // Register commands

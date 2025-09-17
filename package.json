@@ -349,7 +349,7 @@
     "test:ui": "vitest --ui",
     "test:clear-cache": "rm -rf node_modules/.vite",
     "coverage:open": "open coverage/index.html || start coverage/index.html",
-    "coverage:check": "ts-node scripts/test-runner.ts all --coverage --threshold=80",
+    "coverage:check": "ts-node scripts/test-runner.ts all --coverage --threshold=100",
     "coverage:feature": "ts-node scripts/coverage-feature.ts",
     "coverage:features": "ts-node scripts/coverage-report.ts",
     "hooks:install": "husky install",
