@@ -222,30 +222,6 @@ Location: `/test/integration/`
   - [ ] Profile provider works
   - [ ] Multiple terminals supported
 
-### 2.3 Level 3: E2E UI Tests
-**Priority:** MEDIUM
-**Time Estimate:** 2 days
-
-Location: `/test/e2e/`
-
-- [ ] `complete-workflow.e2e.test.ts`
-  - [ ] Create distribution flow
-  - [ ] Import TAR file flow
-  - [ ] Export to TAR flow
-  - [ ] Delete distribution flow
-
-- [ ] `error-scenarios.e2e.test.ts`
-  - [ ] Invalid input handling
-  - [ ] Network failure recovery
-  - [ ] Permission denied handling
-  - [ ] WSL not installed scenario
-
-- [ ] `ui-interactions.e2e.test.ts`
-  - [ ] Tree view clicking
-  - [ ] Command palette usage
-  - [ ] Settings modification
-  - [ ] Multi-window support
-
 ---
 
 ## 📁 Phase 3: Test Infrastructure
@@ -354,6 +330,31 @@ Create `.github/workflows/test.yml`:
 - [ ] Check coverage thresholds
 - [ ] Lint test files
 
+### 5.3 Level 3: E2E UI Tests
+**Priority:** MEDIUM
+**Time Estimate:** 2 days
+
+Location: `/test/e2e/`
+
+- [ ] `complete-workflow.e2e.test.ts`
+  - [ ] Create distribution flow
+  - [ ] Import TAR file flow
+  - [ ] Export to TAR flow
+  - [ ] Delete distribution flow
+
+- [ ] `error-scenarios.e2e.test.ts`
+  - [ ] Invalid input handling
+  - [ ] Network failure recovery
+  - [ ] Permission denied handling
+  - [ ] WSL not installed scenario
+
+- [ ] `ui-interactions.e2e.test.ts`
+  - [ ] Tree view clicking
+  - [ ] Command palette usage
+  - [ ] Settings modification
+  - [ ] Multi-window support
+
+
 ---
 
 ## 📚 Phase 6: Documentation
@@ -378,38 +379,6 @@ Document:
 - [ ] How to create test fixtures
 - [ ] How to debug failing tests
 - [ ] Common testing patterns
-
----
-
-## 📅 Implementation Timeline
-
-### Week 1: Foundation
-- Day 1-2: Complete Phase 1 (Mock Elimination)
-- Day 3-5: Start Phase 2.1 (Critical Unit Tests)
-
-### Week 2: Core Testing
-- Complete Level 1 Unit Tests for critical components
-- Begin Level 2 VS Code API tests
-
-### Week 3: Integration
-- Complete Level 2 API tests
-- Start Level 3 E2E tests
-- Create test fixtures and helpers
-
-### Week 4: Coverage
-- Implement remaining unit tests
-- Achieve 80% coverage target
-- Fix failing tests
-
-### Week 5: Polish
-- CI/CD integration
-- Documentation updates
-- Performance optimization
-
-### Week 6: Validation
-- Full test suite execution
-- Coverage validation
-- Sign-off from QA
 
 ---
 
