@@ -170,7 +170,7 @@ class TestRunner {
                     args = ['run', 'test:e2e:windows'];
                 } else {
                     command = 'npx';
-                    args = ['wdio', 'run', 'wdio.conf.ts'];
+                    args = ['wdio', 'run', 'test/config/wdio.conf.ts'];
                 }
                 break;
 

@@ -36,6 +36,12 @@ claude-personas/
 
 # Test results
 test-results/
+test-results-summary.txt
+test-results.xml
+validation-report.json
+.coverage
+test-screenshots/
+.pytest_cache/
 
 # E2E Debug artifacts (CRITICAL - thousands of files!)
 test/e2e-debug/

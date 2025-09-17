@@ -125,7 +125,7 @@ echo ""
 echo -e "${MAGENTA}════════════════════════════════════════════════════════════${NC}"
 
 # Run the tests with our ESM configuration
-npx wdio wdio.conf.ui.mjs
+npx wdio test/config/wdio.conf.ui.mjs
 
 TEST_EXIT_CODE=$?
 

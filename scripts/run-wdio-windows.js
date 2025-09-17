@@ -104,7 +104,7 @@ function startWebdriverIO() {
     
     // Determine which specs to run
     const args = process.argv.slice(2);
-    let wdioArgs = ['wdio', 'run', 'wdio.conf.windows.ts'];
+    let wdioArgs = ['wdio', 'run', 'test/config/wdio.conf.windows.ts'];
     
     // Add any additional arguments (like --spec)
     if (args.length > 0) {

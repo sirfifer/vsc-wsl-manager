@@ -238,7 +238,7 @@ export class CompleteTestHarness {
         const startTime = Date.now();
         
         // Check if wdio.conf.ts exists
-        if (!fs.existsSync(path.join(__dirname, '../../wdio.conf.ts'))) {
+        if (!fs.existsSync(path.join(__dirname, '../../test/config/wdio.conf.ts'))) {
             return {
                 passed: false,
                 errors: ['WebdriverIO not configured'],
@@ -247,7 +247,7 @@ export class CompleteTestHarness {
         }
         
         try {
-            const { stdout, stderr } = await execAsync('npx wdio run wdio.conf.ts 2>&1', {
+            const { stdout, stderr } = await execAsync('npx wdio run test/config/wdio.conf.ts 2>&1', {
                 timeout: 120000 // 2 minute timeout for E2E tests
             });
             const duration = Date.now() - startTime;
