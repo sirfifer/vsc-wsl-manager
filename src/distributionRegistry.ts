@@ -239,4 +239,108 @@ export class DistributionRegistry {
         this.cacheExpiry = null;
         logger.debug('Cache cleared');
     }
+
+    /**
+     * Validate a distribution URL is accessible
+     * @param distroName Name of the distribution to validate
+     * @returns true if URL is valid and accessible
+     */
+    async validateDistributionUrl(distroName: string): Promise<boolean> {
+        try {
+            const distros = await this.fetchAvailableDistributions();
+            const distro = distros.find(d => d.Name === distroName);
+
+            if (!distro) {
+                logger.warn(`Distribution ${distroName} not found in registry`);
+                return false;
+            }
+
+            // Get the appropriate URL
+            const url = this.getDownloadUrlForDistro(distro);
+            if (!url) {
+                logger.warn(`No download URL available for ${distroName}`);
+                return false;
+            }
+
+            // Try a HEAD request to validate without downloading
+            const response = await fetch(url, {
+                method: 'HEAD',
+                signal: AbortSignal.timeout(5000) // 5 second timeout
+            });
+
+            if (response.ok) {
+                logger.info(`URL validated for ${distroName}: ${url}`);
+                return true;
+            } else {
+                logger.warn(`URL validation failed for ${distroName}: HTTP ${response.status}`);
+                return false;
+            }
+        } catch (error) {
+            logger.error(`Failed to validate URL for ${distroName}`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Get download URL for a distribution info object
+     * @param distro Distribution info
+     * @returns Download URL or null if not available
+     */
+    private getDownloadUrlForDistro(distro: DistributionInfo): string | null {
+        // Prefer .wsl format over package URLs
+        const arch = process.arch === 'arm64' ? 'Arm64' : 'Amd64';
+
+        if (arch === 'Arm64') {
+            return distro.Arm64WslUrl || distro.Arm64PackageUrl || distro.Amd64WslUrl || distro.Amd64PackageUrl || null;
+        } else {
+            return distro.Amd64WslUrl || distro.Amd64PackageUrl || null;
+        }
+    }
+
+    /**
+     * Get available distributions from WSL command
+     * Fallback method when network registry is unavailable
+     */
+    async fetchFromWSLCommand(): Promise<DistributionInfo[]> {
+        try {
+            logger.info('Attempting to fetch distributions from WSL --list --online');
+            const { CommandBuilder } = await import('./utils/commandBuilder');
+            const result = await CommandBuilder.executeWSL(['--list', '--online']);
+
+            if (!result.stdout) {
+                logger.warn('No output from WSL --list --online');
+                return [];
+            }
+
+            // Parse WSL output to extract distribution names
+            const lines = result.stdout.split('\n');
+            const distributions: DistributionInfo[] = [];
+
+            // Skip header lines and parse distribution list
+            let startParsing = false;
+            for (const line of lines) {
+                if (line.includes('NAME') && line.includes('FRIENDLY')) {
+                    startParsing = true;
+                    continue;
+                }
+
+                if (startParsing && line.trim()) {
+                    // Parse lines like "Ubuntu    Ubuntu"
+                    const parts = line.trim().split(/\s{2,}/);
+                    if (parts.length >= 1) {
+                        distributions.push({
+                            Name: parts[0],
+                            FriendlyName: parts[1] || parts[0]
+                        });
+                    }
+                }
+            }
+
+            logger.info(`Parsed ${distributions.length} distributions from WSL command`);
+            return distributions;
+        } catch (error) {
+            logger.error('Failed to fetch distributions from WSL command', error);
+            return [];
+        }
+    }
 }

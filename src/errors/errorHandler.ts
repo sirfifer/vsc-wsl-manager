@@ -319,6 +319,30 @@ ${error.recoveryActions ? error.recoveryActions.map(a => `- ${a}`).join('\n') : 
             terminal.show();
             terminal.sendText('wsl --list');
         }
+        // Handle download-related recovery actions
+        else if (action === 'Check your internet connection') {
+            vscode.commands.executeCommand('wsl-manager.testConnectivity');
+        } else if (action === 'Verify the distribution is available') {
+            vscode.commands.executeCommand('wsl-manager.validateDistributions');
+        } else if (action === 'Try downloading a different distribution') {
+            vscode.commands.executeCommand('wsl-manager.downloadDistribution');
+        } else if (action === 'Check available disk space') {
+            const terminal = vscode.window.createTerminal('Check Disk Space');
+            terminal.show();
+            if (process.platform === 'win32') {
+                terminal.sendText('wmic logicaldisk get size,freespace,caption');
+            } else {
+                terminal.sendText('df -h');
+            }
+        }
+        // Handle other common actions
+        else if (action.includes('Check the distribution name')) {
+            vscode.commands.executeCommand('wsl-manager.refreshDistributions');
+        } else if (action.includes('Choose a different name')) {
+            vscode.window.showInformationMessage('Please try the operation again with a different name.');
+        } else if (action.includes('Run VS Code as Administrator')) {
+            vscode.window.showWarningMessage('Please restart VS Code as Administrator to perform this operation.');
+        }
     }
 
     /**

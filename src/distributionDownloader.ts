@@ -62,17 +62,39 @@ export class DistributionDownloader {
      * Uses TAR files and wsl --import which work in user space
      */
     async downloadDistribution(
-        distributionName: string, 
+        distributionName: string,
         options: DownloadOptions = {}
     ): Promise<string> {
         const { maxRetries = 3 } = options;
-        
+
         logger.info(`Downloading distribution: ${distributionName}`);
-        
+
         try {
+            // First validate that the distribution URL is accessible
+            const isValid = await this.registry.validateDistributionUrl(distributionName);
+            if (!isValid) {
+                logger.warn(`Distribution URL validation failed for ${distributionName}`);
+
+                // Try to get a better error message
+                const distros = await this.registry.fetchAvailableDistributions();
+                const distro = distros.find(d => d.Name === distributionName);
+
+                if (!distro) {
+                    throw new Error(`Distribution '${distributionName}' not found in registry. Try refreshing the distribution list.`);
+                }
+
+                const hasUrl = distro.Amd64WslUrl || distro.Amd64PackageUrl || distro.Arm64WslUrl || distro.Arm64PackageUrl;
+                if (!hasUrl) {
+                    throw new Error(`No download URL available for '${distributionName}'. This distribution may not be available for direct download.`);
+                }
+
+                // URL exists but validation failed - likely network or server issue
+                logger.warn(`Distribution '${distributionName}' has URL but validation failed - proceeding with download attempt`);
+            }
+
             // PRIMARY METHOD: Download TAR file and import (NO ADMIN REQUIRED)
             logger.debug('Using TAR download method (no admin required)');
-            
+
             // Try to download rootfs TAR file
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
@@ -88,9 +110,9 @@ export class DistributionDownloader {
                     await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
                 }
             }
-            
+
             throw new Error(`Failed to download ${distributionName} after ${maxRetries} attempts`);
-            
+
         } catch (error) {
             throw new Error(`Failed to download distribution '${distributionName}': ${error}`);
         }
@@ -214,7 +236,19 @@ export class DistributionDownloader {
                 if (response.statusCode !== 200) {
                     writeStream.close();
                     fs.unlinkSync(destinationPath);
-                    reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+
+                    let errorMessage = `HTTP ${response.statusCode}: ${response.statusMessage}`;
+
+                    // Provide more specific error messages
+                    if (response.statusCode === 404) {
+                        errorMessage = `Distribution file not found (404). The download URL may have changed. Try refreshing the distribution list.`;
+                    } else if (response.statusCode === 403) {
+                        errorMessage = `Access denied (403). The distribution server may have changed access requirements.`;
+                    } else if (response.statusCode >= 500) {
+                        errorMessage = `Server error (${response.statusCode}). The distribution server may be experiencing issues. Try again later.`;
+                    }
+
+                    reject(new Error(errorMessage));
                     return;
                 }
 
@@ -241,8 +275,22 @@ export class DistributionDownloader {
 
             request.on('error', (error: any) => {
                 writeStream.close();
-                fs.unlinkSync(destinationPath);
-                reject(error);
+                if (fs.existsSync(destinationPath)) {
+                    fs.unlinkSync(destinationPath);
+                }
+
+                // Improve error messages
+                if (error.code === 'ENOTFOUND') {
+                    reject(new Error(`Cannot reach download server. Please check your internet connection.`));
+                } else if (error.code === 'ETIMEDOUT') {
+                    reject(new Error(`Download timed out. The server may be slow or your connection may be unstable.`));
+                } else if (error.code === 'ECONNRESET') {
+                    reject(new Error(`Connection reset by server. This may be a temporary issue, please try again.`));
+                } else if (error.code === 'ECONNREFUSED') {
+                    reject(new Error(`Connection refused by server. The download server may be unavailable.`));
+                } else {
+                    reject(new Error(`Download failed: ${error.message || error}`));
+                }
             });
 
             writeStream.on('finish', () => {

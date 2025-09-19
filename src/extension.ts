@@ -12,8 +12,10 @@ import { ImageTreeProvider } from './views/ImageTreeProvider';
 
 // Utilities
 import { InputValidator } from './utils/inputValidator';
+import { CommandBuilder } from './utils/commandBuilder';
 import { ErrorHandler } from './errors/errorHandler';
 import { Logger } from './utils/logger';
+import { DistributionRegistry } from './distributionRegistry';
 
 const logger = Logger.getInstance();
 
@@ -897,6 +899,184 @@ export function activate(context: vscode.ExtensionContext) {
                 
             } catch (error) {
                 await ErrorHandler.showError(error, 'export distribution');
+            }
+        }),
+
+        // Diagnostic and validation commands
+        vscode.commands.registerCommand('wsl-manager.testConnectivity', async () => {
+            try {
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Testing internet connectivity...',
+                    cancellable: false
+                }, async () => {
+                    try {
+                        // Use fetch for HTTP request
+                        const https = require('https');
+                        const url = 'https://raw.githubusercontent.com/microsoft/WSL/master/distributions/DistributionInfo.json';
+
+                        const testConnectivity = () => new Promise<boolean>((resolve) => {
+                            https.get(url, (res: any) => {
+                                if (res.statusCode === 200) {
+                                    vscode.window.showInformationMessage('✓ Internet connection is working. Microsoft registry is accessible.');
+                                    resolve(true);
+                                } else {
+                                    vscode.window.showErrorMessage(`Registry returned status ${res.statusCode}. Microsoft servers may be experiencing issues.`);
+                                    resolve(false);
+                                }
+                                res.destroy();
+                            }).on('error', (err: any) => {
+                                vscode.window.showErrorMessage('✗ Cannot reach Microsoft registry. Check your internet connection or proxy settings.');
+                                resolve(false);
+                            });
+                        });
+
+                        await testConnectivity();
+                    } catch (error) {
+                        vscode.window.showErrorMessage('✗ Cannot reach Microsoft registry. Check your internet connection or proxy settings.');
+                    }
+                });
+            } catch (error) {
+                await ErrorHandler.showError(error, 'test connectivity');
+            }
+        }),
+
+        vscode.commands.registerCommand('wsl-manager.validateDistributions', async () => {
+            try {
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Validating distribution URLs...',
+                    cancellable: false
+                }, async (progress) => {
+                    const registry = new DistributionRegistry();
+                    const distros = await registry.fetchAvailableDistributions();
+
+                    const results: string[] = [];
+                    results.push('Distribution URL Validation Results');
+                    results.push('=' .repeat(50));
+                    results.push('');
+
+                    for (const distro of distros) {
+                        progress.report({ message: `Checking ${distro.Name}...` });
+
+                        const url = distro.Amd64WslUrl || distro.Amd64PackageUrl;
+                        if (!url) {
+                            results.push(`❌ ${distro.Name}: No download URL available`);
+                            continue;
+                        }
+
+                        try {
+                            // HEAD request to check if URL is valid without downloading
+                            const https = require('https');
+                            const http = require('http');
+                            const urlLib = require('url');
+
+                            const checkUrl = () => new Promise<{ status: number, headers: any }>((resolve, reject) => {
+                                const parsedUrl = urlLib.parse(url);
+                                const client = parsedUrl.protocol === 'https:' ? https : http;
+
+                                const req = client.request({
+                                    ...parsedUrl,
+                                    method: 'HEAD',
+                                    timeout: 5000
+                                }, (res: any) => {
+                                    resolve({ status: res.statusCode, headers: res.headers });
+                                    res.destroy();
+                                });
+
+                                req.on('error', reject);
+                                req.on('timeout', () => {
+                                    req.destroy();
+                                    reject(new Error('Timeout'));
+                                });
+                                req.end();
+                            });
+
+                            const response = await checkUrl();
+
+                            if (response.status === 200) {
+                                const size = response.headers['content-length'];
+                                const sizeStr = size ? ` (${formatBytes(parseInt(size))})` : '';
+                                results.push(`✅ ${distro.Name}: Available${sizeStr}`);
+                            } else {
+                                results.push(`⚠️ ${distro.Name}: HTTP ${response.status}`);
+                            }
+                        } catch (error: any) {
+                            if (error.message === 'Timeout') {
+                                results.push(`⏱️ ${distro.Name}: Timeout - server not responding`);
+                            } else {
+                                results.push(`❌ ${distro.Name}: Unreachable - ${error.message || 'Unknown error'}`);
+                            }
+                        }
+                    }
+
+                    results.push('');
+                    results.push(`Checked ${distros.length} distributions`);
+                    results.push(`Registry URL: https://raw.githubusercontent.com/microsoft/WSL/master/distributions/DistributionInfo.json`);
+
+                    // Show results in output channel
+                    const outputChannel = vscode.window.createOutputChannel('WSL Distribution Validation');
+                    results.forEach(line => outputChannel.appendLine(line));
+                    outputChannel.show();
+
+                    // Also show summary message
+                    const available = results.filter(r => r.includes('✅')).length;
+                    const unavailable = results.filter(r => r.includes('❌') || r.includes('⚠️')).length;
+
+                    if (unavailable === 0) {
+                        vscode.window.showInformationMessage(`All ${distros.length} distributions are available for download!`);
+                    } else {
+                        vscode.window.showWarningMessage(
+                            `${available} distributions available, ${unavailable} have issues. Check the output for details.`
+                        );
+                    }
+                });
+            } catch (error) {
+                await ErrorHandler.showError(error, 'validate distributions');
+            }
+        }),
+
+        vscode.commands.registerCommand('wsl-manager.checkWSLStatus', async () => {
+            try {
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Checking WSL status...',
+                    cancellable: false
+                }, async () => {
+                    const results: string[] = [];
+                    results.push('WSL System Status');
+                    results.push('=' .repeat(50));
+                    results.push('');
+
+                    // Check WSL installation
+                    try {
+                        const versionResult = await CommandBuilder.executeWSL(['--version']);
+                        results.push('✅ WSL is installed');
+                        results.push('Version info:');
+                        results.push(versionResult.stdout);
+                    } catch {
+                        results.push('❌ WSL is not installed or not accessible');
+                        results.push('Run "wsl --install" in an elevated PowerShell to install WSL');
+                    }
+
+                    results.push('');
+
+                    // List installed distributions
+                    try {
+                        const listResult = await CommandBuilder.executeWSL(['--list', '--verbose']);
+                        results.push('Installed distributions:');
+                        results.push(listResult.stdout || 'No distributions installed');
+                    } catch {
+                        results.push('Unable to list distributions');
+                    }
+
+                    // Show results
+                    const outputChannel = vscode.window.createOutputChannel('WSL Status');
+                    results.forEach(line => outputChannel.appendLine(line));
+                    outputChannel.show();
+                });
+            } catch (error) {
+                await ErrorHandler.showError(error, 'check WSL status');
             }
         }),
 
