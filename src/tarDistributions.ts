@@ -37,8 +37,8 @@ export const TAR_DISTRIBUTIONS: TarDistribution[] = [
         name: 'Ubuntu-24.04',
         friendlyName: 'Ubuntu 24.04 LTS',
         description: 'Latest LTS release of Ubuntu',
-        tarUrl: 'https://cloud-images.ubuntu.com/wsl/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz',
-        size: '~700MB',
+        tarUrl: 'https://releases.ubuntu.com/24.04.3/ubuntu-24.04.3-wsl-amd64.wsl',
+        size: '~667MB',
         architecture: 'x64'
     },
     {

@@ -279,17 +279,19 @@ export class DistributionDownloader {
                     fs.unlinkSync(destinationPath);
                 }
 
-                // Improve error messages
+                // Improve error messages with URL context
                 if (error.code === 'ENOTFOUND') {
-                    reject(new Error(`Cannot reach download server. Please check your internet connection.`));
+                    reject(new Error(`Cannot reach download server at ${parsedUrl.hostname}. Please check your internet connection.`));
                 } else if (error.code === 'ETIMEDOUT') {
-                    reject(new Error(`Download timed out. The server may be slow or your connection may be unstable.`));
+                    reject(new Error(`Download timed out from ${parsedUrl.hostname}. The server may be slow or your connection may be unstable.`));
                 } else if (error.code === 'ECONNRESET') {
-                    reject(new Error(`Connection reset by server. This may be a temporary issue, please try again.`));
+                    reject(new Error(`Connection reset by ${parsedUrl.hostname}. This may be a temporary issue, please try again.`));
                 } else if (error.code === 'ECONNREFUSED') {
-                    reject(new Error(`Connection refused by server. The download server may be unavailable.`));
+                    reject(new Error(`Connection refused by ${parsedUrl.hostname}. The download server may be unavailable.`));
+                } else if (error.code === 'CERT_HAS_EXPIRED') {
+                    reject(new Error(`SSL certificate expired for ${parsedUrl.hostname}. The server needs to update its certificate.`));
                 } else {
-                    reject(new Error(`Download failed: ${error.message || error}`));
+                    reject(new Error(`Download failed from ${url}: ${error.message || error}`));
                 }
             });
 
@@ -431,21 +433,53 @@ export class DistributionDownloader {
         distributionName: string,
         options: DownloadOptions = {}
     ): Promise<string> {
-        const rootfsUrl = this.getRootfsUrl(distributionName);
-        if (!rootfsUrl) {
-            throw new Error(`No TAR source available for ${distributionName}`);
+        // First try to get URL from Microsoft's registry
+        let downloadUrl: string | undefined = undefined;
+        let fileExtension = '.tar.gz';
+
+        try {
+            const distros = await this.registry.fetchAvailableDistributions();
+            const distro = distros.find(d => d.Name === distributionName);
+
+            if (distro) {
+                // Prefer .wsl files from the registry
+                downloadUrl = distro.Amd64WslUrl || distro.Amd64PackageUrl;
+                if (downloadUrl) {
+                    logger.info(`Using URL from Microsoft registry: ${downloadUrl}`);
+                    // Determine file extension based on URL
+                    if (downloadUrl.toLowerCase().includes('.wsl')) {
+                        fileExtension = '.wsl';
+                    } else if (downloadUrl.toLowerCase().includes('.appx')) {
+                        fileExtension = '.appx';
+                    }
+                }
+            }
+        } catch (error) {
+            logger.warn(`Failed to get URL from registry: ${error}`);
         }
-        
-        logger.debug(`Downloading TAR from: ${rootfsUrl}`);
-        
+
+        // Fall back to tarDistributions if no registry URL
+        if (!downloadUrl) {
+            downloadUrl = this.getRootfsUrl(distributionName);
+            if (!downloadUrl) {
+                throw new Error(
+                    `No download URL available for ${distributionName}. ` +
+                    `The distribution may not be available for direct download.`
+                );
+            }
+            logger.info(`Using URL from tarDistributions: ${downloadUrl}`);
+        }
+
+        logger.debug(`Downloading from: ${downloadUrl}`);
+
         // Download to user directory (not temp)
-        const downloadPath = path.join(this.downloadsDir, `${distributionName.toLowerCase()}.tar.gz`);
+        const downloadPath = path.join(this.downloadsDir, `${distributionName.toLowerCase()}${fileExtension}`);
         
         // Check if already downloaded
         if (fs.existsSync(downloadPath) && fs.statSync(downloadPath).size > 0) {
             logger.info(`Using cached download: ${downloadPath}`);
         } else {
-            await this.downloadWithProgress(rootfsUrl, downloadPath, options.onProgress);
+            await this.downloadWithProgress(downloadUrl, downloadPath, options.onProgress);
         }
         
         // Generate unique instance name
@@ -477,17 +511,18 @@ export class DistributionDownloader {
     
     /**
      * Get TAR file URL for distributions - NO ADMIN REQUIRED
+     * This is now a fallback method when registry URLs aren't available
      */
-    private getRootfsUrl(distributionName: string): string | null {
+    private getRootfsUrl(distributionName: string): string | undefined {
         // Import TAR distributions
         const { getTarUrl } = require('./tarDistributions');
-        
+
         // Try to get URL from our TAR distributions list
         const tarUrl = getTarUrl(distributionName);
         if (tarUrl) {
             return tarUrl;
         }
-        
+
         // Fallback to legacy hardcoded URLs for backward compatibility
         const rootfsUrls: { [key: string]: string } = {
             'alpine': 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.0-x86_64.tar.gz',
@@ -496,8 +531,8 @@ export class DistributionDownloader {
             'debian': 'https://github.com/debuerreotype/docker-debian-artifacts/raw/dist-amd64/bookworm/rootfs.tar.xz',
             'archlinux': 'https://mirror.rackspace.com/archlinux/iso/latest/archlinux-bootstrap-x86_64.tar.gz',
         };
-        
-        return rootfsUrls[distributionName.toLowerCase()] || null;
+
+        return rootfsUrls[distributionName.toLowerCase()] || undefined;
     }
     
     /**
