@@ -186,7 +186,7 @@ export class DistroManager {
                 description: 'Ubuntu 24.04 LTS (Noble Numbat) - Latest LTS',
                 version: '24.04',
                 architecture: 'x64',
-                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz',
+                sourceUrl: 'https://releases.ubuntu.com/24.04.3/ubuntu-24.04.3-wsl-amd64.wsl',
                 tags: ['ubuntu', 'lts', 'latest'],
                 size: 700 * 1024 * 1024
             },
@@ -196,19 +196,9 @@ export class DistroManager {
                 description: 'Ubuntu 22.04 LTS (Jammy Jellyfish) - Long Term Support',
                 version: '22.04.3',
                 architecture: 'x64',
-                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz',
+                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz',
                 tags: ['ubuntu', 'lts', 'stable'],
                 size: 650 * 1024 * 1024
-            },
-            {
-                name: 'ubuntu-20.04',
-                displayName: 'Ubuntu 20.04 LTS',
-                description: 'Ubuntu 20.04 LTS (Focal Fossa) - Previous LTS',
-                version: '20.04.6',
-                architecture: 'x64',
-                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/focal/current/ubuntu-focal-wsl-amd64-wsl.rootfs.tar.gz',
-                tags: ['ubuntu', 'lts', 'legacy'],
-                size: 500 * 1024 * 1024
             },
             {
                 name: 'ubuntu-23.10',
@@ -216,7 +206,7 @@ export class DistroManager {
                 description: 'Ubuntu 23.10 (Mantic Minotaur) - Latest non-LTS',
                 version: '23.10',
                 architecture: 'x64',
-                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/mantic/current/ubuntu-mantic-wsl-amd64-wsl.rootfs.tar.gz',
+                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/mantic/current/ubuntu-mantic-wsl-amd64-ubuntu23.10.rootfs.tar.gz',
                 tags: ['ubuntu', 'latest', 'non-lts'],
                 size: 680 * 1024 * 1024
             },
