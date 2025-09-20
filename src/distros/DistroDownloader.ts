@@ -214,11 +214,28 @@ export class DistroDownloader {
                 }
             }
             
-            // Move to final location
-            if (fs.existsSync(targetPath)) {
-                fs.unlinkSync(targetPath);
+            // Check if this is an APPX/AppxBundle file that needs extraction
+            const fileExt = path.extname(tempPath).toLowerCase();
+            if (fileExt === '.appx' || fileExt === '.appxbundle') {
+                logger.info(`Extracting TAR from ${fileExt} package...`);
+                const extractedPath = await this.extractTarFromAppx(tempPath, targetPath);
+
+                // Clean up the APPX file
+                if (fs.existsSync(tempPath)) {
+                    fs.unlinkSync(tempPath);
+                }
+
+                // Use the extracted TAR path
+                if (!extractedPath) {
+                    throw new Error('Failed to extract TAR file from APPX package');
+                }
+            } else {
+                // Not an APPX, just move to final location
+                if (fs.existsSync(targetPath)) {
+                    fs.unlinkSync(targetPath);
+                }
+                fs.renameSync(tempPath, targetPath);
             }
-            fs.renameSync(tempPath, targetPath);
             
             // Update distro info
             const stats = fs.statSync(targetPath);
@@ -251,6 +268,102 @@ export class DistroDownloader {
         }
     }
     
+    /**
+     * Extract TAR file from APPX/AppxBundle package
+     * @param appxPath Path to the APPX file
+     * @param targetPath Desired path for the extracted TAR file
+     * @returns Path to the extracted TAR file, or null if extraction failed
+     */
+    private async extractTarFromAppx(appxPath: string, targetPath: string): Promise<string | null> {
+        try {
+            // Use unzip command (available on most systems)
+            const { execSync } = require('child_process');
+            const tempDir = path.join(path.dirname(appxPath), 'appx_extract_' + Date.now());
+
+            // Create temp directory
+            fs.mkdirSync(tempDir, { recursive: true });
+
+            // Extract using unzip or tar (APPX is basically a ZIP file)
+            try {
+                // Try unzip first
+                execSync(`unzip -q "${appxPath}" -d "${tempDir}"`, { stdio: 'pipe' });
+            } catch {
+                // Try using tar as fallback
+                try {
+                    execSync(`tar -xf "${appxPath}" -C "${tempDir}"`, { stdio: 'pipe' });
+                } catch (error) {
+                    logger.error('Failed to extract APPX using unzip or tar');
+                    throw error;
+                }
+            }
+
+            // Find the TAR file (usually install.tar.gz or similar)
+            const files = this.findFilesRecursive(tempDir);
+            let tarFile = null;
+
+            for (const file of files) {
+                const basename = path.basename(file).toLowerCase();
+                if (basename.endsWith('.tar.gz') || basename.endsWith('.tar')) {
+                    // Prefer install.tar.gz if available
+                    if (basename.includes('install')) {
+                        tarFile = file;
+                        break;
+                    }
+                    // Otherwise take the first TAR file found
+                    if (!tarFile) {
+                        tarFile = file;
+                    }
+                }
+            }
+
+            if (tarFile) {
+                logger.info(`Found TAR file: ${path.basename(tarFile)}`);
+
+                // Move to target location
+                if (fs.existsSync(targetPath)) {
+                    fs.unlinkSync(targetPath);
+                }
+                fs.renameSync(tarFile, targetPath);
+
+                // Clean up temp directory
+                fs.rmSync(tempDir, { recursive: true, force: true });
+
+                logger.info(`Successfully extracted TAR to: ${targetPath}`);
+                return targetPath;
+            }
+
+            // Clean up temp directory
+            fs.rmSync(tempDir, { recursive: true, force: true });
+            logger.error('No TAR file found in APPX package');
+            return null;
+
+        } catch (error: any) {
+            logger.error(`Failed to extract TAR from APPX: ${error.message}`);
+            return null;
+        }
+    }
+
+    /**
+     * Recursively find all files in a directory
+     */
+    private findFilesRecursive(dir: string): string[] {
+        const files: string[] = [];
+
+        const items = fs.readdirSync(dir);
+        for (const item of items) {
+            const fullPath = path.join(dir, item);
+            const stat = fs.statSync(fullPath);
+
+            if (stat.isDirectory()) {
+                files.push(...this.findFilesRecursive(fullPath));
+            } else {
+                files.push(fullPath);
+            }
+        }
+
+        return files;
+    }
+
     /**
      * Download a file from a URL
      */

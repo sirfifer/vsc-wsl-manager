@@ -406,17 +406,38 @@ export class DistroManager {
             // Fetch from Microsoft Registry
             const msDistributions = await this.registry.fetchAvailableDistributions();
 
-            // Convert to our format
-            const newDistros = msDistributions.map(ms => ({
-                name: ms.Name.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
-                displayName: ms.FriendlyName || ms.Name,
-                description: `Official ${ms.FriendlyName || ms.Name} from Microsoft Store`,
-                version: 'latest', // Microsoft registry doesn't provide version info
-                architecture: 'x64' as const,
-                sourceUrl: ms.Amd64PackageUrl || ms.Amd64WslUrl || '',
-                tags: ['official', 'microsoft'],
-                available: false
-            })).filter(d => d.sourceUrl); // Only include distros with URLs
+            // Convert to our format and fetch sizes
+            const newDistros = await Promise.all(
+                msDistributions
+                    .filter(ms => ms.Amd64PackageUrl || ms.Amd64WslUrl)
+                    .map(async ms => {
+                        const url = ms.Amd64PackageUrl || ms.Amd64WslUrl || '';
+                        const distro: DistroInfo = {
+                            name: ms.Name.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+                            displayName: ms.FriendlyName || ms.Name,
+                            description: `Official ${ms.FriendlyName || ms.Name} from Microsoft Store`,
+                            version: 'latest', // Microsoft registry doesn't provide version info
+                            architecture: 'x64' as const,
+                            sourceUrl: url,
+                            tags: ['official', 'microsoft'],
+                            available: false
+                        };
+
+                        // Try to fetch size via HEAD request
+                        try {
+                            const size = await this.fetchFileSize(url);
+                            if (size > 0) {
+                                distro.size = size;
+                            }
+                        } catch (error) {
+                            logger.debug(`Failed to fetch size for ${ms.Name}: ${error}`);
+                            // Use estimated size based on typical distribution sizes
+                            distro.size = this.estimateDistroSize(ms.Name);
+                        }
+
+                        return distro;
+                    })
+            );
 
             if (newDistros.length > 0) {
                 // Replace catalog with fresh data from Microsoft
@@ -441,6 +462,62 @@ export class DistroManager {
         } catch (error) {
             logger.warn('Failed to fetch from Microsoft Registry, using cached catalog:', error as Error);
             // Continue with existing catalog
+        }
+    }
+
+    /**
+     * Fetch file size via HEAD request
+     */
+    private async fetchFileSize(url: string): Promise<number> {
+        return new Promise((resolve, reject) => {
+            const urlObj = new URL(url);
+            const https = require('https');
+            const http = require('http');
+            const client = urlObj.protocol === 'https:' ? https : http;
+
+            const req = client.request({
+                hostname: urlObj.hostname,
+                path: urlObj.pathname + urlObj.search,
+                method: 'HEAD',
+                timeout: 5000
+            }, (res: any) => {
+                if (res.statusCode === 200 && res.headers['content-length']) {
+                    const size = parseInt(res.headers['content-length']);
+                    resolve(size);
+                } else {
+                    reject(new Error(`Failed to fetch size: ${res.statusCode}`));
+                }
+            });
+
+            req.on('error', reject);
+            req.on('timeout', () => {
+                req.destroy();
+                reject(new Error('Request timeout'));
+            });
+
+            req.end();
+        });
+    }
+
+    /**
+     * Estimate distribution size based on name
+     */
+    private estimateDistroSize(name: string): number {
+        const nameLower = name.toLowerCase();
+
+        // Size estimates in bytes based on typical distribution sizes
+        if (nameLower.includes('ubuntu')) {
+            return 600 * 1024 * 1024; // 600 MB
+        } else if (nameLower.includes('debian')) {
+            return 200 * 1024 * 1024; // 200 MB
+        } else if (nameLower.includes('kali')) {
+            return 400 * 1024 * 1024; // 400 MB
+        } else if (nameLower.includes('opensuse') || nameLower.includes('suse')) {
+            return 250 * 1024 * 1024; // 250 MB
+        } else if (nameLower.includes('oracle')) {
+            return 150 * 1024 * 1024; // 150 MB
+        } else {
+            return 300 * 1024 * 1024; // 300 MB default
         }
     }
 

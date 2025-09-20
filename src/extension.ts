@@ -131,7 +131,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const selected = await vscode.window.showQuickPick(
                     downloadable.map(d => ({
                         label: d.displayName,
-                        description: d.version,
+                        description: d.size ? `${formatBytes(d.size)} • ${d.version}` : d.version,
                         detail: d.description,
                         distro: d
                     })),
@@ -187,8 +187,8 @@ export function activate(context: vscode.ExtensionContext) {
                 const selectedDistro = await vscode.window.showQuickPick(
                     available.map(d => ({
                         label: d.displayName,
-                        description: d.version,
-                        detail: `${d.description} (${formatBytes(d.size || 0)})`,
+                        description: d.size ? `${formatBytes(d.size)} • ${d.version}` : d.version,
+                        detail: d.description,
                         distro: d
                     })),
                     { placeHolder: 'Select distribution to create image from' }
