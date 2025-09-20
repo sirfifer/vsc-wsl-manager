@@ -3,7 +3,7 @@ import { WSLManager } from './wslManager';
 import { WSLTerminalProfileManager } from './terminal/wslTerminalProfileProvider';
 
 // New Two-World Architecture imports
-import { DistroManager } from './distros/DistroManager';
+import { EnhancedDistroManager } from './distros/EnhancedDistroManager';
 import { DistroDownloader } from './distros/DistroDownloader';
 import { WSLImageManager } from './images/WSLImageManager';
 import { ManifestManager } from './manifest/ManifestManager';
@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Initialize Two-World Architecture managers
     const manifestManager = new ManifestManager();
-    const distroManager = new DistroManager();
+    const distroManager = new EnhancedDistroManager();
     const distroDownloader = new DistroDownloader(distroManager);
     const imageManager = new WSLImageManager(manifestManager, distroManager);
     
@@ -97,8 +97,22 @@ export function activate(context: vscode.ExtensionContext) {
         // ===== Distro Commands =====
         vscode.commands.registerCommand('wsl-manager.refreshDistributions', async () => {
             try {
-                await refreshAll();
-                vscode.window.showInformationMessage('Distributions refreshed');
+                // Force refresh from all sources
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Refreshing distributions from Microsoft Registry...',
+                    cancellable: false
+                }, async () => {
+                    await distroManager.refreshDistributions();
+                    await refreshAll();
+                });
+
+                // Show summary
+                const distros = await distroManager.listDistros();
+                const available = distros.filter(d => d.available).length;
+                vscode.window.showInformationMessage(
+                    `Found ${distros.length} distributions (${available} downloaded locally)`
+                );
             } catch (error) {
                 await ErrorHandler.showError(error, 'refresh distributions');
             }

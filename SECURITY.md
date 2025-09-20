@@ -15,7 +15,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 ### How to Report
 
 1. **DO NOT** create a public GitHub issue for security vulnerabilities
-2. Email security concerns to: [security@vsc-wsl-manager.dev]
+2. Email security concerns to: [security@amerman.net]
 3. Include the following information:
    - Type of vulnerability
    - Affected components

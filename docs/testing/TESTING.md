@@ -138,7 +138,6 @@ These tools serve **completely different purposes**:
 - **Coverage Target:** All critical user journeys
 - **Test Types:**
   - WebdriverIO UI tests (`test/e2e/`)
-  - Python E2E tests (`test/e2e-python/`)
   - User workflow validation
 
 ### 🔒 Security Tests (`test/security/`)
@@ -256,7 +255,6 @@ npm run test:integration:debug # Debug mode with logs
 # LEVEL 3: E2E UI Tests (1-2 minutes, visible on Windows)
 npm run test:e2e               # Orchestrate Windows UI tests
 npm run test:e2e:visible       # Force visible UI on Windows
-npm run test:e2e:python        # Python-based E2E tests
 npm run test:e2e:record        # With screen recording
 
 # COMPREHENSIVE TESTING
@@ -293,22 +291,6 @@ npm run test:comprehensive
 npm run test:ci -- --coverage --threshold=80
 ```
 
-### Python E2E Tests
-
-```bash
-# Install dependencies
-npm run test:e2e:python:install
-
-# Run all Python E2E tests
-npm run test:e2e:python
-
-# Run specific test suites
-npm run test:e2e:python:activation
-npm run test:e2e:python:commands
-
-# Clean test artifacts
-npm run test:e2e:python:clean
-```
 
 ## Writing Tests
 
@@ -626,21 +608,6 @@ code --version
 npm run wdio:doctor
 ```
 
-#### Python E2E Tests Issues
-```bash
-# Ensure project is under /mnt/c/ (Windows-accessible)
-pwd
-
-# Check Python installation on Windows
-cmd.exe /c "python --version"
-
-# Verify VS Code installation
-cmd.exe /c "code --version"
-
-# Clean and retry
-npm run test:e2e:python:clean
-npm run test:e2e:python
-```
 
 ## Best Practices
 
@@ -695,9 +662,6 @@ test/
 ├── e2e/                    # WebdriverIO UI tests
 │   ├── specs/              # Test specifications
 │   └── pageobjects/        # Page object models
-├── e2e-python/            # Python-based E2E tests
-│   ├── test_*.py           # Test files
-│   └── vscode_helper.py    # VS Code automation helper
 ├── security/              # Security-focused tests
 ├── validation/            # Input validation tests
 ├── real-output-tests/     # Tests with real WSL
@@ -713,7 +677,6 @@ test/
 - [WebdriverIO VS Code Service](https://webdriver.io/docs/vscode-service)
 - [VS Code Extension Testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension)
 - [TDD Best Practices](https://martinfowler.com/bliki/TestDrivenDevelopment.html)
-- [Python E2E Testing Guide](./docs/testing/PYTHON_E2E_GUIDE.md)
 
 ---
 

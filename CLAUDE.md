@@ -43,29 +43,7 @@ code --extensionDevelopmentPath=. --new-window
 # OR press F5 in VS Code
 ```
 
-### Step 4a: Python E2E UI Testing (RECOMMENDED)
-```bash
-# Run Python-based E2E tests (runs on Windows from WSL)
-npm run test:e2e:python
-
-# Run specific test suites
-npm run test:e2e:python:activation
-npm run test:e2e:python:commands
-
-# Run single test for debugging
-./scripts/run-single-python-test.sh
-
-# Clean test artifacts
-npm run test:e2e:python:clean
-```
-
-**Python E2E Testing Requirements:**
-- Project MUST be located under `/mnt/c/...` (Windows-accessible path)
-- Python must be installed on Windows
-- VS Code must be installed on Windows
-- Tests will launch VS Code on Windows while running from WSL
-
-### Step 4b: WebdriverIO UI Testing (ALTERNATIVE)
+### Step 4a: WebdriverIO UI Testing (RECOMMENDED)
 ```bash
 # Run WebdriverIO tests (if Python tests fail)
 npm run test:e2e:windows
@@ -188,15 +166,9 @@ All WSL commands follow this secure pattern:
 
 ## Troubleshooting
 
-### Python E2E Tests
-- **VS Code crashes**: Remove `--disable-extensions` flag conflict in vscode_helper.py
-- **Tests timeout**: Increase timeout in conftest.py or test files
-- **Path errors**: Ensure project is under /mnt/c/ not ~/
-- **Import errors**: Run `cmd.exe /c "pip install -r test\\e2e-python\\requirements.txt"`
-
 ### WebdriverIO Tests
 - **Extension not loading**: Check for flag conflicts (--disable-extensions with --extensionDevelopmentPath)
-- **Multiple windows open**: Ensure proper cleanup in conftest.py
+- **Multiple windows open**: Ensure proper cleanup in test teardown
 - **ChromeDriver version mismatch**: Install matching version for VS Code
 
 ### Test Failures

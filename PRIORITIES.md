@@ -7,10 +7,10 @@ This document outlines the development priorities for VSC WSL Manager, organized
 **New automated setup process available!**
 ```bash
 # Set up your entire development environment
-python setup-environment.py
+npm run setup
 
 # Test the extension locally
-python scripts/test-local.py
+npm run test:local
 ```
 
 See [SETUP.md](docs/SETUP.md) for detailed setup instructions.
@@ -20,7 +20,7 @@ See [SETUP.md](docs/SETUP.md) for detailed setup instructions.
 **Goal**: Validate core functionality and refine features through rapid iteration.
 
 ### Immediate Blockers
-- [ ] Run environment setup script: `python setup-environment.py`
+- [ ] Run environment setup script: `npm run setup`
   - [ ] Validates all dependencies
   - [ ] Installs npm packages
   - [ ] Prompts for GitHub username and publisher name
@@ -41,7 +41,7 @@ See [SETUP.md](docs/SETUP.md) for detailed setup instructions.
 - [ ] Fix any UI/UX issues in tree view
 
 ### Local Testing Workflow
-- [ ] Use automated testing script: `python scripts/test-local.py`
+- [ ] Use automated testing script: `npm run test:local`
   - [ ] Compiles TypeScript
   - [ ] Runs unit tests
   - [ ] Packages extension
