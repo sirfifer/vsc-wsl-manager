@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { Logger } from '../utils/logger';
+import { DistributionRegistry } from '../distributionRegistry';
 
 const logger = Logger.getInstance();
 
@@ -75,6 +76,7 @@ export class DistroManager {
     private readonly distroStorePath: string;
     private readonly catalogPath: string;
     private catalog: DistroCatalog | null = null;
+    protected registry: DistributionRegistry; // Protected so EnhancedDistroManager can access
     
     constructor(storePath?: string) {
         // Use %USERPROFILE%/.vscode-wsl-manager/distros
@@ -82,10 +84,11 @@ export class DistroManager {
             process.env.USERPROFILE || process.env.HOME || '',
             '.vscode-wsl-manager'
         );
-        
+
         this.distroStorePath = path.join(baseDir, 'distros');
         this.catalogPath = path.join(this.distroStorePath, 'catalog.json');
-        
+        this.registry = new DistributionRegistry();
+
         this.ensureStorageExists();
         this.loadCatalog();
     }
@@ -178,18 +181,11 @@ export class DistroManager {
      * Get default distribution definitions
      */
     private getDefaultDistros(): DistroInfo[] {
-        return [
-            // Ubuntu Family
-            {
-                name: 'ubuntu-24.04',
-                displayName: 'Ubuntu 24.04 LTS',
-                description: 'Ubuntu 24.04 LTS (Noble Numbat) - Latest LTS',
-                version: '24.04',
-                architecture: 'x64',
-                sourceUrl: 'https://releases.ubuntu.com/24.04.3/ubuntu-24.04.3-wsl-amd64.wsl',
-                tags: ['ubuntu', 'lts', 'latest'],
-                size: 700 * 1024 * 1024
-            },
+        // Return empty array - rely on Microsoft Registry for distribution list
+        // Microsoft Registry provides official, validated URLs that are guaranteed to work
+        return [];
+
+        /* Removed hardcoded list - kept for reference:
             {
                 name: 'ubuntu-22.04',
                 displayName: 'Ubuntu 22.04 LTS',
@@ -287,27 +283,9 @@ export class DistroManager {
                 size: 75 * 1024 * 1024
             },
             
-            // Arch Family
-            {
-                name: 'archlinux',
-                displayName: 'Arch Linux',
-                description: 'Arch Linux - Rolling release for advanced users',
-                version: 'latest',
-                architecture: 'x64',
-                sourceUrl: 'https://mirror.rackspace.com/archlinux/iso/latest/archlinux-bootstrap-x86_64.tar.gz',
-                tags: ['arch', 'rolling', 'advanced'],
-                size: 150 * 1024 * 1024
-            },
-            {
-                name: 'manjaro',
-                displayName: 'Manjaro Linux',
-                description: 'Manjaro - User-friendly Arch-based distribution',
-                version: 'latest',
-                architecture: 'x64',
-                sourceUrl: 'https://github.com/manjaro/docker/raw/master/manjaro-base.tar.xz',
-                tags: ['manjaro', 'arch-based', 'user-friendly'],
-                size: 200 * 1024 * 1024
-            },
+            // Arch Family - REMOVED
+            // Arch Linux: URL format changed from .tar.gz to .tar.zst (not supported by WSL)
+            // Manjaro: Unreliable Docker image URLs
             
             // openSUSE Family
             {
@@ -417,12 +395,61 @@ export class DistroManager {
                 size: 120 * 1024 * 1024
             }
         ];
+        */
     }
     
+    /**
+     * Fetch distributions from Microsoft Registry and merge with local catalog
+     */
+    private async fetchAndMergeDistros(): Promise<void> {
+        try {
+            // Fetch from Microsoft Registry
+            const msDistributions = await this.registry.fetchAvailableDistributions();
+
+            // Convert to our format
+            const newDistros = msDistributions.map(ms => ({
+                name: ms.Name.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+                displayName: ms.FriendlyName || ms.Name,
+                description: `Official ${ms.FriendlyName || ms.Name} from Microsoft Store`,
+                version: 'latest', // Microsoft registry doesn't provide version info
+                architecture: 'x64' as const,
+                sourceUrl: ms.Amd64PackageUrl || ms.Amd64WslUrl || '',
+                tags: ['official', 'microsoft'],
+                available: false
+            })).filter(d => d.sourceUrl); // Only include distros with URLs
+
+            if (newDistros.length > 0) {
+                // Replace catalog with fresh data from Microsoft
+                this.catalog = {
+                    version: '1.0.0',
+                    updated: new Date().toISOString(),
+                    distributions: newDistros
+                };
+
+                // Check which ones are already downloaded
+                for (const distro of this.catalog.distributions) {
+                    const tarPath = path.join(this.distroStorePath, `${distro.name}.tar`);
+                    if (fs.existsSync(tarPath)) {
+                        distro.available = true;
+                        distro.filePath = tarPath;
+                    }
+                }
+
+                this.saveCatalog();
+                logger.info(`Updated catalog with ${newDistros.length} distributions from Microsoft Registry`);
+            }
+        } catch (error) {
+            logger.warn('Failed to fetch from Microsoft Registry, using cached catalog:', error as Error);
+            // Continue with existing catalog
+        }
+    }
+
     /**
      * List all available distros
      */
     async listDistros(): Promise<DistroInfo[]> {
+        // Refresh from Microsoft Registry
+        await this.fetchAndMergeDistros();
         if (!this.catalog) {
             this.loadCatalog();
         }

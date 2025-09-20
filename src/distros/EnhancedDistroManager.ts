@@ -15,13 +15,12 @@ const logger = Logger.getInstance();
  * EnhancedDistroManager extends DistroManager with dynamic distribution fetching
  */
 export class EnhancedDistroManager extends DistroManager {
-    private registry: DistributionRegistry;
     private lastRefresh: Date | null = null;
     private readonly REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour
 
     constructor(storePath?: string) {
         super(storePath);
-        this.registry = new DistributionRegistry();
+        // Use inherited registry from parent class
     }
 
     /**
