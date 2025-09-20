@@ -53,7 +53,7 @@ export class EnhancedDistroManager extends DistroManager {
      * Check if we should refresh from Microsoft
      */
     private shouldRefresh(): boolean {
-        if (!this.lastRefresh) return true;
+        if (!this.lastRefresh) {return true;}
         const age = Date.now() - this.lastRefresh.getTime();
         return age > this.REFRESH_INTERVAL;
     }

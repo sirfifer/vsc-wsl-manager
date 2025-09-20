@@ -138,7 +138,7 @@ export function activate(context: vscode.ExtensionContext) {
                     { placeHolder: 'Select distribution to download' }
                 );
 
-                if (!selected) return;
+                if (!selected) {return;}
 
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
@@ -194,20 +194,20 @@ export function activate(context: vscode.ExtensionContext) {
                     { placeHolder: 'Select distribution to create image from' }
                 );
 
-                if (!selectedDistro) return;
+                if (!selectedDistro) {return;}
 
                 const imageName = await vscode.window.showInputBox({
                     prompt: 'Enter name for the new WSL instance',
                     placeHolder: 'my-dev-environment',
                     validateInput: (value) => {
-                        if (!value) return 'Name is required';
+                        if (!value) {return 'Name is required';}
                         const validation = InputValidator.validateDistributionName(value);
-                        if (!validation.isValid) return validation.error;
+                        if (!validation.isValid) {return validation.error;}
                         return undefined;
                     }
                 });
 
-                if (!imageName) return;
+                if (!imageName) {return;}
 
                 const description = await vscode.window.showInputBox({
                     prompt: 'Enter description (optional)',
@@ -265,7 +265,7 @@ export function activate(context: vscode.ExtensionContext) {
                         { placeHolder: 'Select distribution to create image from' }
                     );
 
-                    if (!selected) return;
+                    if (!selected) {return;}
                     sourceDistroName = selected.distro.name;
                 }
 
@@ -273,14 +273,14 @@ export function activate(context: vscode.ExtensionContext) {
                     prompt: 'Enter name for the new WSL instance',
                     value: `${sourceDistroName}-instance`,
                     validateInput: (value) => {
-                        if (!value) return 'Name is required';
+                        if (!value) {return 'Name is required';}
                         const validation = InputValidator.validateDistributionName(value);
-                        if (!validation.isValid) return validation.error;
+                        if (!validation.isValid) {return validation.error;}
                         return undefined;
                     }
                 });
 
-                if (!newName) return;
+                if (!newName) {return;}
 
                 const description = await vscode.window.showInputBox({
                     prompt: 'Enter description (optional)',
@@ -367,7 +367,7 @@ export function activate(context: vscode.ExtensionContext) {
                         { placeHolder: 'Select distribution to delete' }
                     );
 
-                    if (!selected) return;
+                    if (!selected) {return;}
                     distroName = selected.distro.name;
                 }
 
@@ -377,7 +377,7 @@ export function activate(context: vscode.ExtensionContext) {
                     'Delete'
                 );
 
-                if (confirmation !== 'Delete') return;
+                if (confirmation !== 'Delete') {return;}
 
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
@@ -412,19 +412,19 @@ export function activate(context: vscode.ExtensionContext) {
                         })),
                         { placeHolder: 'Select image to edit' }
                     );
-                    if (!selected) return;
+                    if (!selected) {return;}
                     imageName = selected.image.name;
                 }
 
                 const image = await imageManager.getImageInfo(imageName!);
-                if (!image) return;
+                if (!image) {return;}
 
                 const newDisplayName = await vscode.window.showInputBox({
                     prompt: 'Display name (press Enter to keep current)',
                     value: image.displayName || image.name
                 });
 
-                if (!newDisplayName) return;
+                if (!newDisplayName) {return;}
 
                 const newDescription = await vscode.window.showInputBox({
                     prompt: 'Description (press Enter to keep current)',
@@ -442,7 +442,7 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                 );
 
-                if (!enabledChoice) return;
+                if (!enabledChoice) {return;}
 
                 await imageManager.updateImageProperties(imageName!, {
                     displayName: newDisplayName,
@@ -474,12 +474,12 @@ export function activate(context: vscode.ExtensionContext) {
                         })),
                         { placeHolder: 'Select image to toggle' }
                     );
-                    if (!selected) return;
+                    if (!selected) {return;}
                     imageName = selected.image.name;
                 }
 
                 const image = await imageManager.getImageInfo(imageName!);
-                if (!image) return;
+                if (!image) {return;}
 
                 await imageManager.updateImageProperties(imageName!, {
                     enabled: !image.enabled
@@ -521,7 +521,7 @@ export function activate(context: vscode.ExtensionContext) {
                         { placeHolder: 'Select image to delete' }
                     );
 
-                    if (!selected) return;
+                    if (!selected) {return;}
                     imageName = selected.image.name;
                 }
 
@@ -531,7 +531,7 @@ export function activate(context: vscode.ExtensionContext) {
                     'Delete'
                 );
 
-                if (confirmation !== 'Delete') return;
+                if (confirmation !== 'Delete') {return;}
 
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
@@ -571,21 +571,21 @@ export function activate(context: vscode.ExtensionContext) {
                     { placeHolder: 'Select a distribution to create an image from' }
                 );
 
-                if (!selectedDistro) return;
+                if (!selectedDistro) {return;}
 
                 // Get image name
                 const imageName = await vscode.window.showInputBox({
                     prompt: 'Enter a name for the new image',
                     value: `${selectedDistro.distro.name}-image`,
                     validateInput: (value) => {
-                        if (!value) return 'Name is required';
+                        if (!value) {return 'Name is required';}
                         const validation = InputValidator.validateDistributionName(value);
-                        if (!validation.isValid) return validation.error;
+                        if (!validation.isValid) {return validation.error;}
                         return undefined;
                     }
                 });
 
-                if (!imageName) return;
+                if (!imageName) {return;}
 
                 // Ask about scope
                 const currentWorkspace = vscode.workspace.workspaceFolders?.[0];
@@ -659,7 +659,7 @@ export function activate(context: vscode.ExtensionContext) {
                         { placeHolder: 'Select an image to clone' }
                     );
 
-                    if (!selectedImage) return;
+                    if (!selectedImage) {return;}
                     sourceImage = selectedImage.image;
                 }
 
@@ -668,14 +668,14 @@ export function activate(context: vscode.ExtensionContext) {
                     prompt: 'Enter a name for the cloned image',
                     value: `${sourceImage.name}-clone`,
                     validateInput: (value) => {
-                        if (!value) return 'Name is required';
+                        if (!value) {return 'Name is required';}
                         const validation = InputValidator.validateDistributionName(value);
-                        if (!validation.isValid) return validation.error;
+                        if (!validation.isValid) {return validation.error;}
                         return undefined;
                     }
                 });
 
-                if (!newImageName) return;
+                if (!newImageName) {return;}
 
                 // Ask about scope
                 const currentWorkspace = vscode.workspace.workspaceFolders?.[0];
@@ -743,21 +743,21 @@ export function activate(context: vscode.ExtensionContext) {
                     { placeHolder: 'Select an image to create a distribution from' }
                 );
 
-                if (!selectedImage) return;
+                if (!selectedImage) {return;}
 
                 // Get distribution name
                 const distroName = await vscode.window.showInputBox({
                     prompt: 'Enter a name for the new distribution',
                     value: `${selectedImage.image.name}-instance`,
                     validateInput: (value) => {
-                        if (!value) return 'Name is required';
+                        if (!value) {return 'Name is required';}
                         const validation = InputValidator.validateDistributionName(value);
-                        if (!validation.isValid) return validation.error;
+                        if (!validation.isValid) {return validation.error;}
                         return undefined;
                     }
                 });
 
-                if (!distroName) return;
+                if (!distroName) {return;}
 
                 // Create distribution (by cloning the image)
                 await vscode.window.withProgress({
@@ -796,7 +796,7 @@ export function activate(context: vscode.ExtensionContext) {
                         { placeHolder: 'Select WSL instance to open terminal' }
                     );
 
-                    if (!selected) return;
+                    if (!selected) {return;}
                     imageName = selected.name;
                 }
 
@@ -825,20 +825,20 @@ export function activate(context: vscode.ExtensionContext) {
                     title: 'Select TAR file to import'
                 });
 
-                if (!tarFile || tarFile.length === 0) return;
+                if (!tarFile || tarFile.length === 0) {return;}
 
                 const distroName = await vscode.window.showInputBox({
                     prompt: 'Enter name for the imported distribution',
                     placeHolder: 'imported-distro',
                     validateInput: (value) => {
-                        if (!value) return 'Name is required';
+                        if (!value) {return 'Name is required';}
                         const validation = InputValidator.validateDistributionName(value);
-                        if (!validation.isValid) return validation.error;
+                        if (!validation.isValid) {return validation.error;}
                         return undefined;
                     }
                 });
 
-                if (!distroName) return;
+                if (!distroName) {return;}
 
                 const displayName = await vscode.window.showInputBox({
                     prompt: 'Enter display name',
@@ -889,7 +889,7 @@ export function activate(context: vscode.ExtensionContext) {
                     { placeHolder: 'Select WSL instance to export' }
                 );
 
-                if (!selected) return;
+                if (!selected) {return;}
 
                 const saveFile = await vscode.window.showSaveDialog({
                     defaultUri: vscode.Uri.file(`${selected.name}.tar`),
@@ -899,7 +899,7 @@ export function activate(context: vscode.ExtensionContext) {
                     title: 'Export WSL instance'
                 });
 
-                if (!saveFile) return;
+                if (!saveFile) {return;}
 
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
@@ -1142,7 +1142,7 @@ export function deactivate() {
  * Format bytes to human readable string
  */
 function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {return '0 B';}
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));

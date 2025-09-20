@@ -5,6 +5,9 @@
 
 import * as vscode from 'vscode';
 
+// Create a dedicated output channel for error details
+const errorOutputChannel = vscode.window.createOutputChannel('WSL Manager Errors');
+
 /**
  * Custom error types for specific WSL scenarios
  */
@@ -254,8 +257,8 @@ export class ErrorHandler {
      */
     static async showError(error: any, operation?: string): Promise<void> {
         const wslError = error instanceof WSLError ? error : this.createError(error);
-        
-        const message = operation 
+
+        const message = operation
             ? `Failed to ${operation}: ${wslError.message}`
             : wslError.message;
 
@@ -267,9 +270,12 @@ export class ErrorHandler {
             stack: error?.stack
         });
 
+        // Log detailed error to output channel
+        this.logErrorToChannel(wslError, operation, error);
+
         // Show error with recovery actions
         if (wslError.recoveryActions && wslError.recoveryActions.length > 0) {
-            const actions = ['Show Details', ...wslError.recoveryActions.slice(0, 2)];
+            const actions = ['Show Details', 'Copy Error', ...wslError.recoveryActions.slice(0, 1)];
             const selection = await vscode.window.showErrorMessage(
                 message,
                 ...actions
@@ -277,30 +283,119 @@ export class ErrorHandler {
 
             if (selection === 'Show Details') {
                 this.showDetailedError(wslError);
+            } else if (selection === 'Copy Error') {
+                this.copyErrorToClipboard(wslError, operation, error);
             } else if (selection && wslError.recoveryActions.includes(selection)) {
                 this.executeRecoveryAction(selection);
             }
         } else {
-            vscode.window.showErrorMessage(message);
+            const selection = await vscode.window.showErrorMessage(
+                message,
+                'Show Details',
+                'Copy Error'
+            );
+
+            if (selection === 'Show Details') {
+                this.showDetailedError(wslError);
+            } else if (selection === 'Copy Error') {
+                this.copyErrorToClipboard(wslError, operation, error);
+            }
         }
+    }
+
+    /**
+     * Log error details to output channel
+     */
+    private static logErrorToChannel(error: WSLError, operation?: string, originalError?: any): void {
+        errorOutputChannel.appendLine('='.repeat(80));
+        errorOutputChannel.appendLine(`ERROR OCCURRED AT: ${new Date().toISOString()}`);
+        errorOutputChannel.appendLine('='.repeat(80));
+
+        if (operation) {
+            errorOutputChannel.appendLine(`Operation: ${operation}`);
+        }
+
+        errorOutputChannel.appendLine(`Error Type: ${error.type}`);
+        errorOutputChannel.appendLine(`Message: ${error.message}`);
+
+        if (error.details) {
+            errorOutputChannel.appendLine('');
+            errorOutputChannel.appendLine('Details:');
+            errorOutputChannel.appendLine(error.details);
+        }
+
+        if (error.recoveryActions && error.recoveryActions.length > 0) {
+            errorOutputChannel.appendLine('');
+            errorOutputChannel.appendLine('Recovery Actions:');
+            error.recoveryActions.forEach(action => {
+                errorOutputChannel.appendLine(`  - ${action}`);
+            });
+        }
+
+        if (originalError?.stack) {
+            errorOutputChannel.appendLine('');
+            errorOutputChannel.appendLine('Stack Trace:');
+            errorOutputChannel.appendLine(originalError.stack);
+        }
+
+        // If it's a download error, include the URL
+        if (error.type === ErrorType.DOWNLOAD_FAILED && originalError?.url) {
+            errorOutputChannel.appendLine('');
+            errorOutputChannel.appendLine(`Download URL: ${originalError.url}`);
+        }
+
+        errorOutputChannel.appendLine('');
+        errorOutputChannel.appendLine('='.repeat(80));
+        errorOutputChannel.appendLine('');
     }
 
     /**
      * Show detailed error information
      */
     private static showDetailedError(error: WSLError): void {
-        const details = `
-**Error Type:** ${error.type}
+        // Show the output channel instead of modal dialog
+        errorOutputChannel.show(true);
 
-**Message:** ${error.message}
+        // Also show a message indicating where to find details
+        vscode.window.showInformationMessage(
+            'Error details have been logged to the "WSL Manager Errors" output channel. ' +
+            'You can copy the error details from there.',
+            'Open Output Channel'
+        ).then(selection => {
+            if (selection === 'Open Output Channel') {
+                errorOutputChannel.show(true);
+            }
+        });
+    }
 
-**Details:** ${error.details || 'No additional details'}
+    /**
+     * Copy error details to clipboard
+     */
+    private static async copyErrorToClipboard(error: WSLError, operation?: string, originalError?: any): Promise<void> {
+        const errorText = [
+            '### WSL Manager Error Report',
+            '',
+            `**Date:** ${new Date().toISOString()}`,
+            operation ? `**Operation:** ${operation}` : '',
+            `**Error Type:** ${error.type}`,
+            `**Message:** ${error.message}`,
+            '',
+            '**Details:**',
+            '```',
+            error.details || 'No additional details',
+            '```',
+            '',
+            error.recoveryActions && error.recoveryActions.length > 0 ? '**Recovery Actions:**' : '',
+            ...(error.recoveryActions || []).map(a => `- ${a}`),
+            '',
+            originalError?.stack ? '**Stack Trace:**' : '',
+            originalError?.stack ? '```' : '',
+            originalError?.stack || '',
+            originalError?.stack ? '```' : ''
+        ].filter(line => line !== '').join('\n');
 
-**Recovery Actions:**
-${error.recoveryActions ? error.recoveryActions.map(a => `- ${a}`).join('\n') : 'No recovery actions available'}
-        `.trim();
-
-        vscode.window.showInformationMessage(details, { modal: true });
+        await vscode.env.clipboard.writeText(errorText);
+        vscode.window.showInformationMessage('Error details copied to clipboard');
     }
 
     /**

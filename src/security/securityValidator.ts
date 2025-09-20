@@ -260,13 +260,13 @@ export class SecurityValidator {
         }
         
         // Extract the main command from WSL command
-        if (command.includes('--list')) return 'list';
-        if (command.includes('--import')) return 'import';
-        if (command.includes('--export')) return 'export';
-        if (command.includes('--unregister')) return 'delete';
-        if (command.includes('--terminate')) return 'terminate';
-        if (command.includes('--set-default')) return 'set-default';
-        if (command.includes('-d') || command.includes('--distribution')) return 'command';
+        if (command.includes('--list')) {return 'list';}
+        if (command.includes('--import')) {return 'import';}
+        if (command.includes('--export')) {return 'export';}
+        if (command.includes('--unregister')) {return 'delete';}
+        if (command.includes('--terminate')) {return 'terminate';}
+        if (command.includes('--set-default')) {return 'set-default';}
+        if (command.includes('-d') || command.includes('--distribution')) {return 'command';}
         
         return 'unknown';
     }

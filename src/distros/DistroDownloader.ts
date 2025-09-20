@@ -85,6 +85,55 @@ export class DistroDownloader {
     }
     
     /**
+     * Validate a URL is reachable before attempting download
+     */
+    async validateUrl(url: string): Promise<{ valid: boolean; statusCode?: number; error?: string }> {
+        return new Promise((resolve) => {
+            const parsedUrl = new URL(url);
+            const client = parsedUrl.protocol === 'https:' ? https : http;
+
+            const req = client.request({
+                hostname: parsedUrl.hostname,
+                port: parsedUrl.port,
+                path: parsedUrl.pathname + parsedUrl.search,
+                method: 'HEAD',
+                timeout: 10000,
+                headers: {
+                    'User-Agent': 'VSC-WSL-Manager/1.0'
+                }
+            }, (res) => {
+                // Handle redirects
+                if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                    this.validateUrl(res.headers.location).then(resolve);
+                    return;
+                }
+
+                resolve({
+                    valid: res.statusCode === 200,
+                    statusCode: res.statusCode
+                });
+            });
+
+            req.on('error', (error) => {
+                resolve({
+                    valid: false,
+                    error: error.message
+                });
+            });
+
+            req.on('timeout', () => {
+                req.destroy();
+                resolve({
+                    valid: false,
+                    error: 'Request timeout'
+                });
+            });
+
+            req.end();
+        });
+    }
+
+    /**
      * Download a distro from its source URL
      */
     async downloadDistro(
@@ -92,7 +141,7 @@ export class DistroDownloader {
         options: DownloadOptions = {}
     ): Promise<void> {
         logger.info(`Starting download of distro: ${distroName}`);
-        
+
         // Get distro info
         const distro = await this.distroManager.getDistro(distroName);
         if (!distro) {
@@ -102,12 +151,31 @@ export class DistroDownloader {
         if (!distro.sourceUrl) {
             throw new Error(`No download URL for distro: ${distroName}`);
         }
-        
+
+        // Validate URL before attempting download
+        logger.info(`Validating URL for ${distroName}: ${distro.sourceUrl}`);
+        const validation = await this.validateUrl(distro.sourceUrl);
+
+        if (!validation.valid) {
+            const errorMsg = validation.error
+                ? `URL validation failed: ${validation.error}`
+                : `URL returned status ${validation.statusCode}`;
+
+            logger.error(`${errorMsg} for ${distroName}`);
+
+            const error: any = new Error(`Cannot reach download server for ${distroName}. ${errorMsg}`);
+            error.url = distro.sourceUrl;
+            error.statusCode = validation.statusCode;
+            throw error;
+        }
+
+        logger.info(`URL validated successfully for ${distroName}`);
+
         // Check if already downloaded
         const targetPath = this.distroManager.getDistroPath(distroName);
         if (fs.existsSync(targetPath) && !options.overwrite) {
             logger.info(`Distro already downloaded: ${distroName}`);
-            
+
             // Verify if requested
             if (options.verifyChecksum && distro.sha256) {
                 const isValid = await this.verifyFile(targetPath, distro.sha256);
@@ -115,7 +183,7 @@ export class DistroDownloader {
                     throw new Error('Downloaded file checksum mismatch');
                 }
             }
-            
+
             return;
         }
         

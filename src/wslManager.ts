@@ -104,7 +104,7 @@ export class WSLManager {
         // Skip header line
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i];
-            if (!line) continue;
+            if (!line) {continue;}
 
             // Parse WSL output format
             const isDefault = line.startsWith('*');

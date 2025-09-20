@@ -114,7 +114,7 @@ export class Logger {
     }
     
     private sanitizeData(data: any): any {
-        if (!data) return data;
+        if (!data) {return data;}
         
         // List of sensitive keys to redact
         const sensitiveKeys = ['password', 'token', 'key', 'secret', 'auth', 'credential'];
@@ -145,7 +145,7 @@ export class Logger {
     }
     
     private formatError(error: any): string {
-        if (!error) return 'Unknown error';
+        if (!error) {return 'Unknown error';}
         
         if (error instanceof Error) {
             const stack = error.stack ? error.stack.split('\n').slice(0, 3).join(' | ') : '';
@@ -156,7 +156,7 @@ export class Logger {
     }
     
     private async writeToFile(message: string): Promise<void> {
-        if (!this.fileLoggingEnabled || !this.logFilePath) return;
+        if (!this.fileLoggingEnabled || !this.logFilePath) {return;}
         
         try {
             const messageSize = Buffer.byteLength(message + '\n', 'utf8');
@@ -176,7 +176,7 @@ export class Logger {
     }
     
     private async rotateLogFile(): Promise<void> {
-        if (!this.logFilePath) return;
+        if (!this.logFilePath) {return;}
         
         try {
             const dir = path.dirname(this.logFilePath);
@@ -207,7 +207,7 @@ export class Logger {
     }
     
     private log(level: LogLevel, message: string, context?: Record<string, any>, error?: any): void {
-        if (!this.shouldLog(level)) return;
+        if (!this.shouldLog(level)) {return;}
         
         const entry: LogEntry = {
             timestamp: new Date().toISOString(),

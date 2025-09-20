@@ -170,7 +170,7 @@ export class WSLTerminalProfileManager {
 
         const visibleImages = images.filter(img => {
             // Check if enabled
-            if (img.enabled === false) return false;
+            if (img.enabled === false) {return false;}
 
             // Check scope
             if (!img.scope || img.scope.type === 'global') {

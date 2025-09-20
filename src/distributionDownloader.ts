@@ -406,7 +406,7 @@ export class DistributionDownloader {
             logger.debug(`Checking for ${distributionName} in: ${distributions.join(', ')}`);
             
             const found = distributions.some(dist => {
-                if (!dist || dist === '') return false;
+                if (!dist || dist === '') {return false;}
                 // Case-insensitive partial match
                 return dist.toLowerCase().includes(distributionName.toLowerCase()) ||
                        distributionName.toLowerCase().includes(dist.toLowerCase());

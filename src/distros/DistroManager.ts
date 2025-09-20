@@ -136,7 +136,7 @@ export class DistroManager {
      * Merge default distros into catalog if missing
      */
     private mergeDefaultDistros(): void {
-        if (!this.catalog) return;
+        if (!this.catalog) {return;}
         
         const defaultDistros = this.getDefaultDistros();
         const existingNames = new Set(this.catalog.distributions.map(d => d.name));
