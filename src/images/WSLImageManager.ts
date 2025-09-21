@@ -233,16 +233,36 @@ export class WSLImageManager {
         }
         
         try {
+            // Check if the file is actually TAR or a misnamed APPX
+            let importFilePath = distro.filePath;
+            const isActuallyTar = await this.checkIfTarFormat(distro.filePath);
+
+            if (!isActuallyTar) {
+                logger.warn(`File ${distro.filePath} is not TAR format, attempting to extract TAR from APPX...`);
+                const extractedPath = await this.extractTarFromMisnamedAppx(distro.filePath);
+                if (extractedPath) {
+                    importFilePath = extractedPath;
+                    logger.info(`Successfully extracted TAR file for import`);
+                } else {
+                    throw new Error(`Failed to extract TAR from ${distro.filePath}. The file may be corrupted.`);
+                }
+            }
+
             // Import the distro as a new WSL distribution
             logger.debug(`Importing ${distroName} to ${imageName} at ${installPath}`);
             await CommandBuilder.executeWSL([
                 '--import',
                 imageName,
                 installPath,
-                distro.filePath,
+                importFilePath,
                 '--version',
                 String(options.wslVersion || 2)
             ], { timeout: 300000 } as CommandOptions); // 5 minutes
+
+            // Clean up extracted file if we created one
+            if (importFilePath !== distro.filePath && fs.existsSync(importFilePath)) {
+                fs.unlinkSync(importFilePath);
+            }
             
             // Create and write manifest
             const manifest = this.manifestManager.createDistroManifest(
@@ -552,5 +572,118 @@ export class WSLImageManager {
     async imageExists(imageName: string): Promise<boolean> {
         const distros = await this.listWSLDistributions();
         return distros.includes(imageName);
+    }
+
+    /**
+     * Check if a file is actually TAR format or misnamed APPX/ZIP
+     */
+    private async checkIfTarFormat(filePath: string): Promise<boolean> {
+        try {
+            // Read first few bytes to check file signature
+            const fd = fs.openSync(filePath, 'r');
+            const buffer = Buffer.alloc(512);
+            fs.readSync(fd, buffer, 0, 512, 0);
+            fs.closeSync(fd);
+
+            // Check for TAR magic number at offset 257
+            const tarMagic = buffer.toString('ascii', 257, 263);
+            if (tarMagic === 'ustar\0' || tarMagic === 'ustar ') {
+                return true; // It's a TAR file
+            }
+
+            // Check for GZIP header (tar.gz files)
+            if (buffer[0] === 0x1f && buffer[1] === 0x8b) {
+                return true; // It's a GZIP file (likely tar.gz)
+            }
+
+            // Check for ZIP/APPX header
+            if (buffer[0] === 0x50 && buffer[1] === 0x4b) {
+                return false; // It's a ZIP/APPX file
+            }
+
+            // If we can't determine, try using tar command
+            const { execSync } = require('child_process');
+            try {
+                execSync(`tar -tzf "${filePath}" > /dev/null 2>&1`, { stdio: 'pipe' });
+                return true;
+            } catch {
+                return false;
+            }
+        } catch (error) {
+            logger.warn(`Could not determine file format for ${filePath}: ${error}`);
+            return true; // Assume it's TAR and let WSL fail if it's not
+        }
+    }
+
+    /**
+     * Extract TAR from a misnamed APPX file
+     */
+    private async extractTarFromMisnamedAppx(appxPath: string): Promise<string | null> {
+        try {
+            const { execSync } = require('child_process');
+            const tempDir = path.join(path.dirname(appxPath), 'appx_extract_' + Date.now());
+            const extractedTarPath = appxPath.replace(/\.tar$/, '.extracted.tar');
+
+            // Create temp directory
+            fs.mkdirSync(tempDir, { recursive: true });
+
+            try {
+                // Extract using unzip (APPX is ZIP format)
+                logger.debug(`Extracting APPX from ${appxPath} to ${tempDir}`);
+                execSync(`unzip -q "${appxPath}" -d "${tempDir}"`, { stdio: 'pipe' });
+            } catch (unzipError) {
+                // Try with tar as fallback
+                logger.debug('Unzip failed, trying tar...');
+                execSync(`tar -xf "${appxPath}" -C "${tempDir}"`, { stdio: 'pipe' });
+            }
+
+            // Find TAR file in extracted contents
+            const findTarFile = (dir: string): string | null => {
+                const items = fs.readdirSync(dir);
+                for (const item of items) {
+                    const fullPath = path.join(dir, item);
+                    const stat = fs.statSync(fullPath);
+
+                    if (stat.isDirectory()) {
+                        const found = findTarFile(fullPath);
+                        if (found) return found;
+                    } else if (item.toLowerCase().endsWith('.tar.gz') || item.toLowerCase().endsWith('.tar')) {
+                        // Prefer install.tar.gz if available
+                        if (item.toLowerCase().includes('install')) {
+                            return fullPath;
+                        }
+                        // Return first TAR found if no install.tar.gz
+                        return fullPath;
+                    }
+                }
+                return null;
+            };
+
+            const tarFile = findTarFile(tempDir);
+
+            if (tarFile) {
+                logger.info(`Found TAR file: ${path.basename(tarFile)}`);
+
+                // Move to final location
+                if (fs.existsSync(extractedTarPath)) {
+                    fs.unlinkSync(extractedTarPath);
+                }
+                fs.renameSync(tarFile, extractedTarPath);
+
+                // Clean up temp directory
+                fs.rmSync(tempDir, { recursive: true, force: true });
+
+                return extractedTarPath;
+            }
+
+            // Clean up temp directory
+            fs.rmSync(tempDir, { recursive: true, force: true });
+            logger.error('No TAR file found in APPX package');
+            return null;
+
+        } catch (error: any) {
+            logger.error(`Failed to extract TAR from misnamed APPX: ${error.message}`);
+            return null;
+        }
     }
 }
