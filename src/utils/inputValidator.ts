@@ -364,4 +364,105 @@ export class InputValidator {
     static allValid(results: { [key: string]: ValidationResult }): boolean {
         return Object.values(results).every(result => result.isValid);
     }
+
+    /**
+     * Validate a command string
+     * @param command Command to validate
+     * @returns Validation result
+     */
+    static validateCommand(command: string): ValidationResult {
+        if (!command || typeof command !== 'string') {
+            return {
+                isValid: false,
+                error: 'Command cannot be empty'
+            };
+        }
+
+        const trimmedCommand = command.trim();
+
+        if (trimmedCommand.length === 0) {
+            return {
+                isValid: false,
+                error: 'Command cannot be empty'
+            };
+        }
+
+        // Check for command chaining
+        if (trimmedCommand.includes('&&') || trimmedCommand.includes('||')) {
+            return {
+                isValid: false,
+                error: 'Command chaining is not allowed'
+            };
+        }
+
+        // Check for dangerous characters
+        const dangerousChars = /[;&|<>`$(){}[\]]/;
+        if (dangerousChars.test(trimmedCommand)) {
+            return {
+                isValid: false,
+                error: 'Command contains dangerous characters'
+            };
+        }
+
+        return {
+            isValid: true,
+            sanitizedValue: trimmedCommand
+        };
+    }
+
+    /**
+     * Sanitize input string by removing dangerous characters
+     * @param input Input to sanitize
+     * @returns Sanitized string
+     */
+    static sanitizeInput(input: string): string {
+        if (!input || typeof input !== 'string') {
+            return '';
+        }
+
+        // Remove control characters and trim
+        return input
+            .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+            .trim();
+    }
+
+    /**
+     * Check if a path is valid for Windows
+     * @param path Path to validate
+     * @returns True if valid Windows path
+     */
+    static isValidWindowsPath(path: string): boolean {
+        if (!path || typeof path !== 'string') {
+            return false;
+        }
+
+        // Windows path pattern (drive letter or UNC)
+        const windowsPathPattern = /^([a-zA-Z]:[\\/]|\\\\)/;
+
+        // Check for invalid characters in Windows paths
+        const invalidChars = /[<>:"|?*]/;
+        const pathWithoutDrive = path.replace(/^[a-zA-Z]:/, '');
+
+        return windowsPathPattern.test(path) && !invalidChars.test(pathWithoutDrive);
+    }
+
+    /**
+     * Check if a path is valid for Linux
+     * @param path Path to validate
+     * @returns True if valid Linux path
+     */
+    static isValidLinuxPath(path: string): boolean {
+        if (!path || typeof path !== 'string') {
+            return false;
+        }
+
+        // Check for null bytes
+        if (path.includes('\0')) {
+            return false;
+        }
+
+        // Linux paths typically start with / or are relative
+        // Almost any character is valid except null byte
+        return path.length > 0 && !path.includes('\0');
+    }
 }

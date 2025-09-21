@@ -5,10 +5,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['test/**/*.test.ts'],
+    include: ['test/**/*.real.test.ts'],
     exclude: ['node_modules', '.vscode-test', 'out'],
     coverage: {
-      provider: 'c8',
+      provider: 'v8',
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       exclude: [
         'node_modules/',

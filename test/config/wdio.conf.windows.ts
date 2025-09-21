@@ -1,11 +1,11 @@
 import type { Options } from '@wdio/types';
 import * as path from 'path';
 import * as fs from 'fs';
-import { 
-    ensureWindowsPath, 
-    findCodeExe, 
-    findChromeDriverWin 
-} from './test/helpers/paths';
+import {
+    ensureWindowsPath,
+    findCodeExe,
+    findChromeDriverWin
+} from '../helpers/paths';
 
 // Ensure we're on a Windows mount
 const repoRoot = process.cwd();
