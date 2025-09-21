@@ -50,13 +50,17 @@ export class DistroTreeItem extends vscode.TreeItem {
     
     private makeDescription(): string {
         const parts = [this.distro.version];
-        
-        if (this.distro.available) {
-            parts.push('✓');
-        } else if (this.distro.size) {
+
+        // Always show size if available
+        if (this.distro.size) {
             parts.push(this.formatSize(this.distro.size));
         }
-        
+
+        // Show download status
+        if (this.distro.available) {
+            parts.push('✓');
+        }
+
         return parts.join(' • ');
     }
     

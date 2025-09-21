@@ -215,9 +215,10 @@ export class DistroDownloader {
             }
             
             // Check if this is an APPX/AppxBundle file that needs extraction
-            const fileExt = path.extname(tempPath).toLowerCase();
-            if (fileExt === '.appx' || fileExt === '.appxbundle') {
-                logger.info(`Extracting TAR from ${fileExt} package...`);
+            // Use the URL extension, not the temp file extension
+            const urlExt = path.extname(new URL(distro.sourceUrl).pathname).toLowerCase();
+            if (urlExt === '.appx' || urlExt === '.appxbundle') {
+                logger.info(`Extracting TAR from ${urlExt} package...`);
                 const extractedPath = await this.extractTarFromAppx(tempPath, targetPath);
 
                 // Clean up the APPX file
