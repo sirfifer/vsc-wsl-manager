@@ -13,6 +13,8 @@ import { ManifestManager } from '../manifest/ManifestManager';
 import { DistroManager } from '../distros/DistroManager';
 import { Manifest, LayerType } from '../manifest/ManifestTypes';
 import { v4 as uuidv4 } from 'uuid';
+import { CrossPlatformCommandExecutor } from '../utils/commandExecutor';
+import { PLATFORM } from '../utils/platform';
 
 const logger = Logger.getInstance();
 
@@ -616,25 +618,60 @@ export class WSLImageManager {
     }
 
     /**
-     * Extract TAR from a misnamed APPX file
+     * Extract TAR from a misnamed APPX file (cross-platform)
      */
     private async extractTarFromMisnamedAppx(appxPath: string): Promise<string | null> {
         try {
-            const { execSync } = require('child_process');
+            const executor = new CrossPlatformCommandExecutor();
             const tempDir = path.join(path.dirname(appxPath), 'appx_extract_' + Date.now());
             const extractedTarPath = appxPath.replace(/\.tar$/, '.extracted.tar');
 
             // Create temp directory
             fs.mkdirSync(tempDir, { recursive: true });
 
+            logger.debug(`Extracting APPX from ${appxPath} to ${tempDir}`);
+
             try {
-                // Extract using unzip (APPX is ZIP format)
-                logger.debug(`Extracting APPX from ${appxPath} to ${tempDir}`);
-                execSync(`unzip -q "${appxPath}" -d "${tempDir}"`, { stdio: 'pipe' });
-            } catch (unzipError) {
-                // Try with tar as fallback
-                logger.debug('Unzip failed, trying tar...');
-                execSync(`tar -xf "${appxPath}" -C "${tempDir}"`, { stdio: 'pipe' });
+                if (PLATFORM.isWindows) {
+                    // Windows 10/11 has tar.exe built-in which can handle both TAR and ZIP
+                    logger.debug('Using Windows tar.exe for extraction');
+                    const result = await executor.executeCommand('tar.exe', [
+                        '-xf', appxPath,
+                        '-C', tempDir
+                    ]);
+
+                    if (result.exitCode !== 0) {
+                        throw new Error(`tar.exe failed: ${result.stderr}`);
+                    }
+                } else {
+                    // Linux/WSL: try unzip first, then tar
+                    if (await executor.isCommandAvailable('unzip')) {
+                        logger.debug('Using unzip for extraction');
+                        const result = await executor.executeCommand('unzip', [
+                            '-q', appxPath,
+                            '-d', tempDir
+                        ]);
+
+                        if (result.exitCode !== 0) {
+                            throw new Error(`unzip failed: ${result.stderr}`);
+                        }
+                    } else {
+                        logger.debug('Using tar for extraction');
+                        const result = await executor.executeCommand('tar', [
+                            '-xf', appxPath,
+                            '-C', tempDir
+                        ]);
+
+                        if (result.exitCode !== 0) {
+                            throw new Error(`tar failed: ${result.stderr}`);
+                        }
+                    }
+                }
+            } catch (extractError: any) {
+                logger.error(`Extraction failed: ${extractError.message}`);
+                // Clean up temp directory
+                fs.rmSync(tempDir, { recursive: true, force: true });
+                throw extractError;
             }
 
             // Find TAR file in extracted contents

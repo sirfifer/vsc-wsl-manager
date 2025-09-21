@@ -13,6 +13,8 @@ import * as crypto from 'crypto';
 import { URL } from 'url';
 import { Logger } from '../utils/logger';
 import { DistroManager, DistroInfo } from './DistroManager';
+import { CrossPlatformCommandExecutor } from '../utils/commandExecutor';
+import { PLATFORM } from '../utils/platform';
 
 const logger = Logger.getInstance();
 
@@ -270,32 +272,63 @@ export class DistroDownloader {
     }
     
     /**
-     * Extract TAR file from APPX/AppxBundle package
+     * Extract TAR file from APPX/AppxBundle package (cross-platform)
      * @param appxPath Path to the APPX file
      * @param targetPath Desired path for the extracted TAR file
      * @returns Path to the extracted TAR file, or null if extraction failed
      */
     private async extractTarFromAppx(appxPath: string, targetPath: string): Promise<string | null> {
         try {
-            // Use unzip command (available on most systems)
-            const { execSync } = require('child_process');
+            const executor = new CrossPlatformCommandExecutor();
             const tempDir = path.join(path.dirname(appxPath), 'appx_extract_' + Date.now());
 
             // Create temp directory
             fs.mkdirSync(tempDir, { recursive: true });
 
-            // Extract using unzip or tar (APPX is basically a ZIP file)
+            logger.debug(`Extracting APPX package from ${appxPath}`);
+
+            // Extract based on platform
             try {
-                // Try unzip first
-                execSync(`unzip -q "${appxPath}" -d "${tempDir}"`, { stdio: 'pipe' });
-            } catch {
-                // Try using tar as fallback
-                try {
-                    execSync(`tar -xf "${appxPath}" -C "${tempDir}"`, { stdio: 'pipe' });
-                } catch (error) {
-                    logger.error('Failed to extract APPX using unzip or tar');
-                    throw error;
+                if (PLATFORM.isWindows) {
+                    // Windows 10/11 has tar.exe built-in which can handle both TAR and ZIP
+                    logger.debug('Using Windows tar.exe for APPX extraction');
+                    const result = await executor.executeCommand('tar.exe', [
+                        '-xf', appxPath,
+                        '-C', tempDir
+                    ]);
+
+                    if (result.exitCode !== 0) {
+                        throw new Error(`tar.exe extraction failed: ${result.stderr}`);
+                    }
+                } else {
+                    // Linux/WSL: try unzip first, then tar
+                    if (await executor.isCommandAvailable('unzip')) {
+                        logger.debug('Using unzip for APPX extraction');
+                        const result = await executor.executeCommand('unzip', [
+                            '-q', appxPath,
+                            '-d', tempDir
+                        ]);
+
+                        if (result.exitCode !== 0) {
+                            throw new Error(`unzip extraction failed: ${result.stderr}`);
+                        }
+                    } else {
+                        logger.debug('Using tar for APPX extraction');
+                        const result = await executor.executeCommand('tar', [
+                            '-xf', appxPath,
+                            '-C', tempDir
+                        ]);
+
+                        if (result.exitCode !== 0) {
+                            throw new Error(`tar extraction failed: ${result.stderr}`);
+                        }
+                    }
                 }
+            } catch (extractError: any) {
+                logger.error(`APPX extraction failed: ${extractError.message}`);
+                // Clean up temp directory
+                fs.rmSync(tempDir, { recursive: true, force: true });
+                throw extractError;
             }
 
             // Find the TAR file (usually install.tar.gz or similar)
