@@ -33,8 +33,17 @@ export class InputValidator {
     /**
      * Minimum length for distribution names
      */
-    private static readonly MIN_DISTRIBUTION_NAME_LENGTH = 1;
-    
+    private static readonly MIN_DISTRIBUTION_NAME_LENGTH = 3;
+
+    /**
+     * Windows reserved names
+     */
+    private static readonly WINDOWS_RESERVED_NAMES = [
+        'CON', 'PRN', 'AUX', 'NUL',
+        'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
+        'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
+    ];
+
     /**
      * Dangerous path patterns to detect
      */
@@ -45,7 +54,12 @@ export class InputValidator {
         /\$\(.*\)/,          // Command substitution
         /`.*`/,              // Command substitution
         /[;&|<>]/,           // Shell operators
-        /\x00/               // Null bytes
+        /\x00/,              // Null bytes
+        /^\\\\/, // UNC paths
+        /^\/\//,             // Network paths
+        /^file:\/\//,        // File protocol
+        /^smb:\/\//,         // SMB protocol
+        /%2e%2e/i            // URL encoded traversal
     ];
     
     /**
@@ -96,7 +110,17 @@ export class InputValidator {
                 error: 'Distribution name is reserved'
             };
         }
-        
+
+        // Check for Windows reserved names
+        const upperName = trimmedName.toUpperCase();
+        const baseNameUpper = upperName.split('.')[0]; // Remove extension for check
+        if (this.WINDOWS_RESERVED_NAMES.includes(baseNameUpper)) {
+            return {
+                isValid: false,
+                error: 'Distribution name uses a Windows reserved name'
+            };
+        }
+
         return {
             isValid: true,
             sanitizedValue: trimmedName
@@ -145,7 +169,23 @@ export class InputValidator {
                 };
             }
         }
-        
+
+        // Additional check for dangerous shell characters (but allow parentheses for paths like "My Files (Backup)")
+        if (/[;&|`${}[\]<>\n\r]/.test(trimmedPath)) {
+            return {
+                isValid: false,
+                error: 'File path contains dangerous characters'
+            };
+        }
+
+        // Check for null bytes
+        if (trimmedPath.includes('\0')) {
+            return {
+                isValid: false,
+                error: 'File path contains null bytes'
+            };
+        }
+
         // Normalize the path
         const normalizedPath = path.normalize(trimmedPath);
         
@@ -276,8 +316,8 @@ export class InputValidator {
             };
         }
         
-        // Check each parameter
-        const dangerousChars = /[;&|`$(){}[\]<>\\n\\r]/;
+        // Check each parameter (allow parentheses for function calls)
+        const dangerousChars = /[;&|`${}[\]<>\\n\\r]/;
         for (let i = 0; i < params.length; i++) {
             const param = params[i];
             
@@ -387,16 +427,40 @@ export class InputValidator {
             };
         }
 
+        // Allow wsl.exe itself as a command
+        if (trimmedCommand === 'wsl.exe' || trimmedCommand === 'wsl') {
+            return {
+                isValid: true,
+                sanitizedValue: trimmedCommand
+            };
+        }
+
         // Check for command chaining
-        if (trimmedCommand.includes('&&') || trimmedCommand.includes('||')) {
+        if (trimmedCommand.includes('&&') || trimmedCommand.includes('||') || trimmedCommand.includes(';')) {
             return {
                 isValid: false,
                 error: 'Command chaining is not allowed'
             };
         }
 
-        // Check for dangerous characters
-        const dangerousChars = /[;&|<>`$(){}[\]]/;
+        // Check for additional dangerous patterns (allow parentheses for function calls)
+        if (/[`${}[\]<>\n\r|]/.test(trimmedCommand)) {
+            return {
+                isValid: false,
+                error: 'Command contains dangerous characters'
+            };
+        }
+
+        // Check for background execution (single & not part of redirection)
+        if (/\s&\s*$/.test(trimmedCommand) || /\s&\s+/.test(trimmedCommand)) {
+            return {
+                isValid: false,
+                error: 'Command chaining is not allowed'
+            };
+        }
+
+        // Check for dangerous characters including newlines and null bytes
+        const dangerousChars = /[&|<>`$(){}[\]\n\r\0\x1b]/;
         if (dangerousChars.test(trimmedCommand)) {
             return {
                 isValid: false,
@@ -436,14 +500,32 @@ export class InputValidator {
             return false;
         }
 
-        // Windows path pattern (drive letter or UNC)
-        const windowsPathPattern = /^([a-zA-Z]:[\\/]|\\\\)/;
+        // Check for null bytes
+        if (path.includes('\0')) return false;
 
-        // Check for invalid characters in Windows paths
+        // Reject UNC paths
+        if (path.startsWith('\\\\')) return false;
+
+        // Check for reserved names
+        const reserved = /\b(con|prn|aux|nul|com[1-9]|lpt[1-9])\b/i;
+        if (reserved.test(path)) return false;
+
+        // Check for traversal
+        if (path.includes('..')) return false;
+
+        // Check for alternate data streams
+        if (path.includes(':') && !path.match(/^[a-zA-Z]:\\/)) return false;
+
+        // Windows path must start with drive letter
+        const windowsPathPattern = /^[a-zA-Z]:\\/;
+        if (!windowsPathPattern.test(path)) return false;
+
+        // Check for invalid characters (excluding first 3 chars for drive)
+        const pathAfterDrive = path.substring(3);
         const invalidChars = /[<>:"|?*]/;
-        const pathWithoutDrive = path.replace(/^[a-zA-Z]:/, '');
+        if (invalidChars.test(pathAfterDrive)) return false;
 
-        return windowsPathPattern.test(path) && !invalidChars.test(pathWithoutDrive);
+        return true;
     }
 
     /**

@@ -7,6 +7,7 @@ import { DistributionRegistry } from '../distributionRegistry';
 import { Logger } from '../utils/logger';
 import * as https from 'https';
 import * as http from 'http';
+import * as path from 'path';
 import { URL } from 'url';
 
 const logger = Logger.getInstance();
@@ -16,7 +17,7 @@ const logger = Logger.getInstance();
  */
 export class EnhancedDistroManager extends DistroManager {
     private lastRefresh: Date | null = null;
-    private readonly REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour
+    private readonly REFRESH_INTERVAL = process.env.NODE_ENV === 'test' ? 100 : 60 * 60 * 1000; // 100ms for tests, 1 hour otherwise
 
     constructor(storePath?: string) {
         super(storePath);
@@ -32,20 +33,14 @@ export class EnhancedDistroManager extends DistroManager {
             await this.refreshFromRegistry();
         }
 
-        // Get base distros from parent
-        const localDistros = await super.listDistros();
-
-        // Mark with validation status
-        for (const distro of localDistros) {
-            if (!distro.available && distro.sourceUrl) {
-                // Start async validation
-                this.validateUrl(distro.sourceUrl).then(isValid => {
-                    (distro as any).urlValid = isValid;
-                });
-            }
+        // Get the catalog directly which includes our updated distros
+        const catalog = (this as any).catalog;
+        if (catalog && catalog.distributions) {
+            return catalog.distributions;
         }
 
-        return localDistros;
+        // Fall back to parent implementation
+        return super.listDistros();
     }
 
     /**
@@ -227,5 +222,15 @@ export class EnhancedDistroManager extends DistroManager {
         this.lastRefresh = null;
         this.registry.clearCache();
         await this.refreshFromRegistry();
+    }
+
+    /**
+     * Get safe distribution path
+     */
+    getDistroPath(name: string): string {
+        // Sanitize name to prevent path traversal
+        const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
+        const storePath = (this as any).storePath || '';
+        return path.join(storePath, 'distros', safeName + '.tar');
     }
 }

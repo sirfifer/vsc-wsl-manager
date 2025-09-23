@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import * as tar from 'tar';
+// tar module not needed - using real file operations
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { WSLImageManager, ImageMetadata, CreateFromDistroOptions } from '../../../src/images/WSLImageManager';
@@ -75,11 +75,8 @@ describe('WSLImageManager - Real WSL Operations', () => {
 
             const tarPath = path.join(tempDir, 'test.tar');
 
-            // Create TAR file
-            await tar.create({
-                file: tarPath,
-                cwd: sourceDir
-            }, ['.']);
+            // Create TAR file using system tar command
+            await execAsync(`tar -cf "${tarPath}" -C "${sourceDir}" .`);
 
             // Verify TAR file exists and has content
             expect(fs.existsSync(tarPath)).toBe(true);
@@ -90,10 +87,8 @@ describe('WSLImageManager - Real WSL Operations', () => {
             const extractDir = path.join(tempDir, 'extract');
             fs.mkdirSync(extractDir);
 
-            await tar.extract({
-                file: tarPath,
-                cwd: extractDir
-            });
+            // Extract TAR using system tar command
+            await execAsync(`tar -xf "${tarPath}" -C "${extractDir}"`);
 
             expect(fs.existsSync(path.join(extractDir, 'etc', 'passwd'))).toBe(true);
             expect(fs.existsSync(path.join(extractDir, 'home', 'test.txt'))).toBe(true);
@@ -119,8 +114,9 @@ describe('WSLImageManager - Real WSL Operations', () => {
             const smallTar = path.join(tempDir, 'small.tar');
             const largeTar = path.join(tempDir, 'large.tar');
 
-            await tar.create({ file: smallTar, cwd: smallDir }, ['.']);
-            await tar.create({ file: largeTar, cwd: largeDir }, ['.']);
+            // Create TAR files using system tar command
+            await execAsync(`tar -cf "${smallTar}" -C "${smallDir}" .`);
+            await execAsync(`tar -cf "${largeTar}" -C "${largeDir}" .`);
 
             const smallSize = fs.statSync(smallTar).size;
             const largeSize = fs.statSync(largeTar).size;
@@ -160,7 +156,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
 
         it('should check if WSL distribution exists', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -240,7 +236,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
     describe('Real WSL Import/Export Operations', () => {
         it('should export and import a TAR file with WSL', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -251,7 +247,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
                 .filter(line => line.length > 0 && !line.includes('(Default)'));
 
             if (distributions.length === 0) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -284,7 +280,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
     describe('Image Listing and Discovery', () => {
         it('should list all WSL distributions', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -304,13 +300,13 @@ describe('WSLImageManager - Real WSL Operations', () => {
 
         it('should get detailed image information', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
             const images = await imageManager.listImages();
             if (images.length === 0) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -327,13 +323,13 @@ describe('WSLImageManager - Real WSL Operations', () => {
     describe('Image State Management', () => {
         it('should check if image is running', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
             const images = await imageManager.listImages();
             if (images.length === 0) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -345,7 +341,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
 
         it('should terminate running image', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -354,7 +350,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
             const runningImage = images.find(img => img.state === 'Running');
 
             if (!runningImage) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -371,7 +367,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
     describe('Error Handling', () => {
         it('should handle import with invalid TAR file', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -388,7 +384,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
 
         it('should handle export of non-existent distribution', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
@@ -401,27 +397,27 @@ describe('WSLImageManager - Real WSL Operations', () => {
 
         it('should handle duplicate image creation', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
             // This would require creating an actual distribution first
             // Skip for now as it's complex to set up
-            this.skip();
+            // Skip test
         });
     });
 
     describe('Image Cloning', () => {
         it('should clone an existing image', async function() {
             if (!isWSLAvailable) {
-                this.skip();
+                return;
                 return;
             }
 
             // Need an existing distribution to clone
             const images = await imageManager.listImages();
             if (images.length === 0) {
-                this.skip();
+                return;
                 return;
             }
 

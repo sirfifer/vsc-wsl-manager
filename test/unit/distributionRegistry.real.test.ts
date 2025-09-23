@@ -3,13 +3,14 @@
  * Tests fetching distributions from Microsoft's official registry
  */
 
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { DistributionRegistry, DistributionInfo } from '../../src/distributionRegistry';
 
 // Mock fetch globally
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 // Sample data matching Microsoft's actual DistributionInfo.json structure
 const mockDistributionData = {
@@ -53,7 +54,7 @@ describe('DistributionRegistry', () => {
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wsl-test-'));
         
         // Reset fetch mock
-        (global.fetch as jest.Mock).mockReset();
+        (global.fetch as any).mockReset();
     });
     
     afterEach(() => {
@@ -66,7 +67,7 @@ describe('DistributionRegistry', () => {
     describe('fetchAvailableDistributions', () => {
         it('should fetch distributions from Microsoft registry', async () => {
             // Mock successful fetch
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => mockDistributionData
             });
@@ -84,7 +85,7 @@ describe('DistributionRegistry', () => {
         
         it('should use cached data within 24 hours', async () => {
             // First call - fetches from network
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => mockDistributionData
             });
@@ -101,22 +102,22 @@ describe('DistributionRegistry', () => {
         it('should refresh cache after 24 hours', async () => {
             // Mock Date to control time
             const originalDate = Date;
-            const mockDate = jest.fn(() => new originalDate('2024-01-01T00:00:00Z'));
-            mockDate.now = jest.fn(() => new originalDate('2024-01-01T00:00:00Z').getTime());
+            const mockDate = vi.fn(() => new originalDate('2024-01-01T00:00:00Z'));
+            mockDate.now = vi.fn(() => new originalDate('2024-01-01T00:00:00Z').getTime());
             global.Date = mockDate as any;
             
             // First call
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => mockDistributionData
             });
             await registry.fetchAvailableDistributions();
             
             // Advance time by 25 hours
-            mockDate.now = jest.fn(() => new originalDate('2024-01-02T01:00:00Z').getTime());
+            mockDate.now = vi.fn(() => new originalDate('2024-01-02T01:00:00Z').getTime());
             
             // Second call should fetch again
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => mockDistributionData
             });
@@ -130,7 +131,7 @@ describe('DistributionRegistry', () => {
         
         it('should fall back to local cache when network fails', async () => {
             // First, populate local cache
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => mockDistributionData
             });
@@ -141,7 +142,7 @@ describe('DistributionRegistry', () => {
             registry['cacheExpiry'] = null;
             
             // Now simulate network failure
-            (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+            (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
             
             const distros = await registry.fetchAvailableDistributions();
             
@@ -151,7 +152,7 @@ describe('DistributionRegistry', () => {
         });
         
         it('should parse Microsoft JSON structure correctly', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => mockDistributionData
             });
@@ -173,7 +174,7 @@ describe('DistributionRegistry', () => {
         });
         
         it('should handle malformed JSON gracefully', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({ invalid: 'structure' })
             });
@@ -188,7 +189,7 @@ describe('DistributionRegistry', () => {
     describe('getDownloadUrl', () => {
         beforeEach(async () => {
             // Pre-populate with test data
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => mockDistributionData
             });
@@ -223,7 +224,7 @@ describe('DistributionRegistry', () => {
     
     describe('getDistributionInfo', () => {
         beforeEach(async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => mockDistributionData
             });
@@ -246,7 +247,7 @@ describe('DistributionRegistry', () => {
     
     describe('getDefaultDistribution', () => {
         it('should return the default distribution from Microsoft data', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
+            (global.fetch as any).mockResolvedValueOnce({
                 ok: true,
                 json: async () => mockDistributionData
             });
@@ -270,7 +271,7 @@ describe('DistributionRegistry', () => {
             } as Response));
 
             await registry.fetchAvailableDistributions();
-            global.fetch = originalFetch;
+            // Note: originalFetch is not defined, removed this line
             
             // Check that cache file was created
             const cacheFile = path.join(cacheDir, 'distributions.json');
@@ -299,7 +300,7 @@ describe('DistributionRegistry', () => {
             );
             
             // Simulate network failure
-            (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+            (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
             
             const distros = await registry.fetchAvailableDistributions();
             

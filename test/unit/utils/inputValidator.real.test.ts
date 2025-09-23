@@ -33,12 +33,12 @@ describe('InputValidator - Real Input Validation', () => {
             expect(emptyResult.isValid).toBe(false);
             expect(emptyResult.error).toContain('required');
 
-            // Note: Current implementation has MIN_LENGTH = 1, so 'a' is valid
+            // Note: Current implementation has MIN_LENGTH = 3
             const shortResult1 = InputValidator.validateDistributionName('a');
-            expect(shortResult1.isValid).toBe(true);
+            expect(shortResult1.isValid).toBe(false);
 
             const shortResult2 = InputValidator.validateDistributionName('ab');
-            expect(shortResult2.isValid).toBe(true);
+            expect(shortResult2.isValid).toBe(false);
         });
 
         it('should reject names that are too long', () => {
@@ -444,13 +444,13 @@ describe('InputValidator - Real Input Validation', () => {
         });
 
         it('should handle edge cases correctly', () => {
-            // Maximum length name (255 chars)
-            const maxName = 'a'.repeat(255);
+            // Maximum length name (64 chars)
+            const maxName = 'a'.repeat(64);
             const result = InputValidator.validateDistributionName(maxName);
                 expect(result.isValid).toBe(true);
 
             // Just over maximum
-            const overMax = 'a'.repeat(256);
+            const overMax = 'a'.repeat(65);
             const result2 = InputValidator.validateDistributionName(overMax);
                 expect(result2.isValid).toBe(false);
 

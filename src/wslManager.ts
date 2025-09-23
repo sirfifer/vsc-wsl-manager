@@ -66,8 +66,9 @@ export class WSLManager {
             }
             
             // Execute command securely with timeout
+            const listCmd = CommandBuilder.buildListCommand();
             const result = await ErrorHandler.withTimeout(
-                CommandBuilder.executeWSL(CommandBuilder.buildListCommand()),
+                CommandBuilder.executeWSL(listCmd.args),
                 this.DEFAULT_TIMEOUT,
                 'list distributions'
             );
@@ -248,14 +249,13 @@ export class WSLManager {
 
         // Execute import command securely with extended timeout
         try {
+            const importCmd = CommandBuilder.buildImportCommand(
+                nameValidation.sanitizedValue!,
+                dirValidation.sanitizedValue!,
+                pathValidation.sanitizedValue!
+            );
             await ErrorHandler.withTimeout(
-                CommandBuilder.executeWSL(
-                    CommandBuilder.buildImportCommand(
-                        nameValidation.sanitizedValue!,
-                        dirValidation.sanitizedValue!,
-                        pathValidation.sanitizedValue!
-                    )
-                ),
+                CommandBuilder.executeWSL(importCmd.args),
                 this.LONG_OPERATION_TIMEOUT,
                 'import distribution'
             );
@@ -313,13 +313,12 @@ export class WSLManager {
 
         // Execute export command securely with extended timeout
         try {
+            const exportCmd = CommandBuilder.buildExportCommand(
+                nameValidation.sanitizedValue!,
+                pathValidation.sanitizedValue!
+            );
             await ErrorHandler.withTimeout(
-                CommandBuilder.executeWSL(
-                    CommandBuilder.buildExportCommand(
-                        nameValidation.sanitizedValue!,
-                        pathValidation.sanitizedValue!
-                    )
-                ),
+                CommandBuilder.executeWSL(exportCmd.args),
                 this.LONG_OPERATION_TIMEOUT,
                 'export distribution'
             );
@@ -376,9 +375,8 @@ export class WSLManager {
         }
 
         // Execute unregister command securely
-        await CommandBuilder.executeWSL(
-            CommandBuilder.buildUnregisterCommand(validation.sanitizedValue!)
-        );
+        const unregisterCmd = CommandBuilder.buildUnregisterCommand(validation.sanitizedValue!);
+        await CommandBuilder.executeWSL(unregisterCmd.args);
     }
 
     /**
@@ -412,9 +410,8 @@ export class WSLManager {
         }
 
         // Execute terminate command securely
-        await CommandBuilder.executeWSL(
-            CommandBuilder.buildTerminateCommand(validation.sanitizedValue!)
-        );
+        const terminateCmd = CommandBuilder.buildTerminateCommand(validation.sanitizedValue!);
+        await CommandBuilder.executeWSL(terminateCmd.args);
     }
 
     /**
@@ -448,9 +445,8 @@ export class WSLManager {
         }
 
         // Execute set-default command securely
-        await CommandBuilder.executeWSL(
-            CommandBuilder.buildSetDefaultCommand(validation.sanitizedValue!)
-        );
+        const setDefaultCmd = CommandBuilder.buildSetDefaultCommand(validation.sanitizedValue!);
+        await CommandBuilder.executeWSL(setDefaultCmd.args);
     }
 
     private async ensureBaseDistribution(distroName: string): Promise<void> {

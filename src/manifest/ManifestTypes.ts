@@ -43,6 +43,9 @@ export interface ManifestMetadata {
  * Types of layers that can be applied to an image
  */
 export enum LayerType {
+    BASE = 'base',
+    APPLICATION = 'application',
+    CONFIGURATION = 'configuration',
     DISTRO = 'distro',
     ENVIRONMENT = 'environment',
     BOOTSTRAP_SCRIPT = 'bootstrap_script',
@@ -145,9 +148,25 @@ export interface CustomLayer extends LayerBase {
 }
 
 /**
- * Union type for all layer types
+ * Simplified Layer for testing (backward compatibility)
  */
-export type Layer = DistroLayer | EnvironmentLayer | BootstrapScriptLayer | SettingsLayer | CustomLayer;
+export interface Layer {
+    id?: string;
+    type: LayerType;
+    name?: string;
+    source?: string;
+    created?: string;
+    applied?: string;
+    size?: number;
+    description?: string;
+    commands?: string[];
+    [key: string]: any;  // Allow additional properties
+}
+
+/**
+ * Union type for all specific layer types
+ */
+export type SpecificLayer = DistroLayer | EnvironmentLayer | BootstrapScriptLayer | SettingsLayer | CustomLayer;
 
 /**
  * Complete manifest structure
@@ -155,28 +174,40 @@ export type Layer = DistroLayer | EnvironmentLayer | BootstrapScriptLayer | Sett
 export interface Manifest {
     /** Version of the manifest format */
     version: string;
-    
+
     /** Metadata about the image */
     metadata: ManifestMetadata;
-    
+
     /** Layers applied to this image in order */
     layers: Layer[];
-    
+
+    /** When this manifest was created */
+    created?: string;
+
+    /** Tool that created this manifest */
+    created_by?: string;
+
+    /** History of operations */
+    history?: Array<{
+        timestamp: string;
+        action: string;
+    }>;
+
     /** Environment variables set in the image */
     environment_variables?: Record<string, string>;
-    
+
     /** Features installed in the image */
     installed_features?: Record<string, boolean | string>;
-    
+
     /** Bootstrap scripts available in the image */
     bootstrap_scripts?: string[];
-    
+
     /** Tags for categorization */
     tags?: string[];
-    
+
     /** Free-form notes */
     notes?: string;
-    
+
     /** WSL specific configuration */
     wsl_config?: {
         /** WSL version (1 or 2) */

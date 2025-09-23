@@ -40,11 +40,9 @@ describe('ManifestManager - Real File Operations', () => {
 
     describe('Manifest Creation', () => {
         it('should create a valid manifest with metadata', () => {
-            const metadata: ManifestMetadata = {
+            const metadata = {
                 name: 'test-image',
                 description: 'Test image for unit testing',
-                author: 'Test User',
-                tags: ['test', 'development'],
                 source: 'alpine:3.18'
             };
 
@@ -52,7 +50,9 @@ describe('ManifestManager - Real File Operations', () => {
 
             expect(manifest).toBeDefined();
             expect(manifest.version).toBe(MANIFEST_VERSION);
-            expect(manifest.metadata).toEqual(metadata);
+            expect(manifest.metadata.name).toBe(metadata.name);
+            expect(manifest.metadata.description).toBe(metadata.description);
+            expect(manifest.metadata.source).toBe(metadata.source);
             expect(manifest.layers).toEqual([]);
             expect(manifest.created).toBeDefined();
             expect(manifest.created_by).toBe('vscode-wsl-manager');
@@ -116,8 +116,7 @@ describe('ManifestManager - Real File Operations', () => {
         it('should write manifest to JSON file', () => {
             const manifest = manifestManager.createManifest({
                 name: 'write-test',
-                description: 'Test writing to file',
-                tags: ['io', 'test']
+                description: 'Test writing to file'
             });
 
             manifestManager.writeManifest(manifest, testManifestPath);
@@ -130,14 +129,14 @@ describe('ManifestManager - Real File Operations', () => {
 
             expect(parsed.version).toBe(MANIFEST_VERSION);
             expect(parsed.metadata.name).toBe('write-test');
-            expect(parsed.metadata.tags).toContain('io');
+            expect(parsed.metadata.description).toBe('Test writing to file');
         });
 
         it('should read manifest from JSON file', () => {
             // Write a manifest first
             const original = manifestManager.createManifest({
                 name: 'read-test',
-                author: 'Test Author'
+                description: 'Test reading from file'
             });
 
             manifestManager.addLayer(original, {

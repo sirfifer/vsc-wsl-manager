@@ -158,13 +158,13 @@ export class WSLImageManager {
         );
         this.metadataPath = path.join(baseDir, 'images.json');
         
-        this.loadMetadata();
+        this.loadMetadataInternal();
     }
     
     /**
      * Load image metadata from disk
      */
-    private loadMetadata(): void {
+    private loadMetadataInternal(): void {
         try {
             if (fs.existsSync(this.metadataPath)) {
                 const content = fs.readFileSync(this.metadataPath, 'utf8');
@@ -181,7 +181,7 @@ export class WSLImageManager {
     /**
      * Save image metadata to disk
      */
-    private saveMetadata(): void {
+    private saveMetadataInternal(): void {
         try {
             const dir = path.dirname(this.metadataPath);
             if (!fs.existsSync(dir)) {
@@ -285,7 +285,7 @@ export class WSLImageManager {
             }
             
             // Write manifest to the new image
-            await this.manifestManager.writeManifest(imageName, manifest);
+            await this.manifestManager.writeManifestToImage(imageName, manifest);
             
             // Create metadata entry
             const metadata: ImageMetadata = {
@@ -307,7 +307,7 @@ export class WSLImageManager {
             };
             
             this.imageMetadata.set(imageName, metadata);
-            this.saveMetadata();
+            this.saveMetadataInternal();
             
             logger.info(`Successfully created image '${imageName}' from distro '${distroName}'`);
         } catch (error) {
@@ -408,7 +408,7 @@ export class WSLImageManager {
                     clonedManifest.tags = [...(clonedManifest.tags || []), ...options.tags];
                 }
                 
-                await this.manifestManager.writeManifest(newImageName, clonedManifest);
+                await this.manifestManager.writeManifestToImage(newImageName, clonedManifest);
             }
             
             // Create metadata entry
@@ -431,7 +431,7 @@ export class WSLImageManager {
             };
             
             this.imageMetadata.set(newImageName, metadata);
-            this.saveMetadata();
+            this.saveMetadataInternal();
             
             logger.info(`Successfully cloned '${sourceImageName}' to '${newImageName}'`);
         } finally {
@@ -470,7 +470,7 @@ export class WSLImageManager {
         for (const [name, metadata] of this.imageMetadata) {
             if (wslDistros.includes(name)) {
                 // Check if manifest exists
-                metadata.hasManifest = await this.manifestManager.hasManifest(name);
+                metadata.hasManifest = await this.manifestManager.hasManifest?.(name) || false;
                 images.push(metadata);
             } else {
                 // Remove from metadata if no longer exists
@@ -500,7 +500,7 @@ export class WSLImageManager {
         }
         
         // Save any changes
-        this.saveMetadata();
+        this.saveMetadataInternal();
         
         return images;
     }
@@ -525,7 +525,7 @@ export class WSLImageManager {
         }
         
         this.imageMetadata.delete(imageName);
-        this.saveMetadata();
+        this.saveMetadataInternal();
         
         logger.info(`Successfully deleted image: ${imageName}`);
     }
@@ -554,7 +554,7 @@ export class WSLImageManager {
         };
         
         this.imageMetadata.set(imageName, updated);
-        this.saveMetadata();
+        this.saveMetadataInternal();
         
         logger.info(`Updated properties for image: ${imageName}`);
     }
@@ -574,6 +574,223 @@ export class WSLImageManager {
     async imageExists(imageName: string): Promise<boolean> {
         const distros = await this.listWSLDistributions();
         return distros.includes(imageName);
+    }
+
+    /**
+     * Create an image from a WSL export file
+     */
+    async createFromExport(
+        exportPath: string,
+        imageName: string,
+        options: CreateFromDistroOptions = {}
+    ): Promise<void> {
+        logger.info(`Creating image '${imageName}' from export '${exportPath}'`);
+
+        // Validate export file exists
+        if (!fs.existsSync(exportPath)) {
+            throw new Error(`Export file not found: ${exportPath}`);
+        }
+
+        // Check if image name already exists
+        const existingDistros = await this.listWSLDistributions();
+        if (existingDistros.includes(imageName)) {
+            throw new Error(`WSL distribution already exists: ${imageName}`);
+        }
+
+        // Import the export as a new WSL distribution
+        await this.importImage(exportPath, imageName, options);
+
+        // Add to metadata
+        const metadata: ImageMetadata = {
+            id: uuidv4(),
+            name: imageName,
+            displayName: options.displayName || imageName,
+            sourceType: 'distro',
+            source: exportPath,
+            created: new Date().toISOString(),
+            wslVersion: options.wslVersion || 2,
+            hasManifest: false,
+            enabled: true,
+            installPath: options.installPath || path.join(
+                process.env.USERPROFILE || process.env.HOME || '',
+                '.wsl',
+                imageName
+            )
+        };
+
+        this.imageMetadata.set(imageName, metadata);
+        this.saveMetadataInternal();
+
+        logger.info(`Successfully created image '${imageName}' from export`);
+    }
+
+    /**
+     * Create an image from a TAR file
+     */
+    async createFromFile(
+        filePath: string,
+        imageName: string,
+        options: CreateFromDistroOptions = {}
+    ): Promise<void> {
+        logger.info(`Creating image '${imageName}' from file '${filePath}'`);
+
+        // Validate file exists
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`TAR file not found: ${filePath}`);
+        }
+
+        // Check if image name already exists
+        const existingDistros = await this.listWSLDistributions();
+        if (existingDistros.includes(imageName)) {
+            throw new Error(`WSL distribution already exists: ${imageName}`);
+        }
+
+        // Check if file is TAR or needs extraction
+        let importPath = filePath;
+        const isActuallyTar = await this.checkIfTarFormat(filePath);
+
+        if (!isActuallyTar) {
+            logger.warn(`File ${filePath} is not TAR format, attempting extraction...`);
+            const extractedPath = await this.extractTarFromMisnamedAppx(filePath);
+            if (!extractedPath) {
+                throw new Error(`Failed to extract TAR from ${filePath}`);
+            }
+            importPath = extractedPath;
+        }
+
+        // Import the TAR file
+        await this.importImage(importPath, imageName, options);
+
+        // Clean up temporary file if we extracted
+        if (importPath !== filePath && fs.existsSync(importPath)) {
+            fs.unlinkSync(importPath);
+        }
+
+        // Add to metadata
+        const metadata: ImageMetadata = {
+            id: uuidv4(),
+            name: imageName,
+            displayName: options.displayName || imageName,
+            sourceType: 'distro',
+            source: filePath,
+            created: new Date().toISOString(),
+            wslVersion: options.wslVersion || 2,
+            hasManifest: false,
+            enabled: true,
+            installPath: options.installPath || path.join(
+                process.env.USERPROFILE || process.env.HOME || '',
+                '.wsl',
+                imageName
+            )
+        };
+
+        this.imageMetadata.set(imageName, metadata);
+        this.saveMetadataInternal();
+
+        logger.info(`Successfully created image '${imageName}' from file`);
+    }
+
+    /**
+     * Export an image to a TAR file
+     */
+    async exportImage(
+        imageName: string,
+        exportPath: string,
+        options: { compress?: boolean } = {}
+    ): Promise<void> {
+        logger.info(`Exporting image '${imageName}' to '${exportPath}'`);
+
+        // Check if image exists
+        const distros = await this.listWSLDistributions();
+        if (!distros.includes(imageName)) {
+            throw new Error(`WSL distribution not found: ${imageName}`);
+        }
+
+        // Create export directory if it doesn't exist
+        const exportDir = path.dirname(exportPath);
+        if (!fs.existsSync(exportDir)) {
+            fs.mkdirSync(exportDir, { recursive: true });
+        }
+
+        // Build export command
+        const args = ['--export', imageName, exportPath];
+
+        if (options.compress) {
+            args.push('--vhd');
+        }
+
+        // Execute export
+        const result = await CommandBuilder.executeWSL(args);
+
+        if (result.exitCode !== 0) {
+            throw new Error(`Failed to export image: ${result.stderr || 'Unknown error'}`);
+        }
+
+        // Verify export file was created
+        if (!fs.existsSync(exportPath)) {
+            throw new Error(`Export failed: file not created at ${exportPath}`);
+        }
+
+        const stats = fs.statSync(exportPath);
+        logger.info(`Successfully exported image '${imageName}' (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
+    }
+
+    /**
+     * Import a TAR file as a new WSL distribution
+     */
+    async importImage(
+        tarPath: string,
+        imageName: string,
+        options: CreateFromDistroOptions = {}
+    ): Promise<void> {
+        logger.info(`Importing TAR '${tarPath}' as image '${imageName}'`);
+
+        // Validate TAR file exists
+        if (!fs.existsSync(tarPath)) {
+            throw new Error(`TAR file not found: ${tarPath}`);
+        }
+
+        // Check if image name already exists
+        const existingDistros = await this.listWSLDistributions();
+        if (existingDistros.includes(imageName)) {
+            throw new Error(`WSL distribution already exists: ${imageName}`);
+        }
+
+        // Determine installation path
+        const installPath = options.installPath || path.join(
+            process.env.USERPROFILE || process.env.HOME || '',
+            '.wsl',
+            imageName
+        );
+
+        // Create installation directory
+        if (!fs.existsSync(installPath)) {
+            fs.mkdirSync(installPath, { recursive: true });
+        }
+
+        // Build import command
+        const args = [
+            '--import',
+            imageName,
+            installPath,
+            tarPath
+        ];
+
+        // Add WSL version if specified
+        if (options.wslVersion) {
+            args.push('--version', options.wslVersion.toString());
+        }
+
+        // Execute import
+        const result = await CommandBuilder.executeWSL(args);
+
+        if (result.exitCode !== 0) {
+            throw new Error(`Failed to import image: ${result.stderr || 'Unknown error'}`);
+        }
+
+        // WSL import completed successfully
+
+        logger.info(`Successfully imported image '${imageName}' to ${installPath}`);
     }
 
     /**
@@ -633,15 +850,35 @@ export class WSLImageManager {
 
             try {
                 if (PLATFORM.isWindows) {
-                    // Windows 10/11 has tar.exe built-in which can handle both TAR and ZIP
-                    logger.debug('Using Windows tar.exe for extraction');
-                    const result = await executor.executeCommand('tar.exe', [
-                        '-xf', appxPath,
-                        '-C', tempDir
-                    ]);
+                    // Windows: Try PowerShell first for ZIP/APPX files, then tar.exe
+                    logger.debug('Attempting extraction on Windows');
 
-                    if (result.exitCode !== 0) {
-                        throw new Error(`tar.exe failed: ${result.stderr}`);
+                    // First try PowerShell's Expand-Archive (works for ZIP/APPX)
+                    try {
+                        logger.debug('Using PowerShell Expand-Archive for extraction');
+                        const psCommand = `Expand-Archive -Path "${appxPath}" -DestinationPath "${tempDir}" -Force`;
+                        const psResult = await executor.executeCommand('powershell.exe', [
+                            '-NoProfile',
+                            '-NonInteractive',
+                            '-Command',
+                            psCommand
+                        ]);
+
+                        if (psResult.exitCode !== 0) {
+                            throw new Error(`PowerShell extraction failed: ${psResult.stderr}`);
+                        }
+                        logger.debug('PowerShell extraction succeeded');
+                    } catch (psError: any) {
+                        // If PowerShell fails, try tar.exe as fallback
+                        logger.debug(`PowerShell failed (${psError.message}), trying tar.exe`);
+                        const result = await executor.executeCommand('tar.exe', [
+                            '-xf', appxPath,
+                            '-C', tempDir
+                        ]);
+
+                        if (result.exitCode !== 0) {
+                            throw new Error(`tar.exe also failed: ${result.stderr}`);
+                        }
                     }
                 } else {
                     // Linux/WSL: try unzip first, then tar
@@ -671,32 +908,80 @@ export class WSLImageManager {
                 logger.error(`Extraction failed: ${extractError.message}`);
                 // Clean up temp directory
                 fs.rmSync(tempDir, { recursive: true, force: true });
-                throw extractError;
+                // Return null instead of throwing - let caller handle it
+                return null;
             }
 
-            // Find TAR file in extracted contents
-            const findTarFile = (dir: string): string | null => {
+            // Find TAR file in extracted contents (handle nested APPX bundles)
+            const findTarFile = async (dir: string, depth: number = 0): Promise<string | null> => {
+                if (depth > 2) return null; // Limit recursion depth
+
                 const items = fs.readdirSync(dir);
+
+                // First, look for TAR files directly
                 for (const item of items) {
                     const fullPath = path.join(dir, item);
                     const stat = fs.statSync(fullPath);
 
-                    if (stat.isDirectory()) {
-                        const found = findTarFile(fullPath);
-                        if (found) return found;
-                    } else if (item.toLowerCase().endsWith('.tar.gz') || item.toLowerCase().endsWith('.tar')) {
-                        // Prefer install.tar.gz if available
-                        if (item.toLowerCase().includes('install')) {
+                    if (!stat.isDirectory()) {
+                        if (item.toLowerCase().endsWith('.tar.gz') || item.toLowerCase().endsWith('.tar')) {
+                            // Prefer install.tar.gz if available
+                            if (item.toLowerCase().includes('install')) {
+                                logger.info(`Found install TAR: ${item}`);
+                                return fullPath;
+                            }
+                            // Return first TAR found if no install.tar.gz
+                            logger.info(`Found TAR file: ${item}`);
                             return fullPath;
                         }
-                        // Return first TAR found if no install.tar.gz
-                        return fullPath;
                     }
                 }
+
+                // Then look for nested APPX files (APPX bundles)
+                for (const item of items) {
+                    const fullPath = path.join(dir, item);
+                    const stat = fs.statSync(fullPath);
+
+                    if (!stat.isDirectory()) {
+                        // Check for nested APPX files
+                        if (item.toLowerCase().endsWith('.appx')) {
+                            logger.debug(`Found nested APPX: ${item}`);
+
+                            // Extract nested APPX
+                            const nestedDir = path.join(dir, `nested_${Date.now()}`);
+                            fs.mkdirSync(nestedDir, { recursive: true });
+
+                            try {
+                                logger.debug(`Extracting nested APPX: ${item}`);
+                                if (PLATFORM.isWindows) {
+                                    // Try PowerShell for nested APPX
+                                    const psCommand = `Expand-Archive -Path "${fullPath}" -DestinationPath "${nestedDir}" -Force`;
+                                    await executor.executeCommand('powershell.exe', [
+                                        '-NoProfile', '-NonInteractive', '-Command', psCommand
+                                    ]);
+                                } else {
+                                    // Use unzip for nested APPX
+                                    await executor.executeCommand('unzip', ['-q', fullPath, '-d', nestedDir]);
+                                }
+
+                                // Recursively search nested APPX
+                                const found = await findTarFile(nestedDir, depth + 1);
+                                if (found) return found;
+                            } catch (nestedError) {
+                                logger.warn(`Failed to extract nested APPX: ${nestedError}`);
+                            }
+                        }
+                    } else {
+                        // Search subdirectories
+                        const found = await findTarFile(fullPath, depth);
+                        if (found) return found;
+                    }
+                }
+
                 return null;
             };
 
-            const tarFile = findTarFile(tempDir);
+            const tarFile = await findTarFile(tempDir);
 
             if (tarFile) {
                 logger.info(`Found TAR file: ${path.basename(tarFile)}`);
@@ -722,5 +1007,104 @@ export class WSLImageManager {
             logger.error(`Failed to extract TAR from misnamed APPX: ${error.message}`);
             return null;
         }
+    }
+
+    // Public methods for tests
+    saveMetadata(metadata: ImageMetadata, filePath?: string): void {
+        if (filePath) {
+            // Ensure directory exists
+            const dir = filePath.substring(0, filePath.lastIndexOf('/'));
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            fs.writeFileSync(filePath, JSON.stringify(metadata, null, 2));
+        } else {
+            // Add to internal metadata
+            this.imageMetadata.set(metadata.name, metadata);
+            this.saveMetadataInternal();
+        }
+    }
+
+    loadMetadata(filePath: string): ImageMetadata | null {
+        try {
+            if (!fs.existsSync(filePath)) {
+                return null;
+            }
+            const content = fs.readFileSync(filePath, 'utf8');
+            return JSON.parse(content);
+        } catch {
+            return null;
+        }
+    }
+
+
+    async isImageRunning(imageName: string): Promise<boolean> {
+        try {
+            const result = await new Promise<any>((resolve, reject) => {
+                const { spawn } = require('child_process');
+                const proc = spawn('wsl.exe', ['--list', '--running']);
+                let output = '';
+                proc.stdout.on('data', (data: Buffer) => {
+                    output += data.toString();
+                });
+                proc.on('close', (code: number) => {
+                    resolve({ code, output });
+                });
+                proc.on('error', reject);
+            });
+
+            return result.output.includes(imageName);
+        } catch {
+            return false;
+        }
+    }
+
+    async terminateImage(imageName: string): Promise<void> {
+        const command = CommandBuilder.buildTerminateCommand(imageName);
+        const executor = new CrossPlatformCommandExecutor();
+        await executor.executeCommand(command.command, command.args);
+    }
+
+    isValidImageName(name: string): boolean {
+        // Basic validation for WSL distribution names
+        if (!name || name.length === 0) return false;
+        if (name.length > 255) return false;
+
+        // Check for invalid characters (including spaces)
+        const invalidChars = /[<>:"|?*\\/\s]/;
+        if (invalidChars.test(name)) return false;
+
+        // Check for reserved names
+        const reserved = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'];
+        if (reserved.includes(name.toUpperCase())) return false;
+
+        return true;
+    }
+
+    /**
+     * Export a distribution to a TAR file
+     * @param distroName - Name of the distribution
+     * @param tarPath - Path to save the TAR file
+     */
+    async exportToTar(distroName: string, tarPath: string): Promise<void> {
+        logger.info(`Exporting ${distroName} to ${tarPath}`);
+
+        const commandArgs = CommandBuilder.buildExportCommand(distroName, tarPath);
+        const executor = new CrossPlatformCommandExecutor();
+        await executor.executeCommand(commandArgs.command, commandArgs.args, { timeout: 300000 }); // 5 minutes
+    }
+
+    /**
+     * Import a distribution from a TAR file
+     * @param distroName - Name for the new distribution
+     * @param tarPath - Path to the TAR file
+     * @param installPath - Installation location
+     */
+    async importFromTar(distroName: string, tarPath: string, installPath: string): Promise<void> {
+        logger.info(`Importing ${distroName} from ${tarPath} to ${installPath}`);
+
+        const commandArgs = CommandBuilder.buildImportCommand(distroName, installPath, tarPath);
+        const executor = new CrossPlatformCommandExecutor();
+        await executor.executeCommand(commandArgs.command, commandArgs.args, { timeout: 300000 }); // 5 minutes
     }
 }

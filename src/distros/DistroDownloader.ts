@@ -44,18 +44,30 @@ export interface DownloadProgress {
 export interface DownloadOptions {
     /** Progress callback */
     onProgress?: (progress: DownloadProgress) => void;
-    
+
     /** Whether to verify checksum */
     verifyChecksum?: boolean;
-    
+
     /** Expected SHA256 checksum */
     expectedChecksum?: string;
-    
+
     /** Download timeout in milliseconds */
     timeout?: number;
-    
+
     /** Whether to overwrite existing file */
     overwrite?: boolean;
+
+    /** Byte offset to resume from */
+    resumeFrom?: number;
+
+    /** Whether to follow redirects */
+    followRedirects?: boolean;
+
+    /** Skip if file exists with matching checksum */
+    skipIfExists?: boolean;
+
+    /** Abort signal for cancellation */
+    signal?: AbortSignal;
 }
 
 /**
@@ -198,7 +210,7 @@ export class DistroDownloader {
             this.activeDownloads.set(distroName, abortController);
             
             // Download the file
-            await this.downloadFile(
+            await this.downloadFileOld(
                 distro.sourceUrl,
                 tempPath,
                 {
@@ -401,7 +413,7 @@ export class DistroDownloader {
     /**
      * Download a file from a URL
      */
-    private async downloadFile(
+    private async downloadFileOld(
         url: string,
         destPath: string,
         options: DownloadOptions & { signal?: AbortSignal } = {}
@@ -626,6 +638,196 @@ export class DistroDownloader {
         return results;
     }
     
+    /**
+     * Download a file from URL to destination path
+     */
+    async downloadFile(
+        url: string,
+        destPath: string,
+        options: DownloadOptions = {}
+    ): Promise<void> {
+        logger.debug(`Downloading from: ${url}`);
+        logger.debug(`Destination: ${destPath}`);
+
+        // Create destination directory if it doesn't exist
+        const destDir = path.dirname(destPath);
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+        }
+
+        // If checksum verification is requested, use downloadWithChecksum
+        if (options.verifyChecksum && options.expectedChecksum) {
+            await this.downloadWithChecksum(url, destPath, options);
+            return;
+        }
+
+        // Use internal downloadFile method
+        await this.downloadFileInternal(url, destPath, options);
+    }
+
+    /**
+     * Resume a partial download
+     */
+    async resumeDownload(url: string, destPath: string): Promise<void> {
+        // Check if partial file exists
+        const tempPath = `${destPath}.download`;
+        if (fs.existsSync(tempPath)) {
+            const stats = fs.statSync(tempPath);
+            const startByte = stats.size;
+
+            // Resume from where we left off
+            await this.downloadFile(url, destPath, {
+                resumeFrom: startByte
+            });
+        } else {
+            // Start fresh download
+            await this.downloadFile(url, destPath);
+        }
+    }
+
+    /**
+     * Download file and calculate checksum
+     */
+    async downloadWithChecksum(
+        url: string,
+        destPath: string,
+        options: DownloadOptions = {}
+    ): Promise<string> {
+        // Check if file already exists with correct checksum
+        if (fs.existsSync(destPath) && options.expectedChecksum) {
+            const existingChecksum = await new Promise<string>((resolve, reject) => {
+                const hash = crypto.createHash('sha256');
+                const stream = fs.createReadStream(destPath);
+                stream.on('data', (data) => hash.update(data));
+                stream.on('end', () => resolve(hash.digest('hex')));
+                stream.on('error', reject);
+            });
+
+            if (existingChecksum === options.expectedChecksum) {
+                logger.debug(`File already exists with correct checksum: ${destPath}`);
+                return existingChecksum;
+            }
+        }
+
+        // Download the file (use internal method to avoid recursion)
+        await this.downloadFileInternal(url, destPath, options);
+
+        // Calculate SHA256 checksum
+        const checksum = await new Promise<string>((resolve, reject) => {
+            const hash = crypto.createHash('sha256');
+            const stream = fs.createReadStream(destPath);
+
+            stream.on('data', (data) => hash.update(data));
+            stream.on('end', () => resolve(hash.digest('hex')));
+            stream.on('error', reject);
+        });
+
+        // Validate checksum if expected
+        if (options.expectedChecksum && checksum !== options.expectedChecksum) {
+            // Delete the file
+            fs.unlinkSync(destPath);
+            throw new Error(`Checksum mismatch! Expected ${options.expectedChecksum} but got ${checksum}`);
+        }
+
+        return checksum;
+    }
+
+    /**
+     * Internal download implementation (renamed from downloadFile)
+     */
+    private async downloadFileInternal(
+        url: string,
+        destPath: string,
+        options: DownloadOptions = {}
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const parsedUrl = new URL(url);
+            const protocol = parsedUrl.protocol === 'https:' ? https : http;
+
+            const requestOptions: any = {
+                hostname: parsedUrl.hostname,
+                path: parsedUrl.pathname + parsedUrl.search,
+                headers: {}
+            };
+
+            // Add resume header if specified
+            if (options.resumeFrom) {
+                requestOptions.headers['Range'] = `bytes=${options.resumeFrom}-`;
+            }
+
+            const tempPath = `${destPath}.download`;
+            const writeStream = fs.createWriteStream(
+                tempPath,
+                options.resumeFrom ? { flags: 'a' } : undefined
+            );
+
+            const request = protocol.get(requestOptions, (response) => {
+                // Handle redirects
+                if (response.statusCode === 301 || response.statusCode === 302) {
+                    const redirectUrl = response.headers.location;
+                    if (redirectUrl && options.followRedirects !== false) {
+                        logger.debug(`Following redirect to: ${redirectUrl}`);
+                        writeStream.close();
+                        this.downloadFileInternal(redirectUrl, destPath, options)
+                            .then(resolve)
+                            .catch(reject);
+                        return;
+                    }
+                }
+
+                if (response.statusCode !== 200 && response.statusCode !== 206) {
+                    reject(new Error(`Download failed: ${response.statusCode}`));
+                    return;
+                }
+
+                const totalSize = parseInt(response.headers['content-length'] || '0', 10);
+                let downloadedSize = options.resumeFrom || 0;
+
+                response.on('data', (chunk) => {
+                    downloadedSize += chunk.length;
+                    writeStream.write(chunk);
+
+                    if (options.onProgress) {
+                        options.onProgress({
+                            downloaded: downloadedSize,
+                            total: totalSize,
+                            percent: totalSize > 0 ? (downloadedSize / totalSize) * 100 : 0,
+                            speed: 0
+                        });
+                    }
+                });
+
+                response.on('end', () => {
+                    writeStream.end();
+                    // Rename temp file to final destination
+                    fs.renameSync(tempPath, destPath);
+                    resolve();
+                });
+
+                response.on('error', reject);
+            });
+
+            // Handle abort signal
+            if (options.signal) {
+                options.signal.addEventListener('abort', () => {
+                    request.destroy();
+                    writeStream.close();
+                    reject(new Error('Download aborted'));
+                });
+            }
+
+            // Handle timeout
+            if (options.timeout) {
+                request.setTimeout(options.timeout, () => {
+                    request.destroy();
+                    reject(new Error('Download timeout'));
+                });
+            }
+
+            request.on('error', reject);
+        });
+    }
+
     /**
      * Clean up temp directory
      */

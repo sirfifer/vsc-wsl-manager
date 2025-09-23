@@ -15,16 +15,16 @@ describe('CommandBuilder - Real Command Construction', () => {
         it('should build valid list command', () => {
             const command = CommandBuilder.buildListCommand();
 
-            expect(command.command).toBe('wsl.exe');
-            expect(command.args).toContain('--list');
-            expect(command.args).toContain('--verbose');
+            expect(command[0]).toBe('wsl.exe');
+            expect(command).toContain('--list');
+            expect(command).toContain('--verbose');
         });
 
         it('should execute list command successfully', async () => {
-            const { command, args } = CommandBuilder.buildListCommand();
+            const command = CommandBuilder.buildListCommand();
 
             // Execute real command
-            const output = await assertCommandSucceeds(command, args);
+            const output = await assertCommandSucceeds(command.command, command.args);
 
             // Should return WSL distribution list or error message
             expect(output).toBeDefined();
@@ -42,11 +42,8 @@ describe('CommandBuilder - Real Command Construction', () => {
         });
 
         it('should escape special characters in names', () => {
-            const command = CommandBuilder.buildCreateCommand('test distro', 'Ubuntu 20.04');
-
-            // Arguments should be properly formatted
-            expect(command.args).toContain('test distro');
-            expect(command.args).toContain('Ubuntu 20.04');
+            // Should throw for names with spaces
+            expect(() => CommandBuilder.buildCreateCommand('test distro', 'Ubuntu 20.04')).toThrow();
         });
 
         it('should reject dangerous input', () => {
@@ -122,6 +119,7 @@ describe('CommandBuilder - Real Command Construction', () => {
                 'C:\\My Documents\\export.tar'
             );
 
+            // Should handle spaces in paths
             expect(command.args).toContain('C:\\My Documents\\export.tar');
         });
     });
@@ -303,7 +301,7 @@ describe('CommandBuilder - Real Command Construction', () => {
             for (const name of unicodeNames) {
                 // Should not throw
                 const command = CommandBuilder.buildCreateCommand(name, 'Ubuntu');
-                expect(command.args).toContain(name);
+                expect(command).toContain(name);
             }
         });
 
@@ -348,9 +346,7 @@ describe('CommandBuilder - Real Command Construction', () => {
                 '< input',
                 '`backtick`',
                 '$(subshell)',
-                '\nne
-
-wline',
+                '\nnewline',
                 '\r\ncarriage',
                 '\0null',
                 '../traversal',

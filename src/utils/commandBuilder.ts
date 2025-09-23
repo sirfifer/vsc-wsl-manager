@@ -12,6 +12,7 @@ export interface CommandResult {
     stdout: string;
     stderr: string;
     exitCode: number;
+    code?: number; // Alias for exitCode for compatibility
 }
 
 /**
@@ -54,9 +55,14 @@ export class CommandBuilder {
      * @returns Command result
      */
     static async executeWSL(args: string[], options: CommandOptions = {}): Promise<CommandResult> {
+        // Handle undefined args
+        if (!args || args.length === 0) {
+            throw new Error('No command arguments provided');
+        }
+
         // Validate command arguments
         this.validateWSLCommand(args);
-        
+
         return this.execute(this.WSL_COMMAND, args, options);
     }
     
@@ -191,7 +197,8 @@ export class CommandBuilder {
                 const result: CommandResult = {
                     stdout: stdout.trim(),
                     stderr: stderr.trim(),
-                    exitCode: code || 0
+                    exitCode: code || 0,
+                    code: code || 0 // Alias for compatibility
                 };
                 
                 if (code !== 0) {
@@ -221,9 +228,14 @@ export class CommandBuilder {
         if (!args || args.length === 0) {
             throw new Error('No command arguments provided');
         }
-        
-        // Check if the primary command is in the whitelist
+
+        // Skip validation if it's the wsl.exe command itself
         const primaryCommand = args[0];
+        if (primaryCommand === 'wsl.exe' || primaryCommand === 'wsl') {
+            return; // Allow wsl.exe itself
+        }
+
+        // Check if the primary command is in the whitelist
         if (!this.ALLOWED_WSL_COMMANDS.includes(primaryCommand)) {
             // Check if it's a distribution command (-d)
             if (primaryCommand !== '-d' && primaryCommand !== '--distribution') {
@@ -245,12 +257,12 @@ export class CommandBuilder {
      * @param verbose Include verbose output
      * @returns Command arguments
      */
-    static buildListCommand(verbose = true): string[] {
+    static buildListCommand(verbose = true): { command: string; args: string[] } {
         const args = ['--list'];
         if (verbose) {
             args.push('--verbose');
         }
-        return args;
+        return { command: 'wsl.exe', args };
     }
     
     /**
@@ -260,8 +272,20 @@ export class CommandBuilder {
      * @param tarPath TAR file path
      * @returns Command arguments
      */
-    static buildImportCommand(name: string, installLocation: string, tarPath: string): string[] {
-        return ['--import', name, installLocation, tarPath];
+    static buildCreateCommand(name: string, baseDistro: string): { command: string; args: string[] } {
+        if (!name || !baseDistro) {
+            throw new Error('Distribution name and base distro are required');
+        }
+        this.validateDistributionName(name);
+        this.validateDistributionName(baseDistro);
+        return { command: 'wsl.exe', args: ['--clone', baseDistro, name] };
+    }
+
+    static buildImportCommand(name: string, installLocation: string, tarPath: string): { command: string; args: string[] } {
+        this.validateDistributionName(name);
+        this.validatePath(installLocation);
+        this.validatePath(tarPath);
+        return { command: 'wsl.exe', args: ['--import', name, installLocation, tarPath] };
     }
     
     /**
@@ -270,35 +294,48 @@ export class CommandBuilder {
      * @param exportPath Export file path
      * @returns Command arguments
      */
-    static buildExportCommand(name: string, exportPath: string): string[] {
-        return ['--export', name, exportPath];
+    static buildExportCommand(name: string, exportPath: string): { command: string; args: string[] } {
+        this.validateDistributionName(name);
+        this.validatePath(exportPath);
+        return { command: 'wsl.exe', args: ['--export', name, exportPath] };
     }
-    
-    /**
-     * Build safe command for WSL unregister operation
-     * @param name Distribution name
-     * @returns Command arguments
-     */
-    static buildUnregisterCommand(name: string): string[] {
-        return ['--unregister', name];
+
+    static buildUnregisterCommand(name: string): { command: string; args: string[] } {
+        this.validateDistributionName(name);
+        return { command: 'wsl.exe', args: ['--unregister', name] };
     }
-    
-    /**
-     * Build safe command for WSL terminate operation
-     * @param name Distribution name
-     * @returns Command arguments
-     */
-    static buildTerminateCommand(name: string): string[] {
-        return ['--terminate', name];
+
+    static buildTerminateCommand(name: string): { command: string; args: string[] } {
+        this.validateDistributionName(name);
+        return { command: 'wsl.exe', args: ['--terminate', name] };
     }
-    
-    /**
-     * Build safe command for WSL set default operation
-     * @param name Distribution name
-     * @returns Command arguments
-     */
-    static buildSetDefaultCommand(name: string): string[] {
-        return ['--set-default', name];
+
+    static buildSetDefaultCommand(name: string): { command: string; args: string[] } {
+        this.validateDistributionName(name);
+        return { command: 'wsl.exe', args: ['--set-default', name] };
+    }
+
+    static buildRunCommand(distro: string, command: string): { command: string; args: string[] } {
+        // Validate for injection attempts
+        this.validateDistributionName(distro);
+
+        const dangerous = /[;&|`$<>(){}[\]\n\r\0]/;
+        if (dangerous.test(command) || command.includes('..')) {
+            throw new Error('Command contains dangerous characters');
+        }
+
+        // Parse the command into arguments
+        const commandArgs = command.split(' ').map(arg => {
+            // Remove quotes if present
+            if ((arg.startsWith('"') && arg.endsWith('"')) ||
+                (arg.startsWith("'") && arg.endsWith("'"))) {
+                return arg.slice(1, -1);
+            }
+            return arg;
+        });
+
+        const args = ['wsl.exe', '-d', distro, '--', ...commandArgs];
+        return { command: args[0], args };
     }
     
     /**
@@ -310,11 +347,83 @@ export class CommandBuilder {
         if (!output) {
             return [];
         }
-        
+
         // Split by newlines and filter empty lines
         return output
             .split(/\r?\n/)
             .map(line => line.trim())
             .filter(line => line.length > 0);
     }
+
+    /**
+     * Validate distribution name
+     * @param name Distribution name
+     * @throws Error if name is invalid
+     */
+    private static validateDistributionName(name: string): void {
+        if (!name || name.length === 0) {
+            throw new Error('Distribution name cannot be empty');
+        }
+
+        // Check length limits
+        if (name.length > 255) {
+            throw new Error('Distribution name too long');
+        }
+
+        // Check for dangerous characters - more comprehensive
+        const dangerous = /[;&|`$<>\\(){}\[\]\n\r]/;
+        if (dangerous.test(name)) {
+            throw new Error('Distribution name contains dangerous characters');
+        }
+
+        // Check for path traversal
+        if (name.includes('..')) {
+            throw new Error('Distribution name contains path traversal');
+        }
+    }
+
+    /**
+     * Validate file path
+     * @param path File path
+     * @throws Error if path is invalid
+     */
+    private static validatePath(path: string): void {
+        if (!path || path.length === 0) {
+            throw new Error('Path cannot be empty');
+        }
+
+        // Check for dangerous shell characters (but allow Windows backslashes and spaces)
+        const dangerous = /[;&|`$(){}\[\]\n\r<>]/;
+        if (dangerous.test(path)) {
+            throw new Error('Path contains dangerous characters');
+        }
+
+        // Check for path traversal - both Unix and Windows style
+        if (path.includes('..')) {
+            throw new Error('Path traversal detected');
+        }
+    }
+
+    /**
+     * Escape argument for shell
+     * @param arg Argument to escape
+     * @returns Escaped argument
+     */
+    static escapeArgument(arg: string): string {
+        // Check for dangerous characters
+        if (arg.includes('\0')) {
+            throw new Error('Null bytes not allowed');
+        }
+        if (arg.includes('\n') || arg.includes('\r')) {
+            throw new Error('Newlines not allowed');
+        }
+
+        // For Windows, wrap in quotes ONLY if contains spaces or special chars
+        // Don't quote simple strings
+        if (arg.includes(' ') || /[&|<>^();]/.test(arg)) {
+            return `"${arg.replace(/"/g, '""')}"`;
+        }
+        return arg;
+    }
+
 }

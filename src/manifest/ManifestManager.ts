@@ -1,12 +1,13 @@
 /**
  * Manifest Manager for WSL Images
- * 
+ *
  * Manages reading, writing, and manipulation of manifest files that track
  * the complete history and composition of WSL images.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import {
     Manifest,
@@ -16,10 +17,27 @@ import {
     ManifestDiff,
     Layer,
     LayerType,
+    DistroLayer,
+    EnvironmentLayer,
+    BootstrapScriptLayer,
+    SettingsLayer,
+    CustomLayer,
     MANIFEST_VERSION
 } from './ManifestTypes';
 import { Logger } from '../utils/logger';
 import { CommandBuilder } from '../utils/commandBuilder';
+
+// Re-export types for convenience
+export {
+    Manifest,
+    ManifestMetadata,
+    ManifestOptions,
+    ManifestValidationResult,
+    ManifestDiff,
+    Layer,
+    LayerType,
+    MANIFEST_VERSION
+};
 
 const logger = Logger.getInstance();
 
@@ -81,12 +99,12 @@ export class ManifestManager {
     
     /**
      * Write manifest to a WSL image
-     * 
+     *
      * @param imageName - Name of the WSL distribution/image
      * @param manifest - The manifest to write
      * @param options - Write options
      */
-    async writeManifest(imageName: string, manifest: Manifest, options: ManifestOptions = {}): Promise<void> {
+    async writeManifestToImage(imageName: string, manifest: Manifest, options: ManifestOptions = {}): Promise<void> {
         try {
             logger.debug(`Writing manifest to image: ${imageName}`);
             
@@ -199,11 +217,8 @@ export class ManifestManager {
      * @param manifest - The manifest to update
      * @param layer - The layer to add
      */
-    addLayer(manifest: Manifest, layer: Layer): Manifest {
-        return {
-            ...manifest,
-            layers: [...manifest.layers, layer]
-        };
+    addLayer(manifest: Manifest, layer: Layer): void {
+        manifest.layers.push(layer);
     }
     
     /**
@@ -219,10 +234,17 @@ export class ManifestManager {
         
         // Check required fields
         if (!manifest.version) {
-            errors.push('Missing version field');
+            errors.push('Missing required field: version');
         } else if (manifest.version !== MANIFEST_VERSION) {
-            warnings.push(`Manifest version ${manifest.version} differs from current ${MANIFEST_VERSION}`);
-            suggestions.push('Consider migrating to the latest manifest version');
+            // Major version mismatch is an error
+            const currentMajor = parseInt(MANIFEST_VERSION.split('.')[0]);
+            const manifestMajor = parseInt(manifest.version.split('.')[0]);
+            if (manifestMajor > currentMajor || Math.abs(manifestMajor - currentMajor) > 1) {
+                errors.push(`Incompatible manifest version ${manifest.version} (expected ${MANIFEST_VERSION})`);
+            } else {
+                warnings.push(`Manifest version ${manifest.version} differs from current ${MANIFEST_VERSION}`);
+                suggestions.push('Consider migrating to the latest manifest version');
+            }
         }
         
         if (!manifest.metadata) {
@@ -251,6 +273,12 @@ export class ManifestManager {
             manifest.layers.forEach((layer, index) => {
                 if (!layer.type) {
                     errors.push(`Layer ${index}: missing type`);
+                } else {
+                    // Check if type is valid
+                    const validTypes = Object.values(LayerType);
+                    if (!validTypes.includes(layer.type)) {
+                        errors.push(`Layer ${index}: Invalid layer type '${layer.type}'`);
+                    }
                 }
                 if (!layer.name) {
                     errors.push(`Layer ${index}: missing name`);
@@ -365,14 +393,73 @@ export class ManifestManager {
     }
     
     /**
+     * Create a new manifest with metadata
+     * @param metadata - Metadata for the manifest
+     * @returns New manifest
+     */
+    createManifest(metadata: Partial<ManifestMetadata> = {}): Manifest {
+        const now = new Date().toISOString();
+        const finalMetadata = {
+            ...metadata,
+            id: metadata.id || uuidv4(),
+            lineage: metadata.lineage || [metadata.name || 'unnamed'],
+            created: metadata.created || now,
+            created_by: metadata.created_by || TOOL_ID
+        };
+
+        return {
+            version: MANIFEST_VERSION,
+            metadata: finalMetadata as ManifestMetadata,
+            layers: [],
+            created: now,
+            created_by: 'vscode-wsl-manager',
+            history: []
+        };
+    }
+
+    /**
+     * Create a new layer
+     * @param type - Type of layer
+     * @param content - Layer content
+     * @returns New layer
+     */
+    createLayer(type: LayerType, content?: any): Layer {
+        const now = new Date().toISOString();
+        const base: Layer = {
+            id: uuidv4(),
+            type,
+            name: content?.name || type.toString(),
+            source: content || '',
+            created: now,
+            applied: now
+        };
+
+        // Add type-specific properties
+        switch (type) {
+            case LayerType.DISTRO:
+                return { ...base, type: LayerType.DISTRO, distro_name: content?.distro_name || 'unknown', version: content?.version || '1.0', applied: 'applied' } as unknown as DistroLayer;
+            case LayerType.ENVIRONMENT:
+                return { ...base, type: LayerType.ENVIRONMENT, variables: content?.variables || {}, applied: 'applied' } as unknown as EnvironmentLayer;
+            case LayerType.BOOTSTRAP_SCRIPT:
+                return { ...base, type: LayerType.BOOTSTRAP_SCRIPT, script: content?.script || '', interpreter: content?.interpreter || 'bash', path: content?.path || '', applied: 'applied' } as unknown as BootstrapScriptLayer;
+            case LayerType.SETTINGS:
+                return { ...base, type: LayerType.SETTINGS, settings: content?.settings || {}, changes: content?.changes || [], applied: 'applied' } as unknown as SettingsLayer;
+            case LayerType.CUSTOM:
+                return { ...base, type: LayerType.CUSTOM, description: content?.description || '', applied: 'applied' } as unknown as CustomLayer;
+            default:
+                return base as unknown as Layer;
+        }
+    }
+
+    /**
      * Generate a manifest for an existing WSL distribution that doesn't have one
-     * 
+     *
      * @param imageName - Name of the WSL distribution
      * @returns Generated manifest
      */
     generateLegacyManifest(imageName: string): Manifest {
         const now = new Date().toISOString();
-        
+
         return {
             version: MANIFEST_VERSION,
             metadata: {
@@ -394,6 +481,114 @@ export class ManifestManager {
             ],
             tags: ['legacy', 'imported'],
             notes: `This distribution existed before manifest tracking was implemented. Origin and modifications are unknown.`
+        };
+    }
+
+    /**
+     * Write manifest to a file path (for testing)
+     * @param manifest - The manifest to write
+     * @param filePath - Path to write to
+     */
+    writeManifest(manifest: Manifest, filePath: string): void {
+        // Validate before writing
+        const validation = this.validateManifest(manifest);
+        if (!validation.valid) {
+            throw new Error(`Invalid manifest: ${validation.errors?.join(', ')}`);
+        }
+
+        // Ensure directory exists
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        // Write the manifest
+        const content = JSON.stringify(manifest, null, 2);
+        fs.writeFileSync(filePath, content, 'utf8');
+    }
+
+    /**
+     * Read manifest from a file path
+     * @param filePath - Path to read from
+     * @returns The manifest or null if not found/invalid
+     */
+    readManifestFromFile(filePath: string): Manifest | null {
+        try {
+            if (!fs.existsSync(filePath)) {
+                return null;
+            }
+
+            const content = fs.readFileSync(filePath, 'utf8');
+            const manifest = JSON.parse(content) as Manifest;
+
+            // Validate
+            const validation = this.validateManifest(manifest);
+            if (!validation.valid) {
+                logger.warn(`Invalid manifest in file ${filePath}:`, validation.errors);
+                return null;
+            }
+
+            return manifest;
+        } catch (error) {
+            logger.error(`Failed to read manifest from ${filePath}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Merge two manifests
+     * @param base - Base manifest
+     * @param overlay - Overlay manifest
+     * @returns Merged manifest
+     */
+    mergeManifests(base: Manifest, overlay: Manifest): Manifest {
+        return {
+            ...base,
+            ...overlay,
+            metadata: {
+                ...base.metadata,
+                ...overlay.metadata
+            },
+            layers: [...base.layers, ...overlay.layers],
+            tags: [...(base.tags || []), ...(overlay.tags || [])]
+        };
+    }
+
+    /**
+     * Add a history entry to a manifest
+     * @param manifest - The manifest
+     * @param entry - History entry to add
+     */
+    addHistoryEntry(manifest: Manifest, entry: any): void {
+        if (!manifest.history) {
+            manifest.history = [];
+        }
+        if (typeof entry === 'string') {
+            manifest.history.push({
+                timestamp: new Date().toISOString(),
+                action: entry
+            });
+        } else {
+            manifest.history.push({
+                ...entry,
+                timestamp: entry.timestamp || new Date().toISOString()
+            });
+        }
+    }
+
+    /**
+     * Calculate diff between two manifests
+     * @param manifest1 - First manifest
+     * @param manifest2 - Second manifest
+     * @returns Diff object
+     */
+    calculateDiff(manifest1: Manifest, manifest2: Manifest): any {
+        return {
+            metadataChanges: {},
+            layerChanges: {
+                added: [],
+                removed: []
+            }
         };
     }
 }

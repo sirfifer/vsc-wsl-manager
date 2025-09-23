@@ -3,10 +3,18 @@
  * Provides configurable logging with different levels and output targets
  */
 
-import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+
+// Conditional vscode import for test compatibility
+let vscode: any;
+try {
+    vscode = require('vscode');
+} catch {
+    // Running in test environment - vscode not available
+    vscode = null;
+}
 
 export enum LogLevel {
     DEBUG = 0,
@@ -26,7 +34,7 @@ export interface LogEntry {
 
 export class Logger {
     private static instance: Logger;
-    private outputChannel: vscode.OutputChannel;
+    private outputChannel: any; // vscode.OutputChannel when available
     private logLevel: LogLevel = LogLevel.INFO;
     private fileLoggingEnabled: boolean = false;
     private logFilePath?: string;
@@ -40,15 +48,21 @@ export class Logger {
     private currentFileSize: number = 0;
     
     private constructor() {
-        this.outputChannel = vscode.window.createOutputChannel('WSL Manager');
-        this.loadConfiguration();
-        
-        // Watch for configuration changes
-        vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration('wsl-manager.logging')) {
-                this.loadConfiguration();
-            }
-        });
+        if (vscode) {
+            this.outputChannel = vscode.window.createOutputChannel('WSL Manager');
+            this.loadConfiguration();
+
+            // Watch for configuration changes
+            vscode.workspace.onDidChangeConfiguration((e: any) => {
+                if (e.affectsConfiguration('wsl-manager.logging')) {
+                    this.loadConfiguration();
+                }
+            });
+        } else {
+            // Test environment - no output channel
+            this.outputChannel = null;
+            this.logLevel = LogLevel.DEBUG; // Enable all logs in tests
+        }
     }
     
     static getInstance(): Logger {
@@ -59,18 +73,19 @@ export class Logger {
     }
     
     private loadConfiguration(): void {
+        if (!vscode) return;
         const config = vscode.workspace.getConfiguration('wsl-manager.logging');
         
         // Set log level
-        const levelStr = config.get<string>('level', 'info').toUpperCase();
+        const levelStr = (config.get('level', 'info') as string).toUpperCase();
         this.logLevel = LogLevel[levelStr as keyof typeof LogLevel] || LogLevel.INFO;
         
         // Set file logging
-        this.fileLoggingEnabled = config.get<boolean>('enableFileLogging', false);
-        this.rotationSize = config.get<number>('rotationSizeMB', 10) * 1024 * 1024;
+        this.fileLoggingEnabled = config.get('enableFileLogging', false) as boolean;
+        this.rotationSize = (config.get('rotationSizeMB', 10) as number) * 1024 * 1024;
         
         if (this.fileLoggingEnabled) {
-            const logDir = config.get<string>('logDirectory') || 
+            const logDir = (config.get('logDirectory') as string) ||
                 path.join(process.env.APPDATA || process.env.HOME || '', 'vsc-wsl-manager', 'logs');
             
             // Create log directory
@@ -239,7 +254,12 @@ export class Logger {
         const formattedMessage = this.formatMessage(entry);
         
         // Write to output channel
-        this.outputChannel.appendLine(formattedMessage);
+        if (this.outputChannel) {
+            this.outputChannel.appendLine(formattedMessage);
+        } else {
+            // Test environment - output to console
+            console.log(formattedMessage);
+        }
         
         // Write to console in development
         if (process.env.NODE_ENV === 'development') {
@@ -316,7 +336,9 @@ export class Logger {
      * Show the output channel
      */
     show(): void {
-        this.outputChannel.show();
+        if (this.outputChannel) {
+            this.outputChannel.show();
+        }
     }
     
     /**

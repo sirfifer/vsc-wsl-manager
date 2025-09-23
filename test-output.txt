@@ -1,0 +1,1138 @@
+
+> vsc-wsl-manager@1.0.0 test:unit
+> vitest run test/unit
+
+
+ RUN  v1.6.1 /mnt/c/data/rea/dev/vsc-wsl-manager
+
+ ✓ test/unit/utils/inputValidator.real.test.ts  (31 tests) 10ms
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Storage Directory Creation > should create storage directories on initialization
+[2025-09-23T04:09:12.114Z] [INFO ] Created distro storage directory: /tmp/distro-test-FVvBJx/distros
+[2025-09-23T04:09:12.116Z] [DEBUG] Saved distro catalog
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Storage Directory Creation > should create catalog.json file
+[2025-09-23T04:09:12.120Z] [INFO ] Created distro storage directory: /tmp/distro-test-dY3K1a/distros
+[2025-09-23T04:09:12.121Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.121Z] [DEBUG] Saved distro catalog
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should add a distribution from a real TAR file
+[2025-09-23T04:09:12.123Z] [INFO ] Created distro storage directory: /tmp/distro-test-qNXK2S/distros
+[2025-09-23T04:09:12.123Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.124Z] [INFO ] Adding distro: alpine-test
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should add a distribution from a real TAR file
+[2025-09-23T04:09:12.127Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.127Z] [INFO ] Added distro alpine-test to catalog
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should list all available distributions
+[2025-09-23T04:09:12.129Z] [INFO ] Created distro storage directory: /tmp/distro-test-sYFMM7/distros
+[2025-09-23T04:09:12.129Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.129Z] [INFO ] Adding distro: ubuntu-test
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should list all available distributions
+[2025-09-23T04:09:12.130Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.130Z] [INFO ] Added distro ubuntu-test to catalog
+[2025-09-23T04:09:12.130Z] [INFO ] Adding distro: debian-test
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should list all available distributions
+[2025-09-23T04:09:12.131Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.131Z] [INFO ] Added distro debian-test to catalog
+[2025-09-23T04:09:12.131Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:12.131Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real HTTPS Downloads > should download a small test file from the internet
+[2025-09-23T04:09:12.189Z] [INFO ] Created distro storage directory: /tmp/download-test-q1IypP/distros
+[2025-09-23T04:09:12.190Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.191Z] [DEBUG] Downloading from: https://httpbin.org/bytes/1024
+[2025-09-23T04:09:12.191Z] [DEBUG] Destination: /tmp/download-test-q1IypP/test-download.bin
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should list all available distributions
+[2025-09-23T04:09:12.211Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:12.211Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > File Type Detection > should correctly identify TAR files
+[2025-09-23T04:09:12.212Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552211-c038307e/distros
+[2025-09-23T04:09:12.213Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.213Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.214Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > File Type Detection > should correctly identify GZIP/TAR.GZ files
+[2025-09-23T04:09:12.217Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552216-3dfe3ad9/distros
+[2025-09-23T04:09:12.217Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.254Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.255Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > File Type Detection > should correctly identify ZIP/APPX files
+[2025-09-23T04:09:12.259Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552257-775c33db/distros
+[2025-09-23T04:09:12.259Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.259Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.260Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > createFromDistro - Real Scenario Tests > should handle ZIP file misnamed as .tar (like kali-linux.tar)
+[2025-09-23T04:09:12.263Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552261-938357c7/distros
+[2025-09-23T04:09:12.263Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.263Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.263Z] [DEBUG] Loaded metadata for 3 images
+[2025-09-23T04:09:12.264Z] [INFO ] Adding distro: test-distro
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > createFromDistro - Real Scenario Tests > should handle ZIP file misnamed as .tar (like kali-linux.tar)
+[2025-09-23T04:09:12.269Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.269Z] [INFO ] Added distro test-distro to catalog
+[2025-09-23T04:09:12.270Z] [INFO ] Creating image 'test-image' from distro 'test-distro'
+[2025-09-23T04:09:12.270Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:12.270Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > TAR File Operations > should create a valid TAR file from directory
+[2025-09-23T04:09:12.286Z] [INFO ] Created distro storage directory: /tmp/image-test-8t4lFF/distros
+[2025-09-23T04:09:12.287Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.287Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.288Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/manifest/manifestManager.real.test.ts > ManifestManager - Real File Operations > Manifest File I/O > should handle corrupted JSON files gracefully
+[2025-09-23T04:09:12.269Z] [ERROR] Failed to read manifest from /tmp/manifest-test-YoAvgx/test-manifest.json: | Error: SyntaxError: Unexpected token 'j', ..."invalid": json file "... is not valid JSON | SyntaxError: Unexpected token 'j', ..."invalid": json file "... is not valid JSON |     at JSON.parse (<anonymous>) |     at ManifestManager.readManifestFromFile (/mnt/c/data/rea/dev/vsc-wsl-manager/src/manifest/ManifestManager.ts:522:35)
+
+ ❯ test/unit/manifest/manifestManager.real.test.ts  (19 tests | 7 failed) 123ms
+   ❯ test/unit/manifest/manifestManager.real.test.ts > ManifestManager - Real File Operations > Manifest Creation > should create a valid manifest with metadata
+     → expected { name: 'test-image', …(8) } to deeply equal { name: 'test-image', …(4) }
+   ❯ test/unit/manifest/manifestManager.real.test.ts > ManifestManager - Real File Operations > Manifest File I/O > should read manifest from JSON file
+     → Invalid manifest: Layer 0: missing name
+   ❯ test/unit/manifest/manifestManager.real.test.ts > ManifestManager - Real File Operations > Manifest Validation > should validate correct manifest structure
+     → expected undefined to deeply equal []
+   ❯ test/unit/manifest/manifestManager.real.test.ts > ManifestManager - Real File Operations > Manifest Validation > should warn about large manifests
+     → expected false to be true // Object.is equality
+   ❯ test/unit/manifest/manifestManager.real.test.ts > ManifestManager - Real File Operations > Manifest Merging > should merge two manifests
+     → expected [ 'extended' ] to include 'base'
+   ❯ test/unit/manifest/manifestManager.real.test.ts > ManifestManager - Real File Operations > Manifest Diff > should calculate diff between manifests
+     → expected undefined to deeply equal { old: 'Version 1', new: 'Version 2' }
+   ❯ test/unit/manifest/manifestManager.real.test.ts > ManifestManager - Real File Operations > Real File System Integration > should calculate manifest file size
+     → Invalid manifest: Layer 0: missing name, Layer 1: missing name, Layer 2: missing name, Layer 3: missing name, Layer 4: missing name, Layer 5: missing name, Layer 6: missing name, Layer 7: missing name, Layer 8: missing name, Layer 9: missing name, Layer 10: missing name, Layer 11: missing name, Layer 12: missing name, Layer 13: missing name, Layer 14: missing name, Layer 15: missing name, Layer 16: missing name, Layer 17: missing name, Layer 18: missing name, Layer 19: missing name, Layer 20: missing name, Layer 21: missing name, Layer 22: missing name, Layer 23: missing name, Layer 24: missing name, Layer 25: missing name, Layer 26: missing name, Layer 27: missing name, Layer 28: missing name, Layer 29: missing name, Layer 30: missing name, Layer 31: missing name, Layer 32: missing name, Layer 33: missing name, Layer 34: missing name, Layer 35: missing name, Layer 36: missing name, Layer 37: missing name, Layer 38: missing name, Layer 39: missing name, Layer 40: missing name, Layer 41: missing name, Layer 42: missing name, Layer 43: missing name, Layer 44: missing name, Layer 45: missing name, Layer 46: missing name, Layer 47: missing name, Layer 48: missing name, Layer 49: missing name
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should list all available distributions
+[2025-09-23T04:09:12.443Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should list all available distributions
+[2025-09-23T04:09:12.445Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > TAR File Operations > should calculate TAR file size correctly
+[2025-09-23T04:09:12.453Z] [INFO ] Created distro storage directory: /tmp/image-test-QYT251/distros
+[2025-09-23T04:09:12.453Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.454Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.454Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should list all available distributions
+[2025-09-23T04:09:12.447Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.447Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should remove a distribution and delete its file
+[2025-09-23T04:09:12.490Z] [INFO ] Created distro storage directory: /tmp/distro-test-0KoC3j/distros
+[2025-09-23T04:09:12.490Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.496Z] [INFO ] Adding distro: to-remove
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should remove a distribution and delete its file
+[2025-09-23T04:09:12.498Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.498Z] [INFO ] Added distro to-remove to catalog
+[2025-09-23T04:09:12.498Z] [INFO ] Removing distro: to-remove
+[2025-09-23T04:09:12.499Z] [DEBUG] Deleted distro file: /tmp/distro-test-0KoC3j/distros/to-remove.tar
+[2025-09-23T04:09:12.499Z] [INFO ] Marked distro to-remove as unavailable in catalog
+[2025-09-23T04:09:12.499Z] [INFO ] Removed custom distro to-remove from catalog
+[2025-09-23T04:09:12.499Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.499Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:12.499Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > createFromDistro - Real Scenario Tests > should handle ZIP file misnamed as .tar (like kali-linux.tar)
+[2025-09-23T04:09:12.486Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:12.486Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should remove a distribution and delete its file
+[2025-09-23T04:09:12.507Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:12.507Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > WSL Image Creation > should validate image names
+[2025-09-23T04:09:12.598Z] [INFO ] Created distro storage directory: /tmp/image-test-5py7Gb/distros
+[2025-09-23T04:09:12.599Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.599Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.599Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > createFromDistro - Real Scenario Tests > should handle ZIP file misnamed as .tar (like kali-linux.tar)
+[2025-09-23T04:09:12.691Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > createFromDistro - Real Scenario Tests > should handle ZIP file misnamed as .tar (like kali-linux.tar)
+[2025-09-23T04:09:12.698Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > WSL Image Creation > should check if WSL distribution exists
+[2025-09-23T04:09:12.740Z] [INFO ] Created distro storage directory: /tmp/image-test-g9NPJp/distros
+[2025-09-23T04:09:12.740Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.740Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.740Z] [DEBUG] Loaded metadata for 3 images
+
+ ❯ test/unit/utils/commandBuilder.real.test.ts  (29 tests | 9 failed) 744ms
+   ❯ test/unit/utils/commandBuilder.real.test.ts > CommandBuilder - Real Command Construction > buildRunCommand() > should build valid run command
+     → expected undefined to be 'wsl.exe' // Object.is equality
+   ❯ test/unit/utils/commandBuilder.real.test.ts > CommandBuilder - Real Command Construction > executeWSL() > should execute valid commands
+     → expected { …(3) } to have property "code"
+   ❯ test/unit/utils/commandBuilder.real.test.ts > CommandBuilder - Real Command Construction > executeWSL() > should handle command timeout
+     → expected 'Command \'undefined\' is not allowed' to match /timeout/i
+   ❯ test/unit/utils/commandBuilder.real.test.ts > CommandBuilder - Real Command Construction > executeWSL() > should capture error output
+     → Command 'undefined' is not allowed
+   ❯ test/unit/utils/commandBuilder.real.test.ts > CommandBuilder - Real Command Construction > escapeArgument() > should escape shell special characters
+     → expected '"with space"' to be 'with space' // Object.is equality
+   ❯ test/unit/utils/commandBuilder.real.test.ts > CommandBuilder - Real Command Construction > Real Command Execution > should list distributions without errors
+     → expected '' to match /wsl|not found|not recognized/i
+   ❯ test/unit/utils/commandBuilder.real.test.ts > CommandBuilder - Real Command Construction > Real Command Execution > should validate command structure
+     → expected undefined to be 'wsl.exe' // Object.is equality
+   ❯ test/unit/utils/commandBuilder.real.test.ts > CommandBuilder - Real Command Construction > Security Integration > should prevent all forms of injection
+     → expected [Function] to throw an error
+   ❯ test/unit/utils/commandBuilder.real.test.ts > CommandBuilder - Real Command Construction > Security Integration > should handle edge cases safely
+     → expected [Function] to throw an error
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should remove a distribution and delete its file
+[2025-09-23T04:09:12.863Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should remove a distribution and delete its file
+[2025-09-23T04:09:12.867Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should remove a distribution and delete its file
+[2025-09-23T04:09:12.871Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.871Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should verify distribution integrity with SHA256
+[2025-09-23T04:09:12.879Z] [INFO ] Created distro storage directory: /tmp/distro-test-y5cwPR/distros
+[2025-09-23T04:09:12.879Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.880Z] [INFO ] Adding distro: verify-test
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should verify distribution integrity with SHA256
+[2025-09-23T04:09:12.882Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.882Z] [INFO ] Added distro verify-test to catalog
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should get distribution file path
+[2025-09-23T04:09:12.885Z] [INFO ] Created distro storage directory: /tmp/distro-test-iphobk/distros
+[2025-09-23T04:09:12.885Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.885Z] [INFO ] Adding distro: path-test
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should get distribution file path
+[2025-09-23T04:09:12.887Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.887Z] [INFO ] Added distro path-test to catalog
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should persist catalog to disk and reload it
+[2025-09-23T04:09:12.889Z] [INFO ] Created distro storage directory: /tmp/distro-test-5QM3j4/distros
+[2025-09-23T04:09:12.889Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.889Z] [INFO ] Adding distro: persist-test
+[2025-09-23T04:09:12.890Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.890Z] [INFO ] Added distro persist-test to catalog
+[2025-09-23T04:09:12.891Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.891Z] [DEBUG] Loaded distro catalog with 1 entries
+[2025-09-23T04:09:12.891Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:12.891Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should persist catalog to disk and reload it
+[2025-09-23T04:09:12.901Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:12.901Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > createFromDistro - Real Scenario Tests > should handle ZIP file misnamed as .tar (like kali-linux.tar)
+[2025-09-23T04:09:12.706Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.706Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > createFromDistro - Real Scenario Tests > should successfully extract APPX with embedded TAR
+[2025-09-23T04:09:12.729Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552728-eb95a7bc/distros
+[2025-09-23T04:09:12.729Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.730Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.730Z] [DEBUG] Loaded metadata for 3 images
+Skipping test - zip tools not available
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > APPX Extraction > should create proper temp directory for extraction
+[2025-09-23T04:09:12.910Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552908-407e2d47/distros
+[2025-09-23T04:09:12.910Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.910Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.910Z] [DEBUG] Loaded metadata for 3 images
+[2025-09-23T04:09:12.911Z] [DEBUG] Extracting APPX from /tmp/wsl-test-1758600552908-407e2d47/test.tar to /tmp/wsl-test-1758600552908-407e2d47/appx_extract_1758600552911
+[2025-09-23T04:09:12.911Z] [DEBUG] Executing command: which unzip
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > APPX Extraction > should create proper temp directory for extraction
+[2025-09-23T04:09:12.931Z] [DEBUG] Using unzip for extraction
+[2025-09-23T04:09:12.931Z] [DEBUG] Executing command: unzip -q /tmp/wsl-test-1758600552908-407e2d47/test.tar -d /tmp/wsl-test-1758600552908-407e2d47/appx_extract_1758600552911
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > APPX Extraction > should create proper temp directory for extraction
+[2025-09-23T04:09:12.948Z] [ERROR] Extraction failed: unzip failed: [/tmp/wsl-test-1758600552908-407e2d47/test.tar]
+  End-of-central-directory signature not found.  Either this file is not
+  a zipfile, or it constitutes one disk of a multi-part archive.  In the
+  latter case the central directory and zipfile comment will be found on
+  the last disk(s) of this archive.
+unzip:  cannot find zipfile directory in one of /tmp/wsl-test-1758600552908-407e2d47/test.tar or
+        /tmp/wsl-test-1758600552908-407e2d47/test.tar.zip, and cannot find /tmp/wsl-test-1758600552908-407e2d47/test.tar.ZIP, period.
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > APPX Extraction > should use correct extraction command based on platform
+[2025-09-23T04:09:12.950Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552949-926502e6/distros
+[2025-09-23T04:09:12.950Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.950Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.950Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Platform-Specific Behavior > should handle Windows paths correctly
+[2025-09-23T04:09:12.952Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552951-ff75132c/distros
+[2025-09-23T04:09:12.952Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.952Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.952Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Platform-Specific Behavior > should handle Linux paths correctly
+[2025-09-23T04:09:12.953Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552952-b00f93af/distros
+[2025-09-23T04:09:12.953Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.954Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.954Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Error Handling > should provide meaningful error for corrupted APPX
+[2025-09-23T04:09:12.955Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600552954-c0acc114/distros
+[2025-09-23T04:09:12.955Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:12.955Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:12.955Z] [DEBUG] Loaded metadata for 3 images
+[2025-09-23T04:09:12.956Z] [DEBUG] Extracting APPX from /tmp/wsl-test-1758600552954-c0acc114/corrupt.tar to /tmp/wsl-test-1758600552954-c0acc114/appx_extract_1758600552956
+[2025-09-23T04:09:12.956Z] [DEBUG] Executing command: which unzip
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Error Handling > should provide meaningful error for corrupted APPX
+[2025-09-23T04:09:12.995Z] [DEBUG] Using unzip for extraction
+[2025-09-23T04:09:12.995Z] [DEBUG] Executing command: unzip -q /tmp/wsl-test-1758600552954-c0acc114/corrupt.tar -d /tmp/wsl-test-1758600552954-c0acc114/appx_extract_1758600552956
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Error Handling > should provide meaningful error for corrupted APPX
+[2025-09-23T04:09:13.012Z] [ERROR] Extraction failed: unzip failed: [/tmp/wsl-test-1758600552954-c0acc114/corrupt.tar]
+  End-of-central-directory signature not found.  Either this file is not
+  a zipfile, or it constitutes one disk of a multi-part archive.  In the
+  latter case the central directory and zipfile comment will be found on
+  the last disk(s) of this archive.
+unzip:  cannot find zipfile directory in one of /tmp/wsl-test-1758600552954-c0acc114/corrupt.tar or
+        /tmp/wsl-test-1758600552954-c0acc114/corrupt.tar.zip, and cannot find /tmp/wsl-test-1758600552954-c0acc114/corrupt.tar.ZIP, period.
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Error Handling > should clean up temp files on extraction failure
+[2025-09-23T04:09:13.014Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600553013-bbe381fd/distros
+[2025-09-23T04:09:13.014Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.015Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:13.015Z] [DEBUG] Loaded metadata for 3 images
+[2025-09-23T04:09:13.015Z] [DEBUG] Extracting APPX from /tmp/wsl-test-1758600553013-bbe381fd/bad.tar to /tmp/wsl-test-1758600553013-bbe381fd/appx_extract_1758600553015
+[2025-09-23T04:09:13.015Z] [DEBUG] Executing command: which unzip
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Error Handling > should clean up temp files on extraction failure
+[2025-09-23T04:09:13.034Z] [DEBUG] Using unzip for extraction
+[2025-09-23T04:09:13.034Z] [DEBUG] Executing command: unzip -q /tmp/wsl-test-1758600553013-bbe381fd/bad.tar -d /tmp/wsl-test-1758600553013-bbe381fd/appx_extract_1758600553015
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Error Handling > should clean up temp files on extraction failure
+[2025-09-23T04:09:13.052Z] [ERROR] Extraction failed: unzip failed: [/tmp/wsl-test-1758600553013-bbe381fd/bad.tar]
+  End-of-central-directory signature not found.  Either this file is not
+  a zipfile, or it constitutes one disk of a multi-part archive.  In the
+  latter case the central directory and zipfile comment will be found on
+  the last disk(s) of this archive.
+unzip:  cannot find zipfile directory in one of /tmp/wsl-test-1758600553013-bbe381fd/bad.tar or
+        /tmp/wsl-test-1758600553013-bbe381fd/bad.tar.zip, and cannot find /tmp/wsl-test-1758600553013-bbe381fd/bad.tar.ZIP, period.
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Integration with DistroManager > should handle distro not found error
+[2025-09-23T04:09:13.054Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600553053-88a03a7e/distros
+[2025-09-23T04:09:13.054Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.054Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:13.054Z] [DEBUG] Loaded metadata for 3 images
+[2025-09-23T04:09:13.054Z] [INFO ] Creating image 'test-image' from distro 'non-existent-distro'
+[2025-09-23T04:09:13.054Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.054Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Integration with DistroManager > should handle distro not found error
+[2025-09-23T04:09:13.062Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.062Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should persist catalog to disk and reload it
+[2025-09-23T04:09:13.097Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should persist catalog to disk and reload it
+[2025-09-23T04:09:13.099Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should persist catalog to disk and reload it
+[2025-09-23T04:09:13.111Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.111Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle missing catalog file gracefully
+[2025-09-23T04:09:13.114Z] [INFO ] Created distro storage directory: /tmp/distro-test-BXSl6a/distros
+[2025-09-23T04:09:13.115Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.115Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.115Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.115Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle missing catalog file gracefully
+[2025-09-23T04:09:13.122Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.122Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Microsoft Registry Integration > should fetch real distributions from Microsoft Registry
+[2025-09-23T04:09:13.129Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-fEVgMm/distros
+[2025-09-23T04:09:13.129Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.130Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:13.130Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.130Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Metadata Management > should create and persist image metadata
+[2025-09-23T04:09:13.167Z] [INFO ] Created distro storage directory: /tmp/image-test-6ALRr7/distros
+[2025-09-23T04:09:13.167Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.167Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:13.167Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Integration with DistroManager > should handle distro not found error
+[2025-09-23T04:09:13.274Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Metadata Management > should handle workspace-scoped images
+[2025-09-23T04:09:13.264Z] [INFO ] Created distro storage directory: /tmp/image-test-KM7qlp/distros
+[2025-09-23T04:09:13.264Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.264Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:13.264Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Integration with DistroManager > should handle distro not found error
+[2025-09-23T04:09:13.277Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+[2025-09-23T04:09:13.277Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.277Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Integration with DistroManager > should handle distro not available locally
+[2025-09-23T04:09:13.279Z] [INFO ] Created distro storage directory: /tmp/wsl-test-1758600553278-b413fea2/distros
+[2025-09-23T04:09:13.279Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.279Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:13.279Z] [DEBUG] Loaded metadata for 3 images
+[2025-09-23T04:09:13.280Z] [INFO ] Adding distro: test-distro
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Integration with DistroManager > should handle distro not available locally
+[2025-09-23T04:09:13.281Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.281Z] [INFO ] Added distro test-distro to catalog
+[2025-09-23T04:09:13.281Z] [INFO ] Creating image 'test-image' from distro 'test-distro'
+[2025-09-23T04:09:13.281Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.281Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Integration with DistroManager > should handle distro not available locally
+[2025-09-23T04:09:13.290Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.290Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Real WSL Import/Export Operations > should export and import a TAR file with WSL
+[2025-09-23T04:09:13.362Z] [INFO ] Created distro storage directory: /tmp/image-test-Hs2mTc/distros
+[2025-09-23T04:09:13.362Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.363Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:13.363Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle missing catalog file gracefully
+[2025-09-23T04:09:13.442Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle missing catalog file gracefully
+[2025-09-23T04:09:13.449Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Real WSL Import/Export Operations > should export and import a TAR file with WSL
+Exporting U b u n t u - 2 4 . 0 4   to TAR file...
+[2025-09-23T04:09:13.449Z] [INFO ] Exporting U b u n t u - 2 4 . 0 4   to /tmp/image-test-Hs2mTc/export.tar
+[2025-09-23T04:09:13.449Z] [DEBUG] Executing command: wsl.exe --export U b u n t u - 2 4 . 0 4   /tmp/image-test-Hs2mTc/export.tar
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle missing catalog file gracefully
+[2025-09-23T04:09:13.452Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.452Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle corrupted catalog file
+[2025-09-23T04:09:13.468Z] [INFO ] Created distro storage directory: /tmp/distro-test-kZBeId/distros
+[2025-09-23T04:09:13.468Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.468Z] [ERROR] Failed to load distro catalog: | Error: SyntaxError: Unexpected token 'I', "INVALID JSON {{{" is not valid JSON | SyntaxError: Unexpected token 'I', "INVALID JSON {{{" is not valid JSON |     at JSON.parse (<anonymous>) |     at DistroManager.loadCatalog (/mnt/c/data/rea/dev/vsc-wsl-manager/src/distros/DistroManager.ts:113:37)
+[2025-09-23T04:09:13.469Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.469Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle corrupted catalog file
+[2025-09-23T04:09:13.478Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.478Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Microsoft Registry Integration > should fetch real distributions from Microsoft Registry
+[2025-09-23T04:09:13.484Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.484Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:13.484Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:13.484Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:13.484Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:13.485Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:13.485Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.485Z] [INFO ] Refreshed 7 distributions from registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Microsoft Registry Integration > should have correct Ubuntu-24.04 URL
+[2025-09-23T04:09:13.488Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-xvzb9U/distros
+[2025-09-23T04:09:13.488Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.488Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:13.488Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.488Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Microsoft Registry Integration > should have correct Ubuntu-24.04 URL
+[2025-09-23T04:09:13.495Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.495Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:13.495Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:13.495Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:13.495Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:13.495Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:13.495Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.495Z] [INFO ] Refreshed 7 distributions from registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Microsoft Registry Integration > should refresh distributions from real Microsoft Registry
+[2025-09-23T04:09:13.514Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-3CA2f4/distros
+[2025-09-23T04:09:13.514Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.514Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:13.514Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.514Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Microsoft Registry Integration > should refresh distributions from real Microsoft Registry
+[2025-09-23T04:09:13.521Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.521Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:13.521Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:13.521Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:13.521Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:13.522Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:13.522Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.522Z] [INFO ] Refreshed 7 distributions from registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real URL Validation > should validate real Ubuntu-24.04 URL with HEAD request
+[2025-09-23T04:09:13.524Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-b6D92P/distros
+[2025-09-23T04:09:13.524Z] [DEBUG] Saved distro catalog
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Listing and Discovery > should list all WSL distributions
+[2025-09-23T04:09:13.541Z] [INFO ] Created distro storage directory: /tmp/image-test-MV4rMb/distros
+[2025-09-23T04:09:13.541Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.541Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:13.541Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Integration with DistroManager > should handle distro not available locally
+[2025-09-23T04:09:13.604Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should fetch distributions from Microsoft registry
+[2025-09-23T04:09:13.616Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.617Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should fetch distributions from Microsoft registry
+[2025-09-23T04:09:13.619Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.619Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should use cached data within 24 hours
+[2025-09-23T04:09:13.622Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.622Z] [DEBUG] Fetching from Microsoft registry
+[2025-09-23T04:09:13.623Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.623Z] [INFO ] Fetched 4 distributions
+[2025-09-23T04:09:13.623Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.623Z] [DEBUG] Using cached distribution list
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should refresh cache after 24 hours
+[2024-01-01T00:00:00.000Z] [INFO ] Fetching available distributions
+[2024-01-01T00:00:00.000Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should refresh cache after 24 hours
+[2024-01-01T00:00:00.000Z] [DEBUG] Saved distribution cache
+[2024-01-01T00:00:00.000Z] [INFO ] Fetched 4 distributions
+[2024-01-01T00:00:00.000Z] [INFO ] Fetching available distributions
+[2024-01-01T00:00:00.000Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should refresh cache after 24 hours
+[2024-01-01T00:00:00.000Z] [DEBUG] Saved distribution cache
+[2024-01-01T00:00:00.000Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should fall back to local cache when network fails
+[2025-09-23T04:09:13.627Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.627Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Listing and Discovery > should list all WSL distributions
+[2025-09-23T04:09:13.617Z] [DEBUG] Saved image metadata
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should fall back to local cache when network fails
+[2025-09-23T04:09:13.628Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.628Z] [INFO ] Fetched 4 distributions
+[2025-09-23T04:09:13.628Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.628Z] [DEBUG] Fetching from Microsoft registry
+[2025-09-23T04:09:13.629Z] [ERROR] Failed to fetch from Microsoft registry | Error: Error: Network error | Error: Network error |     at /mnt/c/data/rea/dev/vsc-wsl-manager/test/unit/distributionRegistry.real.test.ts:145:57 |     at runTest (file:///mnt/c/data/rea/dev/vsc-wsl-manager/node_modules/@vitest/runner/dist/index.js:781:11)
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should fall back to local cache when network fails
+[2025-09-23T04:09:13.649Z] [INFO ] Loaded 4 distributions from cache
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should parse Microsoft JSON structure correctly
+[2025-09-23T04:09:13.651Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.651Z] [DEBUG] Fetching from Microsoft registry
+[2025-09-23T04:09:13.652Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.652Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > fetchAvailableDistributions > should handle malformed JSON gracefully
+[2025-09-23T04:09:13.653Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.653Z] [DEBUG] Fetching from Microsoft registry
+[2025-09-23T04:09:13.653Z] [WARN ] Invalid distribution data structure
+[2025-09-23T04:09:13.654Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.654Z] [INFO ] Fetched 0 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDownloadUrl > should return correct URL for x64 architecture
+[2025-09-23T04:09:13.655Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.655Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDownloadUrl > should return correct URL for x64 architecture
+[2025-09-23T04:09:13.656Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.656Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDownloadUrl > should return correct URL for ARM64 architecture
+[2025-09-23T04:09:13.657Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.657Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDownloadUrl > should return correct URL for ARM64 architecture
+[2025-09-23T04:09:13.657Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.657Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDownloadUrl > should fall back to x64 URL when ARM64 not available
+[2025-09-23T04:09:13.658Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.658Z] [DEBUG] Fetching from Microsoft registry
+[2025-09-23T04:09:13.659Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.659Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDownloadUrl > should handle missing distribution gracefully
+[2025-09-23T04:09:13.660Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.660Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDownloadUrl > should handle missing distribution gracefully
+[2025-09-23T04:09:13.661Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.661Z] [INFO ] Fetched 4 distributions
+[2025-09-23T04:09:13.661Z] [WARN ] Distribution not found: NonExistent
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDownloadUrl > should handle distribution name case-insensitively
+[2025-09-23T04:09:13.662Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.662Z] [DEBUG] Fetching from Microsoft registry
+[2025-09-23T04:09:13.663Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.663Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDistributionInfo > should return full distribution info
+[2025-09-23T04:09:13.664Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.664Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDistributionInfo > should return full distribution info
+[2025-09-23T04:09:13.665Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.665Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDistributionInfo > should return null for non-existent distribution
+[2025-09-23T04:09:13.666Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.666Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDistributionInfo > should return null for non-existent distribution
+[2025-09-23T04:09:13.666Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.666Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > getDefaultDistribution > should return the default distribution from Microsoft data
+[2025-09-23T04:09:13.667Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.667Z] [DEBUG] Fetching from Microsoft registry
+[2025-09-23T04:09:13.668Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.668Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > local cache management > should save distributions to local cache file
+[2025-09-23T04:09:13.669Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.669Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > local cache management > should save distributions to local cache file
+[2025-09-23T04:09:13.671Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.671Z] [INFO ] Fetched 4 distributions
+
+stdout | test/unit/distributionRegistry.real.test.ts > DistributionRegistry > local cache management > should load from local cache when network unavailable
+[2025-09-23T04:09:13.673Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.673Z] [DEBUG] Fetching from Microsoft registry
+[2025-09-23T04:09:13.673Z] [ERROR] Failed to fetch from Microsoft registry | Error: Error: Network error | Error: Network error |     at /mnt/c/data/rea/dev/vsc-wsl-manager/test/unit/distributionRegistry.real.test.ts:303:57 |     at file:///mnt/c/data/rea/dev/vsc-wsl-manager/node_modules/@vitest/runner/dist/index.js:135:14
+[2025-09-23T04:09:13.674Z] [INFO ] Loaded 4 distributions from cache
+
+ ✓ test/unit/distributionRegistry.real.test.ts  (16 tests) 61ms
+stdout | test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > Integration with DistroManager > should handle distro not available locally
+[2025-09-23T04:09:13.638Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+[2025-09-23T04:09:13.639Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.639Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/images/wslImageManager.real.test.ts > Linux/WSL-Specific Tests > should check for unzip availability
+[2025-09-23T04:09:13.709Z] [DEBUG] Executing command: which unzip
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Listing and Discovery > should get detailed image information
+[2025-09-23T04:09:13.721Z] [INFO ] Created distro storage directory: /tmp/image-test-7a6NHz/distros
+[2025-09-23T04:09:13.721Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.721Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:13.721Z] [DEBUG] Loaded metadata for 3 images
+
+ ❯ test/unit/images/wslImageManager.real.test.ts  (14 tests | 1 failed) 1533ms
+   ❯ test/unit/images/wslImageManager.real.test.ts > WSLImageManager Cross-Platform Tests > createFromDistro - Real Scenario Tests > should handle ZIP file misnamed as .tar (like kali-linux.tar)
+     → expected 'Distro not found: test-distro' to contain 'Failed to extract TAR'
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle corrupted catalog file
+[2025-09-23T04:09:13.775Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle corrupted catalog file
+[2025-09-23T04:09:13.802Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle corrupted catalog file
+[2025-09-23T04:09:13.810Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.810Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Discovery > should list distributions from catalog
+[2025-09-23T04:09:13.814Z] [INFO ] Created distro storage directory: /tmp/distro-test-juyfB6/distros
+[2025-09-23T04:09:13.814Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.814Z] [INFO ] Adding distro: manual1
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Discovery > should list distributions from catalog
+[2025-09-23T04:09:13.816Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.816Z] [INFO ] Added distro manual1 to catalog
+[2025-09-23T04:09:13.816Z] [INFO ] Adding distro: manual2
+[2025-09-23T04:09:13.817Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.817Z] [INFO ] Added distro manual2 to catalog
+[2025-09-23T04:09:13.817Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:13.817Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Listing and Discovery > should get detailed image information
+[2025-09-23T04:09:13.804Z] [DEBUG] Saved image metadata
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Discovery > should list distributions from catalog
+[2025-09-23T04:09:13.825Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:13.825Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Listing and Discovery > should get detailed image information
+[2025-09-23T04:09:13.884Z] [DEBUG] Saved image metadata
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image State Management > should check if image is running
+[2025-09-23T04:09:13.976Z] [INFO ] Created distro storage directory: /tmp/image-test-uMRdMn/distros
+[2025-09-23T04:09:13.976Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:13.976Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:13.976Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Discovery > should list distributions from catalog
+[2025-09-23T04:09:14.013Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Discovery > should list distributions from catalog
+[2025-09-23T04:09:14.016Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Discovery > should list distributions from catalog
+[2025-09-23T04:09:14.021Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.021Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Discovery > should check if distribution is available locally
+[2025-09-23T04:09:14.023Z] [INFO ] Created distro storage directory: /tmp/distro-test-6XMRV8/distros
+[2025-09-23T04:09:14.023Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.024Z] [INFO ] Adding distro: available-test
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Discovery > should check if distribution is available locally
+[2025-09-23T04:09:14.024Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.024Z] [INFO ] Added distro available-test to catalog
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should handle adding distribution with non-existent file
+[2025-09-23T04:09:14.026Z] [INFO ] Created distro storage directory: /tmp/distro-test-8yi7QY/distros
+[2025-09-23T04:09:14.026Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.026Z] [INFO ] Adding distro: missing-file
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should handle removing non-existent distribution
+[2025-09-23T04:09:14.028Z] [INFO ] Created distro storage directory: /tmp/distro-test-JmHb6d/distros
+[2025-09-23T04:09:14.028Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.028Z] [INFO ] Removing distro: does-not-exist
+[2025-09-23T04:09:14.028Z] [INFO ] Removed custom distro does-not-exist from catalog
+[2025-09-23T04:09:14.029Z] [DEBUG] Saved distro catalog
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should prevent duplicate distribution names
+[2025-09-23T04:09:14.030Z] [INFO ] Created distro storage directory: /tmp/distro-test-QmfkIS/distros
+[2025-09-23T04:09:14.030Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.031Z] [INFO ] Adding distro: duplicate
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should prevent duplicate distribution names
+[2025-09-23T04:09:14.031Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.032Z] [INFO ] Added distro duplicate to catalog
+[2025-09-23T04:09:14.032Z] [INFO ] Adding distro: duplicate
+[2025-09-23T04:09:14.032Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.032Z] [INFO ] Added distro duplicate to catalog
+[2025-09-23T04:09:14.032Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.032Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should prevent duplicate distribution names
+[2025-09-23T04:09:14.039Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.040Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image State Management > should check if image is running
+[2025-09-23T04:09:14.061Z] [DEBUG] Saved image metadata
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real URL Validation > should detect invalid URL with real HEAD request
+[2025-09-23T04:09:14.194Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-2zxer9/distros
+[2025-09-23T04:09:14.194Z] [DEBUG] Saved distro catalog
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should prevent duplicate distribution names
+[2025-09-23T04:09:14.229Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should prevent duplicate distribution names
+[2025-09-23T04:09:14.232Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+[2025-09-23T04:09:14.232Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.232Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Real File Operations > should calculate correct file sizes
+[2025-09-23T04:09:14.235Z] [INFO ] Created distro storage directory: /tmp/distro-test-cS1JSP/distros
+[2025-09-23T04:09:14.235Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.236Z] [INFO ] Adding distro: small
+[2025-09-23T04:09:14.237Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.237Z] [INFO ] Added distro small to catalog
+[2025-09-23T04:09:14.237Z] [INFO ] Adding distro: large
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Real File Operations > should calculate correct file sizes
+[2025-09-23T04:09:14.251Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.251Z] [INFO ] Added distro large to catalog
+[2025-09-23T04:09:14.251Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.251Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image State Management > should terminate running image
+[2025-09-23T04:09:14.240Z] [INFO ] Created distro storage directory: /tmp/image-test-gFp6Z7/distros
+[2025-09-23T04:09:14.240Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.240Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:14.240Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Real File Operations > should calculate correct file sizes
+[2025-09-23T04:09:14.263Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.264Z] [INFO ] Fetched 12 distributions
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image State Management > should terminate running image
+[2025-09-23T04:09:14.325Z] [DEBUG] Saved image metadata
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Error Handling > should handle import with invalid TAR file
+[2025-09-23T04:09:14.416Z] [INFO ] Created distro storage directory: /tmp/image-test-GUhHaJ/distros
+[2025-09-23T04:09:14.416Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.416Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:14.416Z] [DEBUG] Loaded metadata for 3 images
+[2025-09-23T04:09:14.417Z] [INFO ] Importing test-image-1758600554416 from /tmp/image-test-GUhHaJ/invalid.tar to /tmp/image-test-GUhHaJ/install
+[2025-09-23T04:09:14.417Z] [DEBUG] Executing command: wsl.exe --import test-image-1758600554416 /tmp/image-test-GUhHaJ/install /tmp/image-test-GUhHaJ/invalid.tar
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Real File Operations > should calculate correct file sizes
+[2025-09-23T04:09:14.454Z] [DEBUG] Failed to fetch size for SUSE-Linux-Enterprise-15-SP6: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Real File Operations > should calculate correct file sizes
+[2025-09-23T04:09:14.456Z] [DEBUG] Failed to fetch size for openSUSE-Tumbleweed: Error: Failed to fetch size: 302
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Real File Operations > should calculate correct file sizes
+[2025-09-23T04:09:14.461Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.461Z] [INFO ] Updated catalog with 12 distributions from Microsoft Registry
+
+stdout | test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Real File Operations > should handle filesystem permission errors gracefully
+[2025-09-23T04:09:14.464Z] [INFO ] Created distro storage directory: /tmp/distro-test-VGEZ7f/distros
+[2025-09-23T04:09:14.464Z] [DEBUG] Saved distro catalog
+
+ ❯ test/unit/distros/distroManager.real.test.ts  (17 tests | 10 failed) 2355ms
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Management > should list all available distributions
+     → expected [ { name: 'ubuntu', …(9) }, …(11) ] to have a length of 2 but got 12
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should persist catalog to disk and reload it
+     → expected [ { name: 'ubuntu', …(9) }, …(11) ] to have a length of 1 but got 12
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle missing catalog file gracefully
+     → expected [ { name: 'ubuntu', …(9) }, …(11) ] to deeply equal []
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Catalog Persistence > should handle corrupted catalog file
+     → expected [ { name: 'ubuntu', …(9) }, …(11) ] to deeply equal []
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Distribution Discovery > should list distributions from catalog
+     → expected 12 to be 2 // Object.is equality
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should handle adding distribution with non-existent file
+     → Tar file not found: /non/existent/file.tar
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should handle removing non-existent distribution
+     → expected true to be false // Object.is equality
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Error Handling > should prevent duplicate distribution names
+     → expected [] to have a length of 1 but got +0
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Real File Operations > should calculate correct file sizes
+     → expected undefined to be 1024 // Object.is equality
+   ❯ test/unit/distros/distroManager.real.test.ts > DistroManager - Real Tests > Real File Operations > should handle filesystem permission errors gracefully
+     → expected [Function] to not throw an error but 'Error: EACCES: permission denied, mkd…' was thrown
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Error Handling > should handle export of non-existent distribution
+[2025-09-23T04:09:14.597Z] [INFO ] Created distro storage directory: /tmp/image-test-KilhLG/distros
+[2025-09-23T04:09:14.597Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.597Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:14.597Z] [DEBUG] Loaded metadata for 3 images
+[2025-09-23T04:09:14.598Z] [INFO ] Exporting non-existent-distro-12345 to /tmp/image-test-KilhLG/export.tar
+[2025-09-23T04:09:14.598Z] [DEBUG] Executing command: wsl.exe --export non-existent-distro-12345 /tmp/image-test-KilhLG/export.tar
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Catalog Persistence > should save real catalog to disk
+[2025-09-23T04:09:14.659Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-OfpjpJ/distros
+[2025-09-23T04:09:14.659Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.659Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:14.659Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.659Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Catalog Persistence > should save real catalog to disk
+[2025-09-23T04:09:14.666Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.666Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:14.666Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.666Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.666Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:14.666Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:14.666Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.666Z] [INFO ] Refreshed 7 distributions from registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Catalog Persistence > should load real catalog from disk on next instantiation
+[2025-09-23T04:09:14.668Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-PPB4tf/distros
+[2025-09-23T04:09:14.668Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.669Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:14.669Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.669Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Catalog Persistence > should load real catalog from disk on next instantiation
+[2025-09-23T04:09:14.681Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.681Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:14.681Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.681Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.681Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:14.682Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:14.682Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.682Z] [INFO ] Refreshed 7 distributions from registry
+[2025-09-23T04:09:14.682Z] [DEBUG] Loaded distro catalog with 7 entries
+[2025-09-23T04:09:14.682Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:14.682Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.682Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Catalog Persistence > should load real catalog from disk on next instantiation
+[2025-09-23T04:09:14.688Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.688Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:14.688Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.688Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.688Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:14.688Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:14.688Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.688Z] [INFO ] Refreshed 7 distributions from registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Catalog Persistence > should handle corrupted catalog gracefully
+[2025-09-23T04:09:14.690Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-eRO7iw/distros
+[2025-09-23T04:09:14.690Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.690Z] [ERROR] Failed to load distro catalog: | Error: SyntaxError: Unexpected token 'o', "not-valid-json{{{" is not valid JSON | SyntaxError: Unexpected token 'o', "not-valid-json{{{" is not valid JSON |     at JSON.parse (<anonymous>) |     at EnhancedDistroManager.loadCatalog (/mnt/c/data/rea/dev/vsc-wsl-manager/src/distros/DistroManager.ts:113:37)
+[2025-09-23T04:09:14.692Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:14.692Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.692Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Catalog Persistence > should handle corrupted catalog gracefully
+[2025-09-23T04:09:14.698Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.699Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:14.699Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.699Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.699Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:14.699Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:14.699Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.699Z] [INFO ] Refreshed 7 distributions from registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Cache Behavior > should use 1-hour cache duration
+[2025-09-23T04:09:14.701Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-ZXz1Ir/distros
+[2025-09-23T04:09:14.701Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.701Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:14.701Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.701Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Cache Behavior > should use 1-hour cache duration
+[2025-09-23T04:09:14.710Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.710Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:14.710Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.710Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.710Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:14.710Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:14.710Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.710Z] [INFO ] Refreshed 7 distributions from registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Cache Behavior > should clear cache when requested
+[2025-09-23T04:09:14.712Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-mIkbV0/distros
+[2025-09-23T04:09:14.712Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.712Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:14.712Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.713Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Cache Behavior > should clear cache when requested
+[2025-09-23T04:09:14.719Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.720Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:14.720Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.720Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.720Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:14.720Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:14.720Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.720Z] [INFO ] Refreshed 7 distributions from registry
+[2025-09-23T04:09:14.720Z] [INFO ] Clearing distribution cache
+[2025-09-23T04:09:14.720Z] [DEBUG] Cache cleared
+[2025-09-23T04:09:14.720Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:14.720Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.720Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Cache Behavior > should clear cache when requested
+[2025-09-23T04:09:14.726Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.726Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:14.726Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.726Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.726Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:14.726Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:14.726Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.726Z] [INFO ] Refreshed 7 distributions from registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Security - Input Validation > should handle malicious distribution names safely
+[2025-09-23T04:09:14.728Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-xKMxxX/distros
+[2025-09-23T04:09:14.728Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.728Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:14.728Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.728Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Security - Input Validation > should handle malicious distribution names safely
+[2025-09-23T04:09:14.734Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.734Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:14.734Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.734Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.734Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:14.734Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:14.735Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.735Z] [INFO ] Refreshed 7 distributions from registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Security - Input Validation > should sanitize file paths
+[2025-09-23T04:09:14.736Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-k2Xtn1/distros
+[2025-09-23T04:09:14.736Z] [DEBUG] Saved distro catalog
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Performance Requirements > should complete unit operations in < 200ms
+[2025-09-23T04:09:14.738Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-28NFMs/distros
+[2025-09-23T04:09:14.738Z] [DEBUG] Saved distro catalog
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Performance Requirements > should complete listDistros in reasonable time
+[2025-09-23T04:09:14.739Z] [INFO ] Created distro storage directory: /tmp/enhanced-distro-real-test-0Ii82a/distros
+[2025-09-23T04:09:14.739Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.739Z] [INFO ] Refreshing distributions from Microsoft Registry
+[2025-09-23T04:09:14.739Z] [INFO ] Fetching available distributions
+[2025-09-23T04:09:14.739Z] [DEBUG] Fetching from Microsoft registry
+
+stdout | test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Performance Requirements > should complete listDistros in reasonable time
+[2025-09-23T04:09:14.745Z] [DEBUG] Saved distribution cache
+[2025-09-23T04:09:14.745Z] [INFO ] Fetched 12 distributions
+[2025-09-23T04:09:14.745Z] [INFO ] Updated URL for ubuntu-24.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.745Z] [INFO ] Updated URL for ubuntu-22.04: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/Ubuntu2204-220117.appx
+[2025-09-23T04:09:14.745Z] [INFO ] Updated URL for debian-12: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/TheDebianProject.DebianGNULinux_1.12.2.0_neutral___76v4gfsz19hv4.AppxBundle
+[2025-09-23T04:09:14.745Z] [INFO ] Updated URL for kali-linux: https://publicwsldistros.blob.core.windows.net/wsldistrostorage/KaliLinux_1.13.1.0.AppxBundle
+[2025-09-23T04:09:14.745Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.745Z] [INFO ] Refreshed 7 distributions from registry
+
+ ❯ test/unit/distros/enhancedDistroManager.real.test.ts  (14 tests | 1 failed) 1620ms
+   ❯ test/unit/distros/enhancedDistroManager.real.test.ts > EnhancedDistroManager - Real Tests > Real Microsoft Registry Integration > should have correct Ubuntu-24.04 URL
+     → expected 'https://publicwsldistros.blob.core.wi…' to be 'https://releases.ubuntu.com/24.04.3/u…' // Object.is equality
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Error Handling > should handle duplicate image creation
+[2025-09-23T04:09:14.761Z] [INFO ] Created distro storage directory: /tmp/image-test-FNrAlH/distros
+[2025-09-23T04:09:14.761Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.761Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:14.761Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Cloning > should clone an existing image
+[2025-09-23T04:09:14.849Z] [INFO ] Created distro storage directory: /tmp/image-test-r2Cw2c/distros
+[2025-09-23T04:09:14.849Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:14.850Z] [DEBUG] Loaded distro catalog with 12 entries
+[2025-09-23T04:09:14.850Z] [DEBUG] Loaded metadata for 3 images
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Cloning > should clone an existing image
+[2025-09-23T04:09:14.937Z] [DEBUG] Saved image metadata
+Cloning Ubuntu-24.04 to test-image-1758600554850-clone...
+[2025-09-23T04:09:14.937Z] [INFO ] Cloning image 'Ubuntu-24.04' to 'test-image-1758600554850-clone'
+
+stdout | test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Cloning > should clone an existing image
+[2025-09-23T04:09:15.013Z] [DEBUG] Exporting Ubuntu-24.04 to temporary tar
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real HTTPS Downloads > should download with progress tracking
+[2025-09-23T04:09:15.111Z] [INFO ] Created distro storage directory: /tmp/download-test-DtTv0G/distros
+[2025-09-23T04:09:15.111Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:15.111Z] [DEBUG] Downloading from: https://httpbin.org/bytes/10240
+[2025-09-23T04:09:15.111Z] [DEBUG] Destination: /tmp/download-test-DtTv0G/progress-test.bin
+
+ ❯ test/unit/images/imageManager.real.test.ts  (15 tests | 8 failed) 2985ms
+   ❯ test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > WSL Image Creation > should validate image names
+     → expected true to be false // Object.is equality
+   ❯ test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > WSL Image Creation > should check if WSL distribution exists
+     → expected false to be true // Object.is equality
+   ❯ test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Real WSL Import/Export Operations > should export and import a TAR file with WSL
+     → The argument 'args[1]' must be a string without null bytes. Received 'U\x00b\x00u\x00n\x00t\x00u\x00-\x002\x004\x00.\x000\x004\x00\r\x00'
+   ❯ test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Listing and Discovery > should list all WSL distributions
+     → expected undefined not to be undefined
+   ❯ test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Listing and Discovery > should get detailed image information
+     → expected undefined not to be undefined
+   ❯ test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Error Handling > should handle import with invalid TAR file
+     → promise resolved "undefined" instead of rejecting
+   ❯ test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Error Handling > should handle export of non-existent distribution
+     → promise resolved "undefined" instead of rejecting
+   ❯ test/unit/images/imageManager.real.test.ts > WSLImageManager - Real WSL Operations > Image Cloning > should clone an existing image
+     → Command failed with exit code 255: The system cannot find the path specified. 
+Error code: Wsl/ERROR_PATH_NOT_FOUND
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real HTTPS Downloads > should verify SHA256 checksum of downloaded file
+[2025-09-23T04:09:15.189Z] [INFO ] Created distro storage directory: /tmp/download-test-EQED9H/distros
+[2025-09-23T04:09:15.189Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:15.190Z] [DEBUG] Downloading from: https://httpbin.org/base64/SGVsbG8gV29ybGQh
+[2025-09-23T04:09:15.190Z] [DEBUG] Destination: /tmp/download-test-EQED9H/checksum-test.txt
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real HTTPS Downloads > should handle download interruption and resume
+[2025-09-23T04:09:15.282Z] [INFO ] Created distro storage directory: /tmp/download-test-yIvX2H/distros
+[2025-09-23T04:09:15.282Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:15.283Z] [DEBUG] Downloading from: https://httpbin.org/bytes/5120
+[2025-09-23T04:09:15.283Z] [DEBUG] Destination: /tmp/download-test-yIvX2H/resume-test.bin
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real HTTPS Downloads > should handle download interruption and resume
+[2025-09-23T04:09:15.384Z] [DEBUG] Downloading from: https://httpbin.org/bytes/5120
+[2025-09-23T04:09:15.384Z] [DEBUG] Destination: /tmp/download-test-yIvX2H/resume-test.bin
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real HTTPS Downloads > should handle HTTPS redirects
+[2025-09-23T04:09:16.403Z] [INFO ] Created distro storage directory: /tmp/download-test-DY5V1Y/distros
+[2025-09-23T04:09:16.403Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:16.403Z] [DEBUG] Downloading from: https://httpbin.org/redirect-to?url=https://httpbin.org/bytes/512
+[2025-09-23T04:09:16.403Z] [DEBUG] Destination: /tmp/download-test-DY5V1Y/redirect-test.bin
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real HTTPS Downloads > should handle HTTPS redirects
+[2025-09-23T04:09:16.468Z] [DEBUG] Following redirect to: https://httpbin.org/bytes/512
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real HTTPS Downloads > should timeout on slow downloads
+[2025-09-23T04:09:16.806Z] [INFO ] Created distro storage directory: /tmp/download-test-owvQTJ/distros
+[2025-09-23T04:09:16.806Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:16.807Z] [DEBUG] Downloading from: https://httpbin.org/delay/10
+[2025-09-23T04:09:16.807Z] [DEBUG] Destination: /tmp/download-test-owvQTJ/timeout-test.json
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real Distribution Downloads > should download a real Alpine Linux mini root filesystem
+[2025-09-23T04:09:18.811Z] [INFO ] Created distro storage directory: /tmp/download-test-5SGeBr/distros
+[2025-09-23T04:09:18.811Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:18.811Z] [DEBUG] Downloading from: https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-minirootfs-3.18.0-x86_64.tar.gz
+[2025-09-23T04:09:18.811Z] [DEBUG] Destination: /tmp/download-test-5SGeBr/alpine.tar.gz
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Real Distribution Downloads > should download a real Alpine Linux mini root filesystem
+Download progress: 100% (3276395/3276395 bytes)
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Parallel Downloads > should handle multiple simultaneous downloads
+[2025-09-23T04:09:18.944Z] [INFO ] Created distro storage directory: /tmp/download-test-GigVPY/distros
+[2025-09-23T04:09:18.944Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:18.944Z] [DEBUG] Downloading from: https://httpbin.org/bytes/1024
+[2025-09-23T04:09:18.944Z] [DEBUG] Destination: /tmp/download-test-GigVPY/file1.bin
+[2025-09-23T04:09:18.945Z] [DEBUG] Downloading from: https://httpbin.org/bytes/2048
+[2025-09-23T04:09:18.945Z] [DEBUG] Destination: /tmp/download-test-GigVPY/file2.bin
+[2025-09-23T04:09:18.946Z] [DEBUG] Downloading from: https://httpbin.org/bytes/512
+[2025-09-23T04:09:18.946Z] [DEBUG] Destination: /tmp/download-test-GigVPY/file3.bin
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Parallel Downloads > should cancel specific downloads without affecting others
+[2025-09-23T04:09:19.959Z] [INFO ] Created distro storage directory: /tmp/download-test-0P7SMk/distros
+[2025-09-23T04:09:19.959Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:19.959Z] [DEBUG] Downloading from: https://httpbin.org/bytes/2048
+[2025-09-23T04:09:19.959Z] [DEBUG] Destination: /tmp/download-test-0P7SMk/keep.bin
+[2025-09-23T04:09:19.960Z] [DEBUG] Downloading from: https://httpbin.org/delay/5
+[2025-09-23T04:09:19.960Z] [DEBUG] Destination: /tmp/download-test-0P7SMk/cancel.bin
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Error Handling > should handle 404 errors gracefully
+[2025-09-23T04:09:20.462Z] [INFO ] Created distro storage directory: /tmp/download-test-aWFxZp/distros
+[2025-09-23T04:09:20.462Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:20.462Z] [DEBUG] Downloading from: https://httpbin.org/status/404
+[2025-09-23T04:09:20.463Z] [DEBUG] Destination: /tmp/download-test-aWFxZp/404-test.bin
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Error Handling > should handle DNS resolution failures
+[2025-09-23T04:09:20.529Z] [INFO ] Created distro storage directory: /tmp/download-test-xTykQ4/distros
+[2025-09-23T04:09:20.529Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:20.529Z] [DEBUG] Downloading from: https://this-domain-definitely-does-not-exist-12345.com/file.tar
+[2025-09-23T04:09:20.529Z] [DEBUG] Destination: /tmp/download-test-xTykQ4/dns-fail.tar
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Error Handling > should handle invalid URLs
+[2025-09-23T04:09:21.030Z] [INFO ] Created distro storage directory: /tmp/download-test-q3z9Tv/distros
+[2025-09-23T04:09:21.031Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:21.031Z] [DEBUG] Downloading from: not-a-valid-url
+[2025-09-23T04:09:21.031Z] [DEBUG] Destination: /tmp/download-test-q3z9Tv/invalid.tar
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Error Handling > should handle disk full scenarios
+[2025-09-23T04:09:21.032Z] [INFO ] Created distro storage directory: /tmp/download-test-qBVXrk/distros
+[2025-09-23T04:09:21.032Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:21.032Z] [DEBUG] Downloading from: https://httpbin.org/bytes/100
+[2025-09-23T04:09:21.032Z] [DEBUG] Destination: /invalid/path/that/cannot/exist/file.tar
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Checksum Verification > should calculate SHA256 during download
+[2025-09-23T04:09:21.034Z] [INFO ] Created distro storage directory: /tmp/download-test-qJ5cGt/distros
+[2025-09-23T04:09:21.034Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:21.034Z] [DEBUG] Downloading from: https://httpbin.org/bytes/1024
+[2025-09-23T04:09:21.034Z] [DEBUG] Destination: /tmp/download-test-qJ5cGt/sha256-test.bin
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Checksum Verification > should reject downloads with incorrect checksum
+[2025-09-23T04:09:23.265Z] [INFO ] Created distro storage directory: /tmp/download-test-mQ0PX7/distros
+[2025-09-23T04:09:23.265Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:23.265Z] [DEBUG] Downloading from: https://httpbin.org/bytes/512
+[2025-09-23T04:09:23.266Z] [DEBUG] Destination: /tmp/download-test-mQ0PX7/checksum-fail.bin
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Download Caching > should skip download if file exists with correct checksum
+[2025-09-23T04:09:23.417Z] [INFO ] Created distro storage directory: /tmp/download-test-6zV0PW/distros
+[2025-09-23T04:09:23.417Z] [DEBUG] Saved distro catalog
+[2025-09-23T04:09:23.418Z] [DEBUG] Downloading from: https://httpbin.org/bytes/256
+[2025-09-23T04:09:23.418Z] [DEBUG] Destination: /tmp/download-test-6zV0PW/cached.bin
+
+stdout | test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Download Caching > should skip download if file exists with correct checksum
+[2025-09-23T04:09:23.584Z] [DEBUG] File already exists with correct checksum: /tmp/download-test-6zV0PW/cached.bin
+
+ ❯ test/unit/distros/distroDownloader.real.test.ts  (16 tests | 1 failed) 11398ms
+   ❯ test/unit/distros/distroDownloader.real.test.ts > DistroDownloader - Real Network Tests > Checksum Verification > should reject downloads with incorrect checksum
+     → promise resolved "undefined" instead of rejecting
+
+ Test Files  7 failed | 2 passed (9)
+      Tests  37 failed | 134 passed (171)
+   Start at  21:09:01
+   Duration  21.60s (transform 2.80s, setup 1ms, collect 5.81s, tests 20.83s, environment 2ms, prepare 19.43s)
+
