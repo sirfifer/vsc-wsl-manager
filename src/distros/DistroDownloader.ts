@@ -7,6 +7,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import * as https from 'https';
 import * as http from 'http';
 import * as crypto from 'crypto';
@@ -292,7 +293,8 @@ export class DistroDownloader {
     private async extractTarFromAppx(appxPath: string, targetPath: string): Promise<string | null> {
         try {
             const executor = new CrossPlatformCommandExecutor();
-            const tempDir = path.join(path.dirname(appxPath), 'appx_extract_' + Date.now());
+            // Use system temp directory to avoid polluting source directories
+            const tempDir = path.join(os.tmpdir(), 'appx_extract_' + Date.now());
 
             // Create temp directory
             fs.mkdirSync(tempDir, { recursive: true });
@@ -365,11 +367,13 @@ export class DistroDownloader {
             if (tarFile) {
                 logger.info(`Found TAR file: ${path.basename(tarFile)}`);
 
-                // Move to target location
+                // Copy to target location (use copy instead of rename to handle cross-device)
                 if (fs.existsSync(targetPath)) {
                     fs.unlinkSync(targetPath);
                 }
-                fs.renameSync(tarFile, targetPath);
+
+                // Copy file instead of rename to handle cross-filesystem moves
+                fs.copyFileSync(tarFile, targetPath);
 
                 // Clean up temp directory
                 fs.rmSync(tempDir, { recursive: true, force: true });
@@ -829,16 +833,40 @@ export class DistroDownloader {
     }
 
     /**
-     * Clean up temp directory
+     * Clean up temp directory and old extraction directories
      */
     cleanupTempFiles(): void {
         try {
-            const files = fs.readdirSync(this.tempDir);
-            for (const file of files) {
-                if (file.endsWith('.download')) {
-                    const filePath = path.join(this.tempDir, file);
-                    fs.unlinkSync(filePath);
-                    logger.debug(`Cleaned up temp file: ${file}`);
+            // Clean up .download files in tempDir
+            if (fs.existsSync(this.tempDir)) {
+                const files = fs.readdirSync(this.tempDir);
+                for (const file of files) {
+                    if (file.endsWith('.download')) {
+                        const filePath = path.join(this.tempDir, file);
+                        fs.unlinkSync(filePath);
+                        logger.debug(`Cleaned up temp file: ${file}`);
+                    }
+                }
+            }
+
+            // Clean up old APPX extraction directories in system temp
+            const systemTemp = os.tmpdir();
+            const tempContents = fs.readdirSync(systemTemp);
+            const oneHourAgo = Date.now() - 3600000; // 1 hour in ms
+
+            for (const item of tempContents) {
+                if (item.startsWith('appx_extract_')) {
+                    const itemPath = path.join(systemTemp, item);
+                    try {
+                        const stats = fs.statSync(itemPath);
+                        // Remove if older than 1 hour
+                        if (stats.mtimeMs < oneHourAgo) {
+                            fs.rmSync(itemPath, { recursive: true, force: true });
+                            logger.debug(`Cleaned up old extraction directory: ${item}`);
+                        }
+                    } catch (err) {
+                        // Ignore errors for individual items
+                    }
                 }
             }
         } catch (error) {

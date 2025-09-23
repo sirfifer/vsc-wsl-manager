@@ -103,7 +103,7 @@ export class DistroManager {
                 fs.mkdirSync(this.distroStorePath, { recursive: true });
                 logger.info(`Created distro storage directory: ${this.distroStorePath}`);
             } catch (error) {
-                logger.warn(`Failed to create storage directory: ${this.distroStorePath}`, error);
+                logger.warn(`Failed to create storage directory: ${this.distroStorePath}`, error as Error);
                 // Continue without storage - catalog operations will be in memory only
             }
         }

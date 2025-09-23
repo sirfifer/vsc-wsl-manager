@@ -166,9 +166,16 @@ describe('WSLImageManager - Real WSL Operations', () => {
 
             // Get list of actual distributions
             const { stdout } = await execAsync('wsl.exe --list --quiet');
-            const distributions = stdout.split('\n')
+
+            // Handle UTF-16LE encoding from Windows WSL (removes null bytes)
+            let cleanOutput = stdout;
+            if (cleanOutput.includes('\x00')) {
+                cleanOutput = cleanOutput.replace(/\x00/g, '');
+            }
+
+            const distributions = cleanOutput.split('\n')
                 .map(line => line.trim())
-                .filter(line => line.length > 0);
+                .filter(line => line.length > 0 && !line.includes('Windows Subsystem'));
 
             if (distributions.length > 0) {
                 // Check if first distribution exists
@@ -242,9 +249,16 @@ describe('WSLImageManager - Real WSL Operations', () => {
 
             // This test requires an existing WSL distribution
             const { stdout } = await execAsync('wsl.exe --list --quiet');
-            const distributions = stdout.split('\n')
+
+            // Handle UTF-16LE encoding from Windows WSL (removes null bytes)
+            let cleanOutput = stdout;
+            if (cleanOutput.includes('\x00')) {
+                cleanOutput = cleanOutput.replace(/\x00/g, '');
+            }
+
+            const distributions = cleanOutput.split('\n')
                 .map(line => line.trim())
-                .filter(line => line.length > 0 && !line.includes('(Default)'));
+                .filter(line => line.length > 0 && !line.includes('(Default)') && !line.includes('Windows Subsystem'));
 
             if (distributions.length === 0) {
                 return;

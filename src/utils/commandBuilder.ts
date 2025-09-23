@@ -276,16 +276,19 @@ export class CommandBuilder {
         if (!name || !baseDistro) {
             throw new Error('Distribution name and base distro are required');
         }
-        this.validateDistributionName(name);
-        this.validateDistributionName(baseDistro);
-        return { command: 'wsl.exe', args: ['--clone', baseDistro, name] };
+        const cleanName = name.trim().replace(/[\r\n]+/g, '');
+        const cleanBase = baseDistro.trim().replace(/[\r\n]+/g, '');
+        this.validateDistributionName(cleanName);
+        this.validateDistributionName(cleanBase);
+        return { command: 'wsl.exe', args: ['--clone', cleanBase, cleanName] };
     }
 
     static buildImportCommand(name: string, installLocation: string, tarPath: string): { command: string; args: string[] } {
-        this.validateDistributionName(name);
+        const cleanName = name.trim().replace(/[\r\n]+/g, '');
+        this.validateDistributionName(cleanName);
         this.validatePath(installLocation);
         this.validatePath(tarPath);
-        return { command: 'wsl.exe', args: ['--import', name, installLocation, tarPath] };
+        return { command: 'wsl.exe', args: ['--import', cleanName, installLocation, tarPath] };
     }
     
     /**
@@ -295,29 +298,35 @@ export class CommandBuilder {
      * @returns Command arguments
      */
     static buildExportCommand(name: string, exportPath: string): { command: string; args: string[] } {
-        this.validateDistributionName(name);
+        // Clean the name before validation and use
+        const cleanName = name.trim().replace(/[\r\n]+/g, '');
+        this.validateDistributionName(cleanName);
         this.validatePath(exportPath);
-        return { command: 'wsl.exe', args: ['--export', name, exportPath] };
+        return { command: 'wsl.exe', args: ['--export', cleanName, exportPath] };
     }
 
     static buildUnregisterCommand(name: string): { command: string; args: string[] } {
-        this.validateDistributionName(name);
-        return { command: 'wsl.exe', args: ['--unregister', name] };
+        const cleanName = name.trim().replace(/[\r\n]+/g, '');
+        this.validateDistributionName(cleanName);
+        return { command: 'wsl.exe', args: ['--unregister', cleanName] };
     }
 
     static buildTerminateCommand(name: string): { command: string; args: string[] } {
-        this.validateDistributionName(name);
-        return { command: 'wsl.exe', args: ['--terminate', name] };
+        const cleanName = name.trim().replace(/[\r\n]+/g, '');
+        this.validateDistributionName(cleanName);
+        return { command: 'wsl.exe', args: ['--terminate', cleanName] };
     }
 
     static buildSetDefaultCommand(name: string): { command: string; args: string[] } {
-        this.validateDistributionName(name);
-        return { command: 'wsl.exe', args: ['--set-default', name] };
+        const cleanName = name.trim().replace(/[\r\n]+/g, '');
+        this.validateDistributionName(cleanName);
+        return { command: 'wsl.exe', args: ['--set-default', cleanName] };
     }
 
     static buildRunCommand(distro: string, command: string): { command: string; args: string[] } {
-        // Validate for injection attempts
-        this.validateDistributionName(distro);
+        // Clean and validate distribution name
+        const cleanDistro = distro.trim().replace(/[\r\n]+/g, '');
+        this.validateDistributionName(cleanDistro);
 
         const dangerous = /[;&|`$<>(){}[\]\n\r\0]/;
         if (dangerous.test(command) || command.includes('..')) {
@@ -334,7 +343,7 @@ export class CommandBuilder {
             return arg;
         });
 
-        const args = ['wsl.exe', '-d', distro, '--', ...commandArgs];
+        const args = ['wsl.exe', '-d', cleanDistro, '--', ...commandArgs];
         return { command: args[0], args };
     }
     
@@ -361,23 +370,27 @@ export class CommandBuilder {
      * @throws Error if name is invalid
      */
     private static validateDistributionName(name: string): void {
-        if (!name || name.length === 0) {
+        // Clean the name first (remove any line endings or extra whitespace)
+        const cleanName = name.trim().replace(/[\r\n]+/g, '');
+
+        if (!cleanName || cleanName.length === 0) {
             throw new Error('Distribution name cannot be empty');
         }
 
         // Check length limits
-        if (name.length > 255) {
+        if (cleanName.length > 255) {
             throw new Error('Distribution name too long');
         }
 
-        // Check for dangerous characters - more comprehensive
-        const dangerous = /[;&|`$<>\\(){}\[\]\n\r]/;
-        if (dangerous.test(name)) {
+        // Check for dangerous characters (but not newlines since we cleaned them)
+        // Also don't check for backslash as it's not dangerous in distribution names
+        const dangerous = /[;&|`$<>(){}\[\]]/;
+        if (dangerous.test(cleanName)) {
             throw new Error('Distribution name contains dangerous characters');
         }
 
         // Check for path traversal
-        if (name.includes('..')) {
+        if (cleanName.includes('..')) {
             throw new Error('Distribution name contains path traversal');
         }
     }

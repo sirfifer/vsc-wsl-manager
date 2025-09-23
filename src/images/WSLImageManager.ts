@@ -448,10 +448,18 @@ export class WSLImageManager {
     async listWSLDistributions(): Promise<string[]> {
         try {
             const result = await CommandBuilder.executeWSL(['--list', '--quiet']);
-            const lines = result.stdout.split('\n')
+
+            // Handle UTF-16LE encoding from Windows WSL (removes null bytes)
+            let output = result.stdout;
+            if (output.includes('\x00')) {
+                // Remove null bytes from UTF-16LE encoding
+                output = output.replace(/\x00/g, '');
+            }
+
+            const lines = output.split('\n')
                 .map(line => line.trim())
-                .filter(line => line.length > 0);
-            
+                .filter(line => line.length > 0 && !line.includes('Windows Subsystem'));
+
             return lines;
         } catch (error) {
             logger.error('Failed to list WSL distributions:', error as Error);

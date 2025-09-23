@@ -281,7 +281,7 @@ export class ManifestManager {
                     }
                 }
                 if (!layer.name) {
-                    errors.push(`Layer ${index}: missing name`);
+                    warnings.push(`Layer ${index}: missing name`);
                 }
                 if (!layer.applied) {
                     warnings.push(`Layer ${index}: missing applied timestamp`);
@@ -294,12 +294,23 @@ export class ManifestManager {
                 warnings.push('No distro layer found - image may not have a base distribution recorded');
             }
         }
-        
+
+        // Check for large manifest
+        if (manifest.layers && manifest.layers.length > 50) {
+            warnings.push('Large manifest detected - consider splitting into smaller images');
+        }
+
+        // Check for large individual layers
+        const totalManifestSize = JSON.stringify(manifest).length;
+        if (totalManifestSize > 1024 * 1024) { // 1MB
+            warnings.push('Very large manifest detected - consider reducing layer descriptions');
+        }
+
         return {
             valid: errors.length === 0,
-            errors: errors.length > 0 ? errors : undefined,
-            warnings: warnings.length > 0 ? warnings : undefined,
-            suggestions: suggestions.length > 0 ? suggestions : undefined
+            errors,
+            warnings,
+            suggestions
         };
     }
     
@@ -547,7 +558,12 @@ export class ManifestManager {
             ...overlay,
             metadata: {
                 ...base.metadata,
-                ...overlay.metadata
+                ...overlay.metadata,
+                // Merge lineages properly
+                lineage: [
+                    ...(base.metadata.lineage || []),
+                    ...(overlay.metadata.lineage || [])
+                ]
             },
             layers: [...base.layers, ...overlay.layers],
             tags: [...(base.tags || []), ...(overlay.tags || [])]

@@ -134,6 +134,7 @@ All WSL commands follow this secure pattern:
 - **Three-Level Architecture**: Unit (5s) → API (30s) → E2E (2min)
 - **Real test data**: Use actual WSL distributions and real file operations
 - **Coverage threshold**: 80% minimum (branches, functions, lines, statements), 100% for critical paths
+- **APPX extraction tests**: Comprehensive tests for APPX/AppxBundle extraction in `test/unit/distros/distroDownloader.appx.real.test.ts`
 - **Security tests**: Real security validation in `test/security/`
 - **Test documentation**: Complete guides in `docs/testing/`
 

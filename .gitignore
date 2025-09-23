@@ -51,3 +51,8 @@ test/e2e-debug/screenshots/
 test/e2e-debug/process-logs/
 test/e2e-debug/**/*.json
 test/e2e-debug/**/*.log
+
+# Test artifacts
+distros/
+test/fixtures/appx/appx_extract_*/
+*.download
