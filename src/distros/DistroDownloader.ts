@@ -288,6 +288,7 @@ export class DistroDownloader {
     
     /**
      * Extract TAR file from APPX/AppxBundle package (cross-platform)
+     * Handles both simple APPX files and nested AppxBundle structures
      * @param appxPath Path to the APPX file
      * @param targetPath Desired path for the extracted TAR file
      * @returns Path to the extracted TAR file, or null if extraction failed
@@ -348,11 +349,79 @@ export class DistroDownloader {
                 throw extractError;
             }
 
+            // Check if this is an AppxBundle with nested APPX files
+            const extractedFiles = this.findFilesRecursive(tempDir);
+            const nestedAppxFiles = extractedFiles.filter(f => {
+                const ext = path.extname(f).toLowerCase();
+                return ext === '.appx' || ext === '.msix';
+            });
+
+            if (nestedAppxFiles.length > 0) {
+                logger.info(`Found ${nestedAppxFiles.length} nested APPX files in bundle`);
+
+                // Look for x64/AMD64 package first, then fall back to first available
+                let targetAppx = nestedAppxFiles.find(f => {
+                    const basename = path.basename(f).toLowerCase();
+                    return basename.includes('x64') || basename.includes('amd64');
+                });
+
+                if (!targetAppx) {
+                    // Fall back to first APPX file
+                    targetAppx = nestedAppxFiles[0];
+                }
+
+                logger.info(`Extracting nested APPX: ${path.basename(targetAppx)}`);
+
+                // Create a subdirectory for the nested extraction
+                const nestedTempDir = path.join(tempDir, 'nested_extract');
+                fs.mkdirSync(nestedTempDir, { recursive: true });
+
+                // Extract the nested APPX
+                try {
+                    if (PLATFORM.isWindows && process.platform === 'win32') {
+                        const result = await executor.executeCommand('tar.exe', [
+                            '-xf', targetAppx,
+                            '-C', nestedTempDir
+                        ]);
+
+                        if (result.exitCode !== 0) {
+                            throw new Error(`Nested tar.exe extraction failed: ${result.stderr}`);
+                        }
+                    } else {
+                        if (await executor.isCommandAvailable('unzip')) {
+                            const result = await executor.executeCommand('unzip', [
+                                '-q', targetAppx,
+                                '-d', nestedTempDir
+                            ]);
+
+                            if (result.exitCode !== 0) {
+                                throw new Error(`Nested unzip extraction failed: ${result.stderr}`);
+                            }
+                        } else {
+                            const result = await executor.executeCommand('tar', [
+                                '-xf', targetAppx,
+                                '-C', nestedTempDir
+                            ]);
+
+                            if (result.exitCode !== 0) {
+                                throw new Error(`Nested tar extraction failed: ${result.stderr}`);
+                            }
+                        }
+                    }
+
+                    // Update the search to look in the nested directory
+                    const nestedFiles = this.findFilesRecursive(nestedTempDir);
+                    extractedFiles.push(...nestedFiles);
+                } catch (nestedError: any) {
+                    logger.error(`Failed to extract nested APPX: ${nestedError.message}`);
+                    // Continue to search in the original extraction
+                }
+            }
+
             // Find the TAR file (usually install.tar.gz or similar)
-            const files = this.findFilesRecursive(tempDir);
             let tarFile = null;
 
-            for (const file of files) {
+            for (const file of extractedFiles) {
                 const basename = path.basename(file).toLowerCase();
                 if (basename.endsWith('.tar.gz') || basename.endsWith('.tar')) {
                     // Prefer install.tar.gz if available
