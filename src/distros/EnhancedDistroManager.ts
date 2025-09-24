@@ -230,7 +230,7 @@ export class EnhancedDistroManager extends DistroManager {
     getDistroPath(name: string): string {
         // Sanitize name to prevent path traversal
         const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
-        const storePath = (this as any).storePath || '';
-        return path.join(storePath, 'distros', safeName + '.tar');
+        // Use parent's implementation which has the correct path
+        return super.getDistroPath(safeName);
     }
 }

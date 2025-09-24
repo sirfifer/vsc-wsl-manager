@@ -80,9 +80,12 @@ export class DistroManager {
     protected registry: DistributionRegistry; // Protected so EnhancedDistroManager can access
     
     constructor(storePath?: string) {
-        // Use %USERPROFILE%/.vscode-wsl-manager/distros
+        // Use storePath if provided, otherwise try multiple fallbacks
         const baseDir = storePath || path.join(
-            process.env.USERPROFILE || process.env.HOME || '',
+            process.env.USERPROFILE ||
+            process.env.HOME ||
+            os.homedir() ||
+            path.join(os.tmpdir(), 'vscode-wsl-manager'),
             '.vscode-wsl-manager'
         );
 

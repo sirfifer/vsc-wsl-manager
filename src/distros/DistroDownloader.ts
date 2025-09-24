@@ -250,7 +250,9 @@ export class DistroDownloader {
                 if (fs.existsSync(targetPath)) {
                     fs.unlinkSync(targetPath);
                 }
-                fs.renameSync(tempPath, targetPath);
+                // Use copy+delete for cross-filesystem compatibility
+                fs.copyFileSync(tempPath, targetPath);
+                fs.unlinkSync(tempPath);
             }
             
             // Update distro info
@@ -303,7 +305,8 @@ export class DistroDownloader {
 
             // Extract based on platform
             try {
-                if (PLATFORM.isWindows) {
+                // Only use tar.exe on actual Windows, not WSL
+                if (PLATFORM.isWindows && process.platform === 'win32') {
                     // Windows 10/11 has tar.exe built-in which can handle both TAR and ZIP
                     logger.debug('Using Windows tar.exe for APPX extraction');
                     const result = await executor.executeCommand('tar.exe', [
@@ -803,8 +806,14 @@ export class DistroDownloader {
 
                 response.on('end', () => {
                     writeStream.end();
-                    // Rename temp file to final destination
-                    fs.renameSync(tempPath, destPath);
+                    // Use copy+delete for cross-filesystem compatibility
+                    try {
+                        fs.copyFileSync(tempPath, destPath);
+                        fs.unlinkSync(tempPath);
+                    } catch (err) {
+                        // If copy fails, try rename as fallback
+                        fs.renameSync(tempPath, destPath);
+                    }
                     resolve();
                 });
 

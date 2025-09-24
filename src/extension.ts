@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as os from 'os';
+import * as path from 'path';
 import { WSLManager } from './wslManager';
 import { WSLTerminalProfileManager } from './terminal/wslTerminalProfileProvider';
 
@@ -41,8 +43,12 @@ export function activate(context: vscode.ExtensionContext) {
     terminalProfileManager = new WSLTerminalProfileManager();
     
     // Initialize Two-World Architecture managers
+    // Use VS Code's global storage path or fall back to user home directory
+    const storageDir = context.globalStorageUri?.fsPath ||
+        path.join(os.homedir(), '.vscode-wsl-manager');
+
     const manifestManager = new ManifestManager();
-    const distroManager = new EnhancedDistroManager();
+    const distroManager = new EnhancedDistroManager(storageDir);
     const distroDownloader = new DistroDownloader(distroManager);
     const imageManager = new WSLImageManager(manifestManager, distroManager);
     
