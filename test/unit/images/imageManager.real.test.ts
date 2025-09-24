@@ -243,7 +243,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
     describe('Real WSL Import/Export Operations', () => {
         it('should export and import a TAR file with WSL', async function() {
             if (!isWSLAvailable) {
-                return;
+                this.skip();
                 return;
             }
 
@@ -294,7 +294,7 @@ describe('WSLImageManager - Real WSL Operations', () => {
     describe('Image Listing and Discovery', () => {
         it('should list all WSL distributions', async function() {
             if (!isWSLAvailable) {
-                return;
+                this.skip();
                 return;
             }
 

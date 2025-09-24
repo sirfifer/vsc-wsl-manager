@@ -138,6 +138,24 @@ All WSL commands follow this secure pattern:
 - **Security tests**: Real security validation in `test/security/`
 - **Test documentation**: Complete guides in `docs/testing/`
 
+### CRITICAL: 100% Test Pass Rate Required
+
+**ALL tests MUST pass before ANY commit. No exceptions.**
+
+- If tests fail, the code is wrong (not the tests)
+- No "environmental issues" excuse - properly detect and skip if needed
+- Network tests use REAL Microsoft downloads (Alpine for speed)
+- WSL tests check for availability and skip with clear message if not available
+- Tests define the specification - if tests pass, code works
+
+### Real Testing Principles
+
+1. **Network Tests**: Download real distros from Microsoft (Alpine ~3MB for unit tests)
+2. **WSL Tests**: Check for WSL availability, skip entire suite if not present
+3. **File Tests**: Use real file operations, no fake file systems
+4. **Error Tests**: Test real error conditions with actual failing operations
+5. **No External Test Services**: No httpbin.org - use real Microsoft services
+
 ### Testing Documentation
 - **Main Guide**: [docs/testing/TESTING.md](docs/testing/TESTING.md)
 - **Architecture**: [docs/testing/TESTING-ARCHITECTURE.md](docs/testing/TESTING-ARCHITECTURE.md)
