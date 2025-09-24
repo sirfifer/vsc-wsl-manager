@@ -26,6 +26,8 @@ import {
 } from './ManifestTypes';
 import { Logger } from '../utils/logger';
 import { CommandBuilder } from '../utils/commandBuilder';
+import { PLATFORM } from '../utils/platform';
+import * as os from 'os';
 
 // Re-export types for convenience
 export {
@@ -57,7 +59,7 @@ const TOOL_ID = 'vscode-wsl-manager';
 export class ManifestManager {
     /**
      * Read manifest from a WSL image
-     * 
+     *
      * @param imageName - Name of the WSL distribution/image
      * @param options - Read options
      * @returns The manifest or null if not found
@@ -65,20 +67,49 @@ export class ManifestManager {
     async readManifest(imageName: string, options: ManifestOptions = {}): Promise<Manifest | null> {
         try {
             logger.debug(`Reading manifest from image: ${imageName}`);
-            
-            // Construct Windows path to access WSL filesystem
-            const manifestPath = `\\\\wsl$\\${imageName}${MANIFEST_PATH_IN_IMAGE}`;
-            
-            // Check if file exists
-            if (!fs.existsSync(manifestPath)) {
+
+            // Platform-aware approach: Use WSL command to read the file
+            // This avoids UNC path issues and works across platforms
+
+            // Check if distribution exists
+            try {
+                const testResult = await CommandBuilder.executeInDistribution(imageName, 'echo "test"');
+                if (testResult.exitCode !== 0) {
+                    logger.debug(`Distribution ${imageName} is not accessible`);
+                    return null;
+                }
+            } catch (error) {
+                logger.debug(`Distribution ${imageName} does not exist or is not running`);
+                return null;
+            }
+
+            // Check if manifest file exists
+            const checkCommand = `[ -f ${MANIFEST_PATH_IN_IMAGE} ] && echo "EXISTS" || echo "NOT_FOUND"`;
+            const checkResult = await CommandBuilder.executeInDistribution(imageName, checkCommand);
+
+            if (checkResult.stdout.includes('NOT_FOUND')) {
                 logger.debug(`No manifest found in image: ${imageName}`);
                 return null;
             }
-            
-            // Read the manifest file
-            const content = fs.readFileSync(manifestPath, 'utf8');
-            const manifest = JSON.parse(content) as Manifest;
-            
+
+            // Read the manifest file using cat
+            const readCommand = `cat ${MANIFEST_PATH_IN_IMAGE}`;
+            const readResult = await CommandBuilder.executeInDistribution(imageName, readCommand);
+
+            if (readResult.exitCode !== 0) {
+                logger.error(`Failed to read manifest from ${imageName}: ${readResult.stderr}`);
+                return null;
+            }
+
+            // Parse the content
+            let manifest: Manifest;
+            try {
+                manifest = JSON.parse(readResult.stdout) as Manifest;
+            } catch (parseError) {
+                logger.error(`Failed to parse manifest from ${imageName}:`, parseError);
+                return null;
+            }
+
             // Validate if requested
             if (options.validate) {
                 const validation = this.validateManifest(manifest);
@@ -89,7 +120,7 @@ export class ManifestManager {
                     }
                 }
             }
-            
+
             return manifest;
         } catch (error) {
             logger.error(`Failed to read manifest from ${imageName}:`, error);
@@ -107,7 +138,7 @@ export class ManifestManager {
     async writeManifestToImage(imageName: string, manifest: Manifest, options: ManifestOptions = {}): Promise<void> {
         try {
             logger.debug(`Writing manifest to image: ${imageName}`);
-            
+
             // Validate before writing
             if (options.validate !== false) {
                 const validation = this.validateManifest(manifest);
@@ -115,32 +146,98 @@ export class ManifestManager {
                     throw new Error(`Invalid manifest: ${validation.errors?.join(', ')}`);
                 }
             }
-            
-            // Construct Windows path
-            const manifestPath = `\\\\wsl$\\${imageName}${MANIFEST_PATH_IN_IMAGE}`;
-            
-            // Backup existing manifest if requested
-            if (options.backup && fs.existsSync(manifestPath)) {
-                const backupPath = manifestPath + '.backup';
-                fs.copyFileSync(manifestPath, backupPath);
-                logger.debug(`Backed up existing manifest to ${backupPath}`);
+
+            // First, verify the distribution exists
+            try {
+                const testResult = await CommandBuilder.executeInDistribution(imageName, 'echo "test"');
+                if (testResult.exitCode !== 0) {
+                    throw new Error(`Distribution ${imageName} is not accessible`);
+                }
+            } catch (error) {
+                logger.error(`Distribution ${imageName} does not exist or is not running`);
+                throw new Error(`Cannot write manifest: Distribution '${imageName}' is not accessible`);
             }
-            
-            // Ensure directory exists (create via WSL command if needed)
+
+            // Platform-aware approach: Use WSL commands to write the file
+            // This avoids UNC path issues and works across platforms
+
+            // Ensure directory exists
             const manifestDir = path.dirname(MANIFEST_PATH_IN_IMAGE);
             await CommandBuilder.executeInDistribution(imageName, `mkdir -p ${manifestDir}`);
-            
-            // Write the manifest
+
+            // Backup existing manifest if requested
+            if (options.backup) {
+                const backupCommand = `[ -f ${MANIFEST_PATH_IN_IMAGE} ] && cp ${MANIFEST_PATH_IN_IMAGE} ${MANIFEST_PATH_IN_IMAGE}.backup || true`;
+                await CommandBuilder.executeInDistribution(imageName, backupCommand);
+                logger.debug(`Backed up existing manifest if it existed`);
+            }
+
+            // Write the manifest using a platform-aware method
             const content = JSON.stringify(manifest, null, 2);
-            fs.writeFileSync(manifestPath, content, 'utf8');
-            
-            // Set appropriate permissions via WSL
+
+            // Method 1: Try using echo/printf to write the file (works on all platforms)
+            // Escape the content for shell
+            const escapedContent = content
+                .replace(/\\/g, '\\\\')
+                .replace(/"/g, '\\"')
+                .replace(/\$/g, '\\$')
+                .replace(/`/g, '\\`')
+                .replace(/\n/g, '\\n');
+
+            const writeCommand = `printf "%s" "${escapedContent}" > ${MANIFEST_PATH_IN_IMAGE}`;
+            const writeResult = await CommandBuilder.executeInDistribution(imageName, writeCommand);
+
+            if (writeResult.exitCode !== 0) {
+                // Fallback: Try using a temporary file approach
+                logger.warn('Direct write failed, trying temporary file approach');
+                await this.writeManifestViaTemp(imageName, content);
+            }
+
+            // Set appropriate permissions
             await CommandBuilder.executeInDistribution(imageName, `chmod 644 ${MANIFEST_PATH_IN_IMAGE}`);
-            
+
+            // Verify the file was written correctly
+            const verifyCommand = `[ -f ${MANIFEST_PATH_IN_IMAGE} ] && echo "OK" || echo "FAIL"`;
+            const verifyResult = await CommandBuilder.executeInDistribution(imageName, verifyCommand);
+
+            if (!verifyResult.stdout.includes('OK')) {
+                throw new Error('Failed to verify manifest was written successfully');
+            }
+
             logger.info(`Manifest written to image: ${imageName}`);
         } catch (error) {
             logger.error(`Failed to write manifest to ${imageName}:`, error);
             throw error;
+        }
+    }
+
+    /**
+     * Write manifest via temporary file (fallback method)
+     *
+     * @param imageName - Name of the WSL distribution
+     * @param content - Manifest content as string
+     */
+    private async writeManifestViaTemp(imageName: string, content: string): Promise<void> {
+        const tempFileName = `manifest_${Date.now()}.json`;
+        const tempPath = path.join(os.tmpdir(), tempFileName);
+
+        try {
+            // Write to local temp file
+            fs.writeFileSync(tempPath, content, 'utf8');
+
+            // Copy to WSL using cat
+            const catCommand = process.platform === 'win32'
+                ? `cat < /mnt/c${tempPath.replace(/\\/g, '/').replace('C:', '')} > ${MANIFEST_PATH_IN_IMAGE}`
+                : `cat ${tempPath} > ${MANIFEST_PATH_IN_IMAGE}`;
+
+            await CommandBuilder.executeInDistribution(imageName, catCommand);
+        } finally {
+            // Clean up temp file
+            try {
+                fs.unlinkSync(tempPath);
+            } catch {
+                // Ignore cleanup errors
+            }
         }
     }
     
@@ -390,14 +487,16 @@ export class ManifestManager {
     
     /**
      * Check if an image has a manifest
-     * 
+     *
      * @param imageName - Name of the WSL distribution/image
      * @returns True if manifest exists
      */
     async hasManifest(imageName: string): Promise<boolean> {
         try {
-            const manifestPath = `\\\\wsl$\\${imageName}${MANIFEST_PATH_IN_IMAGE}`;
-            return fs.existsSync(manifestPath);
+            // Platform-aware check using WSL command
+            const checkCommand = `[ -f ${MANIFEST_PATH_IN_IMAGE} ] && echo "EXISTS" || echo "NOT_FOUND"`;
+            const result = await CommandBuilder.executeInDistribution(imageName, checkCommand);
+            return result.stdout.includes('EXISTS');
         } catch {
             return false;
         }
