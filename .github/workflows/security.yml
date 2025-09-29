@@ -29,7 +29,7 @@ jobs:
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --ignore-scripts
     
     - name: Run npm audit
       run: |
@@ -121,7 +121,7 @@ jobs:
         node-version: '18.x'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --ignore-scripts
     
     - name: Check licenses
       run: |
@@ -197,8 +197,49 @@ jobs:
       with:
         sarif_file: 'trivy-results.sarif'
 
+  lockfile-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+
+    - name: Validate package-lock.json integrity
+      run: |
+        echo "Validating lockfile integrity without executing scripts..."
+        npm ci --ignore-scripts --dry-run
+        echo "✅ Lockfile integrity verified"
+
+    - name: Check for lockfile tampering
+      run: |
+        if git diff --quiet package-lock.json; then
+          echo "✅ Lockfile unchanged during validation"
+        else
+          echo "❌ WARNING: Lockfile was modified during install"
+          git diff package-lock.json
+          exit 1
+        fi
+
+    - name: Verify all packages have integrity hashes
+      run: |
+        echo "Checking for packages without integrity hashes..."
+        MISSING=$(jq '.packages | to_entries[] | select(.key != "" and .value.integrity == null and .value.link == null) | .key' package-lock.json | wc -l)
+        if [ "$MISSING" -gt 0 ]; then
+          echo "❌ Found $MISSING packages without integrity hashes"
+          jq '.packages | to_entries[] | select(.key != "" and .value.integrity == null and .value.link == null) | .key' package-lock.json
+          exit 1
+        else
+          echo "✅ All packages have integrity hashes"
+        fi
+
   security-report:
-    needs: [dependency-audit, code-scanning, secret-scanning, license-check, security-policy-check]
+    needs: [dependency-audit, code-scanning, secret-scanning, license-check, security-policy-check, lockfile-validation]
     runs-on: ubuntu-latest
     if: always()
     
@@ -212,7 +253,8 @@ jobs:
             { name: 'Code Scanning', status: '${{ needs.code-scanning.result }}' },
             { name: 'Secret Scanning', status: '${{ needs.secret-scanning.result }}' },
             { name: 'License Check', status: '${{ needs.license-check.result }}' },
-            { name: 'Security Policy', status: '${{ needs.security-policy-check.result }}' }
+            { name: 'Security Policy', status: '${{ needs.security-policy-check.result }}' },
+            { name: 'Lockfile Validation', status: '${{ needs.lockfile-validation.result }}' }
           ];
           
           let summary = '## Security Scan Summary\n\n';

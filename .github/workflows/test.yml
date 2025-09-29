@@ -28,7 +28,7 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --ignore-scripts
 
     - name: Run linter
       run: npm run lint
@@ -153,7 +153,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        npm ci
+        npm ci --ignore-scripts
         npm run compile
 
     - name: Install Python E2E dependencies
@@ -194,7 +194,7 @@ jobs:
 
     - name: Install and compile
       run: |
-        npm ci
+        npm ci --ignore-scripts
         npm run compile
 
     - name: Run comprehensive test suite
