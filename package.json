@@ -321,7 +321,6 @@
     "test:distro-health": "REAL_TESTS=true vitest run test/integration/distro-health-check.test.ts",
     "check:distros": "node scripts/check-distro-urls.js",
     "test:download-all": "DOWNLOAD_ALL=true npm run test:distro-health",
-    "test:real-download": "node scripts/test-real-download.js",
     "test:real": "REAL_TESTS=true npm run test:integration",
     "test:complete": "node out/scripts/automation/complete-test-runner.js",
     "automate:full": "npm run compile && npm run test:complete",
@@ -345,7 +344,6 @@
     "test:runner:e2e": "ts-node scripts/test-runner.ts e2e",
     "test:runner:security": "ts-node scripts/test-runner.ts security",
     "test:runner:all": "ts-node scripts/test-runner.ts all",
-    "test:ci": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:clear-cache": "rm -rf node_modules/.vite",
     "coverage:open": "open coverage/index.html || start coverage/index.html",
@@ -357,15 +355,12 @@
     "wdio:doctor": "npx wdio doctor"
   },
   "devDependencies": {
-    "vitest": "^1.0.0",
-    "@vitest/ui": "^1.0.0",
-    "c8": "^8.0.1",
-    "@types/chai": "^5.2.2",
     "@types/glob": "^8.1.0",
     "@types/node": "16.x",
     "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
+    "@vitest/ui": "^3.2.4",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.3.8",
     "@wdio/cli": "^9.19.2",
@@ -375,6 +370,7 @@
     "@wdio/spec-reporter": "^9.19.2",
     "@wdio/types": "^9.19.2",
     "@wdio/visual-service": "^9.0.0",
+    "c8": "^8.0.1",
     "chai": "^6.0.1",
     "chromedriver": "^128.0.3",
     "concurrently": "^8.2.2",
@@ -384,6 +380,7 @@
     "typedoc": "^0.25.13",
     "typedoc-plugin-markdown": "^3.17.1",
     "typescript": "^4.9.3",
+    "vitest": "^3.2.4",
     "wdio-vscode-service": "^6.1.3"
   },
   "dependencies": {

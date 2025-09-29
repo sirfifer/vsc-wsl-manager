@@ -3,7 +3,7 @@ import path from 'path';
 
 export default defineConfig({
   test: {
-    globals: true,
+    globals: true, // Enable globals for test functions
     environment: 'node',
     include: ['test/**/*.real.test.ts'],
     exclude: ['node_modules', '.vscode-test', 'out'],
@@ -30,7 +30,12 @@ export default defineConfig({
     hookTimeout: 10000,
     teardownTimeout: 10000,
     isolate: true,
-    threads: false, // Disable threads for better debugging
+    pool: 'forks', // Use forks instead of threads for Node 22 compatibility
+    poolOptions: {
+      forks: {
+        singleFork: false
+      }
+    },
     // NO MOCK CONFIGURATION - Real testing only
     mockReset: false,
     clearMocks: false,
