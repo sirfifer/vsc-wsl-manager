@@ -103,21 +103,17 @@ export function activate(context: vscode.ExtensionContext) {
         // ===== Distro Commands =====
         vscode.commands.registerCommand('wsl-manager.refreshDistributions', async () => {
             try {
-                // Force refresh from all sources
-                await vscode.window.withProgress({
-                    location: vscode.ProgressLocation.Notification,
-                    title: 'Refreshing distributions from Microsoft Registry...',
-                    cancellable: false
-                }, async () => {
-                    await distroManager.refreshDistributions();
-                    await refreshAll();
-                });
+                // Refresh the view to show downloaded distributions
+                // Note: This does NOT force fetch from Microsoft's registry anymore
+                // to prevent wiping download state. The registry auto-refreshes
+                // every hour via listDistros() when needed.
+                await refreshAll();
 
-                // Show summary
+                // Show summary of downloaded distributions
                 const distros = await distroManager.listDistros();
                 const available = distros.filter(d => d.available).length;
                 vscode.window.showInformationMessage(
-                    `Found ${distros.length} distributions (${available} downloaded locally)`
+                    `${available} distribution${available !== 1 ? 's' : ''} downloaded locally`
                 );
             } catch (error) {
                 await ErrorHandler.showError(error, 'refresh distributions');

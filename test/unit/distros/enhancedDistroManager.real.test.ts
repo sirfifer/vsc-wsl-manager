@@ -252,4 +252,264 @@ describe('EnhancedDistroManager - Real Tests', () => {
             expect(duration).toBeLessThan(30000);
         }, 35000);
     });
+
+    describe('Download State Preservation (Bug Fix)', () => {
+        it('should preserve download state when refreshing from registry', async () => {
+            // Simulate a downloaded distribution by creating a file
+            const distroPath = path.join(tempDir, 'distros', 'alpine.tar.gz');
+            fs.mkdirSync(path.dirname(distroPath), { recursive: true });
+            fs.writeFileSync(distroPath, 'fake alpine data');
+
+            // Create initial catalog with downloaded distro
+            const catalogPath = path.join(tempDir, 'distros', 'catalog.json');
+            const initialCatalog = {
+                version: '2.0.0',
+                updated: new Date().toISOString(),
+                distributions: [
+                    {
+                        name: 'alpine',
+                        displayName: 'Alpine Linux',
+                        description: 'Alpine Linux - Lightweight and secure',
+                        version: '3.19',
+                        architecture: 'x64',
+                        sourceUrl: 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.0-x86_64.tar.gz',
+                        tags: ['alpine', 'minimal', 'lightweight'],
+                        size: 3 * 1024 * 1024,
+                        available: true,
+                        filePath: distroPath,
+                        added: new Date().toISOString()
+                    }
+                ]
+            };
+            fs.writeFileSync(catalogPath, JSON.stringify(initialCatalog, null, 2));
+
+            // Get distributions before refresh
+            const distrosBefore = await manager.listDistros();
+            const availableBefore = distrosBefore.filter(d => d.available && d.name === 'alpine');
+            expect(availableBefore.length).toBe(1);
+            expect(availableBefore[0].filePath).toBe(distroPath);
+
+            // Force refresh from registry - THIS WAS WIPING DOWNLOAD STATE
+            await manager.refreshDistributions();
+
+            // Get distributions after refresh
+            const distrosAfter = await manager.listDistros();
+            const availableAfter = distrosAfter.filter(d => d.available && d.name === 'alpine');
+
+            // CRITICAL BUG FIX: Download state should be preserved
+            expect(availableAfter.length).toBe(1);
+            expect(availableAfter[0].available).toBe(true);
+            expect(availableAfter[0].filePath).toBe(distroPath);
+        }, 30000);
+
+        it('should preserve custom imported distros not in default list', async () => {
+            // Create a custom distro not in the hardcoded list
+            const customDistroPath = path.join(tempDir, 'distros', 'my-custom-ubuntu.tar.gz');
+            fs.mkdirSync(path.dirname(customDistroPath), { recursive: true });
+            fs.writeFileSync(customDistroPath, 'fake custom ubuntu data');
+
+            const catalogPath = path.join(tempDir, 'distros', 'catalog.json');
+            const initialCatalog = {
+                version: '2.0.0',
+                updated: new Date().toISOString(),
+                distributions: [
+                    {
+                        name: 'my-custom-ubuntu',
+                        displayName: 'My Custom Ubuntu',
+                        description: 'Custom Ubuntu distribution',
+                        version: '22.04',
+                        architecture: 'x64',
+                        sourceUrl: 'file:///custom/ubuntu.tar.gz',
+                        tags: ['custom', 'ubuntu'],
+                        size: 500 * 1024 * 1024,
+                        available: true,
+                        filePath: customDistroPath,
+                        added: new Date().toISOString()
+                    }
+                ]
+            };
+            fs.writeFileSync(catalogPath, JSON.stringify(initialCatalog, null, 2));
+
+            // Get distributions before refresh
+            const distrosBefore = await manager.listDistros();
+            const customBefore = distrosBefore.find(d => d.name === 'my-custom-ubuntu');
+            expect(customBefore).toBeDefined();
+            expect(customBefore?.available).toBe(true);
+
+            // Force refresh from registry
+            await manager.refreshDistributions();
+
+            // Get distributions after refresh
+            const distrosAfter = await manager.listDistros();
+            const customAfter = distrosAfter.find(d => d.name === 'my-custom-ubuntu');
+
+            // CRITICAL: Custom distro should still be present and available
+            expect(customAfter).toBeDefined();
+            expect(customAfter?.available).toBe(true);
+            expect(customAfter?.filePath).toBe(customDistroPath);
+        }, 30000);
+
+        it('should mark distro as unavailable if file was deleted', async () => {
+            // Create initial catalog with supposedly downloaded distro
+            const distroPath = path.join(tempDir, 'distros', 'debian-12.tar.gz');
+            const catalogPath = path.join(tempDir, 'distros', 'catalog.json');
+            fs.mkdirSync(path.dirname(catalogPath), { recursive: true });
+            const initialCatalog = {
+                version: '2.0.0',
+                updated: new Date().toISOString(),
+                distributions: [
+                    {
+                        name: 'debian-12',
+                        displayName: 'Debian 12',
+                        description: 'Debian 12 (Bookworm)',
+                        version: '12',
+                        architecture: 'x64',
+                        sourceUrl: 'https://github.com/debuerreotype/docker-debian-artifacts/raw/dist-amd64/bookworm/rootfs.tar.xz',
+                        tags: ['debian', 'stable'],
+                        size: 50 * 1024 * 1024,
+                        available: true,
+                        filePath: distroPath,
+                        added: new Date().toISOString()
+                    }
+                ]
+            };
+            fs.writeFileSync(catalogPath, JSON.stringify(initialCatalog, null, 2));
+
+            // Don't create the file (simulate deletion or corruption)
+            expect(fs.existsSync(distroPath)).toBe(false);
+
+            // Force refresh from registry (should detect missing file)
+            await manager.refreshDistributions();
+
+            // Get distributions after refresh
+            const distrosAfter = await manager.listDistros();
+            const debian = distrosAfter.find(d => d.name === 'debian-12');
+
+            // CRITICAL: Should be marked as unavailable since file doesn't exist
+            expect(debian).toBeDefined();
+            expect(debian?.available).toBe(false);
+            expect(debian?.filePath).toBeUndefined();
+        }, 30000);
+
+        it('should update size from file system if not set in catalog', async () => {
+            // Create a distro file
+            const distroPath = path.join(tempDir, 'distros', 'ubuntu-24.04.tar.gz');
+            fs.mkdirSync(path.dirname(distroPath), { recursive: true });
+            const testData = Buffer.alloc(1024 * 100); // 100KB
+            fs.writeFileSync(distroPath, testData);
+
+            const catalogPath = path.join(tempDir, 'distros', 'catalog.json');
+            const initialCatalog = {
+                version: '2.0.0',
+                updated: new Date().toISOString(),
+                distributions: [
+                    {
+                        name: 'ubuntu-24.04',
+                        displayName: 'Ubuntu 24.04 LTS',
+                        description: 'Ubuntu 24.04 LTS',
+                        version: '24.04',
+                        architecture: 'x64',
+                        sourceUrl: 'https://releases.ubuntu.com/24.04.3/ubuntu-24.04.3-wsl-amd64.wsl',
+                        tags: ['ubuntu', 'lts'],
+                        available: true,
+                        filePath: distroPath
+                        // Note: size is missing
+                    }
+                ]
+            };
+            fs.writeFileSync(catalogPath, JSON.stringify(initialCatalog, null, 2));
+
+            // Force refresh from registry
+            await manager.refreshDistributions();
+
+            // Get distributions after refresh
+            const distrosAfter = await manager.listDistros();
+            const ubuntu = distrosAfter.find(d => d.name === 'ubuntu-24.04');
+
+            // CRITICAL: Size should be updated from file system
+            expect(ubuntu).toBeDefined();
+            expect(ubuntu?.available).toBe(true);
+            expect(ubuntu?.size).toBe(1024 * 100);
+        }, 30000);
+
+        it('should merge multiple downloaded distros correctly', async () => {
+            // Create multiple downloaded distro files
+            const alpinePath = path.join(tempDir, 'distros', 'alpine.tar.gz');
+            const debianPath = path.join(tempDir, 'distros', 'debian-12.tar.gz');
+            const customPath = path.join(tempDir, 'distros', 'my-special-distro.tar.gz');
+
+            fs.mkdirSync(path.dirname(alpinePath), { recursive: true });
+            fs.writeFileSync(alpinePath, 'alpine data');
+            fs.writeFileSync(debianPath, 'debian data');
+            fs.writeFileSync(customPath, 'custom data');
+
+            const catalogPath = path.join(tempDir, 'distros', 'catalog.json');
+            const initialCatalog = {
+                version: '2.0.0',
+                updated: new Date().toISOString(),
+                distributions: [
+                    {
+                        name: 'alpine',
+                        displayName: 'Alpine Linux',
+                        description: 'Alpine Linux',
+                        version: '3.19',
+                        architecture: 'x64',
+                        sourceUrl: 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.0-x86_64.tar.gz',
+                        tags: ['alpine'],
+                        size: 3 * 1024 * 1024,
+                        available: true,
+                        filePath: alpinePath
+                    },
+                    {
+                        name: 'debian-12',
+                        displayName: 'Debian 12',
+                        description: 'Debian 12',
+                        version: '12',
+                        architecture: 'x64',
+                        sourceUrl: 'https://github.com/debuerreotype/docker-debian-artifacts/raw/dist-amd64/bookworm/rootfs.tar.xz',
+                        tags: ['debian'],
+                        size: 50 * 1024 * 1024,
+                        available: true,
+                        filePath: debianPath
+                    },
+                    {
+                        name: 'my-special-distro',
+                        displayName: 'My Special Distro',
+                        description: 'Custom distro',
+                        version: '1.0',
+                        architecture: 'x64',
+                        sourceUrl: 'file:///custom.tar.gz',
+                        tags: ['custom'],
+                        size: 100 * 1024 * 1024,
+                        available: true,
+                        filePath: customPath
+                    }
+                ]
+            };
+            fs.writeFileSync(catalogPath, JSON.stringify(initialCatalog, null, 2));
+
+            // Force refresh from registry
+            await manager.refreshDistributions();
+
+            // Get distributions after refresh
+            const distrosAfter = await manager.listDistros();
+            const availableAfter = distrosAfter.filter(d => d.available);
+
+            // CRITICAL: All three should still be available
+            expect(availableAfter.length).toBe(3);
+
+            const alpine = distrosAfter.find(d => d.name === 'alpine');
+            const debian = distrosAfter.find(d => d.name === 'debian-12');
+            const custom = distrosAfter.find(d => d.name === 'my-special-distro');
+
+            expect(alpine?.available).toBe(true);
+            expect(alpine?.filePath).toBe(alpinePath);
+
+            expect(debian?.available).toBe(true);
+            expect(debian?.filePath).toBe(debianPath);
+
+            expect(custom?.available).toBe(true);
+            expect(custom?.filePath).toBe(customPath);
+        }, 30000);
+    });
 });

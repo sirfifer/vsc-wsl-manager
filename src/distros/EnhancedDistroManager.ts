@@ -62,6 +62,13 @@ export class EnhancedDistroManager extends DistroManager {
             const msDistros = await this.registry.fetchAvailableDistributions();
             this.lastRefresh = new Date();
 
+            // Load existing catalog to preserve download state
+            if (!this['catalog']) {
+                this['loadCatalog']();
+            }
+
+            const existingCatalog = this['catalog'] || { distributions: [] };
+
             // Update our catalog with fresh URLs
             const updatedDistros = this.getUpdatedDefaultDistros();
 
@@ -82,15 +89,68 @@ export class EnhancedDistroManager extends DistroManager {
                 }
             }
 
+            // Merge: preserve download state from existing catalog, update URLs from fresh
+            const mergedDistros = updatedDistros.map(freshDistro => {
+                const existing = existingCatalog.distributions.find(
+                    d => d.name === freshDistro.name
+                );
+
+                return {
+                    ...freshDistro,
+                    // Preserve download state if exists
+                    available: existing?.available ?? false,
+                    filePath: existing?.filePath,
+                    size: existing?.size || freshDistro.size,
+                    sha256: existing?.sha256,
+                    added: existing?.added
+                };
+            });
+
+            // Also preserve any distros from existing catalog that aren't in the updated list
+            // (e.g., custom imported distros or distros downloaded with different names)
+            const updatedNames = new Set(updatedDistros.map(d => d.name));
+            const existingOnly = existingCatalog.distributions
+                .filter(d => !updatedNames.has(d.name))
+                .map(d => ({
+                    ...d,
+                    available: d.available ?? false,  // Ensure available is always boolean
+                    filePath: d.filePath,
+                    size: d.size,
+                    sha256: d.sha256,
+                    added: d.added
+                }));
+            mergedDistros.push(...existingOnly);
+
+            // Re-scan file system to update availability (in case files were added/removed manually)
+            const fs = require('fs');
+            for (const distro of mergedDistros) {
+                const filePath = this['getDistroPath'](distro.name);
+                if (fs.existsSync(filePath)) {
+                    distro.available = true;
+                    distro.filePath = filePath;
+
+                    // Update size if not set
+                    if (!distro.size) {
+                        const stats = fs.statSync(filePath);
+                        distro.size = stats.size;
+                    }
+                } else if (distro.available) {
+                    // File was marked available but doesn't exist anymore
+                    distro.available = false;
+                    distro.filePath = undefined;
+                }
+            }
+
             // Save updated catalog
             this['catalog'] = {
                 version: '2.0.0',
                 updated: new Date().toISOString(),
-                distributions: updatedDistros
+                distributions: mergedDistros
             };
             this['saveCatalog']();
 
-            logger.info(`Refreshed ${updatedDistros.length} distributions from registry`);
+            const downloadedCount = mergedDistros.filter(d => d.available).length;
+            logger.info(`Refreshed ${mergedDistros.length} distributions from registry (${downloadedCount} downloaded locally)`);
         } catch (error) {
             logger.error('Failed to refresh from Microsoft Registry:', error);
             // Continue with existing catalog
