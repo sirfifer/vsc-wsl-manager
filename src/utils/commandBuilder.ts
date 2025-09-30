@@ -384,7 +384,7 @@ export class CommandBuilder {
 
         // Check for dangerous characters (but not newlines since we cleaned them)
         // Also don't check for backslash as it's not dangerous in distribution names
-        const dangerous = /[;&|`$<>(){}\[\]]/;
+        const dangerous = /[;&|`$<>(){}\[\]\s]/;  // Added \s for spaces
         if (dangerous.test(cleanName)) {
             throw new Error('Distribution name contains dangerous characters');
         }

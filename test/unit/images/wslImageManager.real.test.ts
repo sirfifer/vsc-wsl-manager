@@ -24,7 +24,8 @@ describe('WSLImageManager Cross-Platform Tests', () => {
 
         // Initialize managers with temp directory
         distroManager = new DistroManager(tempDir);
-        imageManager = new WSLImageManager(distroManager);
+        // Pass distroManager as second parameter (first is manifestManager)
+        imageManager = new WSLImageManager(undefined, distroManager);
     });
 
     afterEach(() => {

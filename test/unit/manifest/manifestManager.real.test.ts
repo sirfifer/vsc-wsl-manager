@@ -136,7 +136,8 @@ describe('ManifestManager - Real File Operations', () => {
             // Write a manifest first
             const original = manifestManager.createManifest({
                 name: 'read-test',
-                description: 'Test reading from file'
+                description: 'Test reading from file',
+                author: 'Test Author'
             });
 
             manifestManager.addLayer(original, {
@@ -336,10 +337,14 @@ describe('ManifestManager - Real File Operations', () => {
                 created: new Date().toISOString()
             });
 
-            const manifest2 = { ...manifest1 };
-            manifest2.metadata = {
-                ...manifest1.metadata,
-                description: 'Version 2'
+            // Deep copy manifest to avoid shared layer array reference
+            const manifest2: Manifest = {
+                ...manifest1,
+                metadata: {
+                    ...manifest1.metadata,
+                    description: 'Version 2'
+                },
+                layers: [...manifest1.layers]  // Deep copy layers array
             };
 
             manifestManager.addLayer(manifest2, {
@@ -437,7 +442,7 @@ describe('ManifestManager - Real File Operations', () => {
 
             expect(loaded?.metadata.description).toBe('Test with 特殊文字 and émojis 🚀');
             expect(loaded?.metadata.author).toBe('Test <user@example.com>');
-            expect(loaded?.metadata.tags).toContain('tag/with/slash');
+            expect(loaded?.tags).toContain('tag/with/slash');
         });
 
         it('should calculate manifest file size', () => {

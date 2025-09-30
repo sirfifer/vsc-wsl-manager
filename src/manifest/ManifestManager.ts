@@ -473,15 +473,20 @@ export class ManifestManager {
             }
         });
         
-        // Compare metadata (only key fields)
-        if (oldManifest.metadata.parent !== newManifest.metadata.parent) {
-            diff.metadata_changes!.parent = newManifest.metadata.parent;
-        }
-        
-        if (oldManifest.metadata.description !== newManifest.metadata.description) {
-            diff.metadata_changes!.description = newManifest.metadata.description;
-        }
-        
+        // Compare metadata (all fields with old/new pairs)
+        const allMetadataKeys = new Set([
+            ...Object.keys(oldManifest.metadata),
+            ...Object.keys(newManifest.metadata)
+        ]);
+
+        allMetadataKeys.forEach(key => {
+            const oldVal = (oldManifest.metadata as any)[key];
+            const newVal = (newManifest.metadata as any)[key];
+            if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                diff.metadata_changes![key] = { old: oldVal, new: newVal };
+            }
+        });
+
         return diff;
     }
     
@@ -504,17 +509,22 @@ export class ManifestManager {
     
     /**
      * Create a new manifest with metadata
-     * @param metadata - Metadata for the manifest
+     * @param metadata - Metadata for the manifest (can include manifest-level fields like tags)
      * @returns New manifest
      */
-    createManifest(metadata: Partial<ManifestMetadata> = {}): Manifest {
+    createManifest(metadata: Partial<ManifestMetadata> & { tags?: string[] } = {}): Manifest {
         const now = new Date().toISOString();
+
+        // Extract tags if provided (it's at manifest level, not metadata)
+        const { tags, ...metadataOnly } = metadata as any;
+
         const finalMetadata = {
-            ...metadata,
-            id: metadata.id || uuidv4(),
-            lineage: metadata.lineage || [metadata.name || 'unnamed'],
-            created: metadata.created || now,
-            created_by: metadata.created_by || TOOL_ID
+            ...metadataOnly,
+            id: metadataOnly.id || uuidv4(),
+            lineage: metadataOnly.lineage || [metadataOnly.name || 'unnamed'],
+            created: metadataOnly.created || now,
+            created_by: metadataOnly.created_by || TOOL_ID,
+            author: metadataOnly.author
         };
 
         return {
@@ -523,7 +533,8 @@ export class ManifestManager {
             layers: [],
             created: now,
             created_by: 'vscode-wsl-manager',
-            history: []
+            history: [],
+            tags: tags || []
         };
     }
 
@@ -706,4 +717,5 @@ export class ManifestManager {
             }
         };
     }
+
 }

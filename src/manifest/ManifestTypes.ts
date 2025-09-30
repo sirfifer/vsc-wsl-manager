@@ -34,9 +34,12 @@ export interface ManifestMetadata {
     
     /** Human-readable name */
     name: string;
-    
+
     /** Optional description */
     description?: string;
+
+    /** Optional author information */
+    author?: string;
 }
 
 /**
@@ -282,7 +285,7 @@ export interface ManifestDiff {
     
     /** Tags changed */
     tag_changes?: { added: string[]; removed: string[] };
-    
-    /** Metadata changes */
-    metadata_changes?: Partial<ManifestMetadata>;
+
+    /** Metadata changes (stores old and new values for each changed field) */
+    metadata_changes?: Record<string, { old: any; new: any }>;
 }

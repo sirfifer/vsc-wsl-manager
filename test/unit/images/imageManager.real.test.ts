@@ -41,7 +41,8 @@ describe('WSLImageManager - Real WSL Operations', () => {
         // Create real temporary directory
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'image-test-'));
         distroManager = new DistroManager(tempDir);
-        imageManager = new WSLImageManager(distroManager);
+        // Pass distroManager as second parameter (first is manifestManager)
+        imageManager = new WSLImageManager(undefined, distroManager);
 
         // Generate unique test distribution name
         testDistroName = `test-image-${Date.now()}`;
@@ -75,8 +76,13 @@ describe('WSLImageManager - Real WSL Operations', () => {
 
             const tarPath = path.join(tempDir, 'test.tar');
 
-            // Create TAR file using system tar command
-            await execAsync(`tar -cf "${tarPath}" -C "${sourceDir}" .`);
+            // Create TAR file using system tar command (use tar.exe on Windows)
+            const tarCmd = process.platform === 'win32' ? 'tar.exe' : 'tar';
+            // On Windows, convert paths to forward slashes and use --force-local
+            const forceLocal = process.platform === 'win32' ? '--force-local' : '';
+            const tarPathNorm = process.platform === 'win32' ? tarPath.replace(/\\/g, '/') : tarPath;
+            const sourceDirNorm = process.platform === 'win32' ? sourceDir.replace(/\\/g, '/') : sourceDir;
+            await execAsync(`${tarCmd} ${forceLocal} -cf "${tarPathNorm}" -C "${sourceDirNorm}" .`);
 
             // Verify TAR file exists and has content
             expect(fs.existsSync(tarPath)).toBe(true);
@@ -88,7 +94,10 @@ describe('WSLImageManager - Real WSL Operations', () => {
             fs.mkdirSync(extractDir);
 
             // Extract TAR using system tar command
-            await execAsync(`tar -xf "${tarPath}" -C "${extractDir}"`);
+            const extractForceLocal = process.platform === 'win32' ? '--force-local' : '';
+            const extractTarNorm = process.platform === 'win32' ? tarPath.replace(/\\/g, '/') : tarPath;
+            const extractDirNorm = process.platform === 'win32' ? extractDir.replace(/\\/g, '/') : extractDir;
+            await execAsync(`${tarCmd} ${extractForceLocal} -xf "${extractTarNorm}" -C "${extractDirNorm}"`);
 
             expect(fs.existsSync(path.join(extractDir, 'etc', 'passwd'))).toBe(true);
             expect(fs.existsSync(path.join(extractDir, 'home', 'test.txt'))).toBe(true);
@@ -114,9 +123,16 @@ describe('WSLImageManager - Real WSL Operations', () => {
             const smallTar = path.join(tempDir, 'small.tar');
             const largeTar = path.join(tempDir, 'large.tar');
 
-            // Create TAR files using system tar command
-            await execAsync(`tar -cf "${smallTar}" -C "${smallDir}" .`);
-            await execAsync(`tar -cf "${largeTar}" -C "${largeDir}" .`);
+            // Create TAR files using system tar command (use tar.exe on Windows)
+            const tarCmd = process.platform === 'win32' ? 'tar.exe' : 'tar';
+            // On Windows, convert paths to forward slashes and use --force-local
+            const forceLocal = process.platform === 'win32' ? '--force-local' : '';
+            const smallTarNorm = process.platform === 'win32' ? smallTar.replace(/\\/g, '/') : smallTar;
+            const largeTarNorm = process.platform === 'win32' ? largeTar.replace(/\\/g, '/') : largeTar;
+            const smallDirNorm = process.platform === 'win32' ? smallDir.replace(/\\/g, '/') : smallDir;
+            const largeDirNorm = process.platform === 'win32' ? largeDir.replace(/\\/g, '/') : largeDir;
+            await execAsync(`${tarCmd} ${forceLocal} -cf "${smallTarNorm}" -C "${smallDirNorm}" .`);
+            await execAsync(`${tarCmd} ${forceLocal} -cf "${largeTarNorm}" -C "${largeDirNorm}" .`);
 
             const smallSize = fs.statSync(smallTar).size;
             const largeSize = fs.statSync(largeTar).size;

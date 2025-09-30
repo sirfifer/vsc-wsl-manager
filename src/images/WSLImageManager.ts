@@ -1020,9 +1020,9 @@ export class WSLImageManager {
     // Public methods for tests
     saveMetadata(metadata: ImageMetadata, filePath?: string): void {
         if (filePath) {
-            // Ensure directory exists
-            const dir = filePath.substring(0, filePath.lastIndexOf('/'));
-            if (!fs.existsSync(dir)) {
+            // Ensure directory exists using path.dirname
+            const dir = path.dirname(filePath);
+            if (dir && dir !== '.' && !fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
             }
             fs.writeFileSync(filePath, JSON.stringify(metadata, null, 2));
