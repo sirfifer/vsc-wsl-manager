@@ -79,6 +79,11 @@
         "icon": "$(trash)"
       },
       {
+        "command": "wsl-manager.refreshTerminalProfiles",
+        "title": "WSL: Refresh Terminal Profiles",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "wsl-manager.createImageFromDistribution",
         "title": "WSL: Create Image from Distribution",
         "icon": "$(add)"

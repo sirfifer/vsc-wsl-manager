@@ -78,6 +78,10 @@ export class DistroManager {
     private readonly catalogPath: string;
     private catalog: DistroCatalog | null = null;
     protected registry: DistributionRegistry; // Protected so EnhancedDistroManager can access
+    private catalogLock: Promise<void> = Promise.resolve(); // Catalog operation lock
+    private catalogOperationInProgress: boolean = false; // Flag to track ongoing operations
+    private downloadOperationLock: boolean = false; // Flag to prevent refresh during download
+    private refreshOperationLock: boolean = false; // Flag to prevent download during refresh
     
     constructor(storePath?: string) {
         // Use storePath if provided, otherwise try multiple fallbacks
@@ -115,13 +119,88 @@ export class DistroManager {
     /**
      * Load the distro catalog
      */
+    /**
+     * Execute a catalog operation with locking to prevent race conditions
+     */
+    private async withCatalogLock<T>(operation: () => T | Promise<T>): Promise<T> {
+        // Wait for any previous operation to complete
+        await this.catalogLock;
+
+        // Create a new promise for this operation
+        let resolve!: () => void;
+        let reject!: (error: any) => void;
+        this.catalogLock = new Promise<void>((res, rej) => {
+            resolve = res;
+            reject = rej;
+        });
+
+        try {
+            this.catalogOperationInProgress = true;
+            const result = await Promise.resolve(operation());
+            resolve();
+            return result;
+        } catch (error) {
+            reject(error);
+            throw error;
+        } finally {
+            this.catalogOperationInProgress = false;
+        }
+    }
+
+    /**
+     * Check if a catalog operation is currently in progress
+     */
+    protected isCatalogOperationInProgress(): boolean {
+        return this.catalogOperationInProgress;
+    }
+
+    /**
+     * Set download operation lock (call before starting download)
+     */
+    setDownloadLock(locked: boolean): void {
+        this.downloadOperationLock = locked;
+        logger.debug(`Download operation lock: ${locked}`);
+    }
+
+    /**
+     * Check if download operation is in progress
+     */
+    isDownloadInProgress(): boolean {
+        return this.downloadOperationLock;
+    }
+
+    /**
+     * Set refresh operation lock (call before starting refresh)
+     */
+    setRefreshLock(locked: boolean): void {
+        this.refreshOperationLock = locked;
+        logger.debug(`Refresh operation lock: ${locked}`);
+    }
+
+    /**
+     * Check if refresh operation is in progress
+     */
+    isRefreshInProgress(): boolean {
+        return this.refreshOperationLock;
+    }
+
+    /**
+     * Force reload catalog from disk (useful after external modifications)
+     */
+    async reloadCatalog(): Promise<void> {
+        await this.withCatalogLock(() => {
+            this.catalog = null; // Clear in-memory cache
+            this.loadCatalog(); // Reload from disk
+        });
+    }
+
     private loadCatalog(): void {
         try {
             if (fs.existsSync(this.catalogPath)) {
                 const content = fs.readFileSync(this.catalogPath, 'utf8');
                 this.catalog = JSON.parse(content);
                 logger.debug(`Loaded distro catalog with ${this.catalog?.distributions.length} entries`);
-                
+
                 // Ensure all default distros are present
                 this.mergeDefaultDistros();
             } else {
@@ -594,49 +673,57 @@ export class DistroManager {
      */
     async addDistro(distro: DistroInfo, tarPath: string): Promise<void> {
         logger.info(`Adding distro: ${distro.name}`);
-        
+
         // Validate tar file exists
         if (!fs.existsSync(tarPath)) {
             throw new Error(`Tar file not found: ${tarPath}`);
         }
-        
+
         // Get file info
         const stats = fs.statSync(tarPath);
         distro.size = stats.size;
         distro.added = new Date().toISOString();
-        
+
         // Calculate SHA256 hash
         const hash = crypto.createHash('sha256');
         const stream = fs.createReadStream(tarPath);
-        
+
         return new Promise((resolve, reject) => {
             stream.on('data', data => hash.update(data));
-            stream.on('end', () => {
-                distro.sha256 = hash.digest('hex');
-                
-                // Copy tar to storage
-                const destPath = this.getDistroPath(distro.name);
-                fs.copyFileSync(tarPath, destPath);
-                distro.filePath = destPath;
-                distro.available = true;
-                
-                // Update catalog
-                if (!this.catalog) {
-                    this.loadCatalog();
+            stream.on('end', async () => {
+                try {
+                    distro.sha256 = hash.digest('hex');
+
+                    // Copy tar to storage
+                    const destPath = this.getDistroPath(distro.name);
+                    fs.copyFileSync(tarPath, destPath);
+                    distro.filePath = destPath;
+                    distro.available = true;
+
+                    // Update catalog with lock to prevent race conditions
+                    await this.withCatalogLock(() => {
+                        // Update catalog
+                        if (!this.catalog) {
+                            this.loadCatalog();
+                        }
+
+                        // Remove existing entry if present
+                        this.catalog!.distributions = this.catalog!.distributions.filter(
+                            d => d.name !== distro.name
+                        );
+
+                        // Add new entry
+                        this.catalog!.distributions.push(distro);
+                        this.catalog!.updated = new Date().toISOString();
+
+                        this.saveCatalog();
+                    });
+
+                    logger.info(`Added distro ${distro.name} to catalog`);
+                    resolve();
+                } catch (error) {
+                    reject(error);
                 }
-                
-                // Remove existing entry if present
-                this.catalog!.distributions = this.catalog!.distributions.filter(
-                    d => d.name !== distro.name
-                );
-                
-                // Add new entry
-                this.catalog!.distributions.push(distro);
-                this.catalog!.updated = new Date().toISOString();
-                
-                this.saveCatalog();
-                logger.info(`Added distro ${distro.name} to catalog`);
-                resolve();
             });
             stream.on('error', reject);
         });

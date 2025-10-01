@@ -121,10 +121,13 @@ export function activate(context: vscode.ExtensionContext) {
         }),
 
         vscode.commands.registerCommand('wsl-manager.downloadDistribution', async () => {
+            // Set download lock BEFORE any operations (prevents refresh from corrupting state)
+            distroManager.setDownloadLock(true);
+
             try {
                 const distros = await distroManager.listDistros();
                 const downloadable = distros.filter(d => !d.available);
-                
+
                 if (downloadable.length === 0) {
                     vscode.window.showInformationMessage('All available distributions are already downloaded');
                     return;
@@ -150,9 +153,9 @@ export function activate(context: vscode.ExtensionContext) {
                     await distroDownloader.downloadDistro(selected.distro.name, {
                         onProgress: (downloadProgress) => {
                             const message = `${(downloadProgress.percent || 0).toFixed(0)}% - ${formatBytes(downloadProgress.downloaded)} / ${formatBytes(downloadProgress.total)}`;
-                            progress.report({ 
+                            progress.report({
                                 increment: undefined,
-                                message 
+                                message
                             });
                         }
                     });
@@ -162,6 +165,9 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(`Downloaded ${selected.distro.displayName} successfully!`);
             } catch (error) {
                 await ErrorHandler.showError(error, 'download distribution');
+            } finally {
+                // Always clear download lock (on success, error, or user cancellation)
+                distroManager.setDownloadLock(false);
             }
         }),
 
@@ -544,10 +550,22 @@ export function activate(context: vscode.ExtensionContext) {
                 });
 
                 await refreshAll();
-                vscode.window.showInformationMessage(`Deleted image '${imageName}' successfully`);
+                vscode.window.showInformationMessage(
+                    `Deleted image '${imageName}' successfully. ` +
+                    `Note: Other VS Code windows need to be reloaded to update their terminal profiles.`
+                );
                 
             } catch (error) {
                 await ErrorHandler.showError(error, 'delete image');
+            }
+        }),
+
+        vscode.commands.registerCommand('wsl-manager.refreshTerminalProfiles', async () => {
+            try {
+                await refreshAll();
+                vscode.window.showInformationMessage('Terminal profiles refreshed successfully');
+            } catch (error) {
+                await ErrorHandler.showError(error, 'refresh terminal profiles');
             }
         }),
 

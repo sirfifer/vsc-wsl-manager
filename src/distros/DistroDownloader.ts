@@ -311,6 +311,7 @@ export class DistroDownloader {
                     // Windows 10/11 has tar.exe built-in which can handle both TAR and ZIP
                     logger.debug('Using Windows tar.exe for APPX extraction');
                     const result = await executor.executeCommand('tar.exe', [
+                        '--force-local',  // Prevent C:\ colon from being interpreted as remote host
                         '-xf', appxPath,
                         '-C', tempDir
                     ]);
@@ -380,6 +381,7 @@ export class DistroDownloader {
                 try {
                     if (PLATFORM.isWindows && process.platform === 'win32') {
                         const result = await executor.executeCommand('tar.exe', [
+                            '--force-local',  // Prevent C:\ colon from being interpreted as remote host
                             '-xf', targetAppx,
                             '-C', nestedTempDir
                         ]);

@@ -56,6 +56,21 @@ export class EnhancedDistroManager extends DistroManager {
      * Refresh distributions from Microsoft Registry
      */
     private async refreshFromRegistry(): Promise<void> {
+        // Don't refresh if a catalog operation is already in progress (prevents race conditions)
+        if (this.isCatalogOperationInProgress()) {
+            logger.debug('Skipping refresh - catalog operation in progress');
+            return;
+        }
+
+        // Don't refresh if a download is in progress (prevents corrupting download state)
+        if (this.isDownloadInProgress()) {
+            logger.debug('Skipping refresh - download operation in progress');
+            return;
+        }
+
+        // Set refresh lock to prevent downloads from starting during refresh
+        this.setRefreshLock(true);
+
         try {
             logger.info('Refreshing distributions from Microsoft Registry');
 
@@ -69,73 +84,53 @@ export class EnhancedDistroManager extends DistroManager {
 
             const existingCatalog = this['catalog'] || { distributions: [] };
 
-            // Update our catalog with fresh URLs
-            const updatedDistros = this.getUpdatedDefaultDistros();
-
-            // Update URLs from Microsoft registry
-            for (const distro of updatedDistros) {
-                const msDistro = msDistros.find(d =>
-                    d.Name.toLowerCase() === distro.name.toLowerCase() ||
-                    d.Name.toLowerCase().includes(distro.name.split('-')[0].toLowerCase())
-                );
-
-                if (msDistro) {
-                    // Update with Microsoft's URL
-                    const newUrl = msDistro.Amd64WslUrl || msDistro.Amd64PackageUrl;
-                    if (newUrl && newUrl !== distro.sourceUrl) {
-                        logger.info(`Updated URL for ${distro.name}: ${newUrl}`);
-                        distro.sourceUrl = newUrl;
-                    }
-                }
-            }
-
-            // Merge: preserve download state from existing catalog, update URLs from fresh
-            const mergedDistros = updatedDistros.map(freshDistro => {
-                const existing = existingCatalog.distributions.find(
-                    d => d.name === freshDistro.name
+            // Convert Microsoft registry distros to our DistroInfo format
+            const catalogDistros: DistroInfo[] = msDistros.map(msDistro => {
+                // Try to find existing entry to preserve download state
+                const existing = existingCatalog.distributions.find(d =>
+                    d.name.toLowerCase() === msDistro.Name.toLowerCase() ||
+                    d.displayName?.toLowerCase() === msDistro.FriendlyName?.toLowerCase()
                 );
 
                 return {
-                    ...freshDistro,
-                    // Preserve download state if exists
+                    name: msDistro.Name.toLowerCase().replace(/\s+/g, '-'),
+                    displayName: msDistro.FriendlyName || msDistro.Name,
+                    description: msDistro.FriendlyName || msDistro.Name,
+                    version: 'latest',
+                    architecture: 'x64',
+                    sourceUrl: msDistro.Amd64WslUrl || msDistro.Amd64PackageUrl || '',
+                    tags: ['microsoft'],
+                    // Preserve download state from existing entry
                     available: existing?.available ?? false,
                     filePath: existing?.filePath,
-                    size: existing?.size || freshDistro.size,
+                    size: existing?.size,
                     sha256: existing?.sha256,
                     added: existing?.added
                 };
             });
 
-            // Also preserve any distros from existing catalog that aren't in the updated list
-            // (e.g., custom imported distros or distros downloaded with different names)
-            const updatedNames = new Set(updatedDistros.map(d => d.name));
-            const existingOnly = existingCatalog.distributions
-                .filter(d => !updatedNames.has(d.name))
+            // Also preserve any locally downloaded distros not in Microsoft registry
+            const msNames = new Set(catalogDistros.map(d => d.name));
+            const localOnly = existingCatalog.distributions
+                .filter(d => !msNames.has(d.name) && d.available)
                 .map(d => ({
                     ...d,
-                    available: d.available ?? false,  // Ensure available is always boolean
-                    filePath: d.filePath,
-                    size: d.size,
-                    sha256: d.sha256,
-                    added: d.added
+                    available: d.available ?? false
                 }));
-            mergedDistros.push(...existingOnly);
+            catalogDistros.push(...localOnly);
 
-            // Re-scan file system to update availability (in case files were added/removed manually)
+            // Re-scan file system to update availability
             const fs = require('fs');
-            for (const distro of mergedDistros) {
+            for (const distro of catalogDistros) {
                 const filePath = this['getDistroPath'](distro.name);
                 if (fs.existsSync(filePath)) {
                     distro.available = true;
                     distro.filePath = filePath;
-
-                    // Update size if not set
                     if (!distro.size) {
                         const stats = fs.statSync(filePath);
                         distro.size = stats.size;
                     }
                 } else if (distro.available) {
-                    // File was marked available but doesn't exist anymore
                     distro.available = false;
                     distro.filePath = undefined;
                 }
@@ -145,15 +140,18 @@ export class EnhancedDistroManager extends DistroManager {
             this['catalog'] = {
                 version: '2.0.0',
                 updated: new Date().toISOString(),
-                distributions: mergedDistros
+                distributions: catalogDistros
             };
             this['saveCatalog']();
 
-            const downloadedCount = mergedDistros.filter(d => d.available).length;
-            logger.info(`Refreshed ${mergedDistros.length} distributions from registry (${downloadedCount} downloaded locally)`);
+            const downloadedCount = catalogDistros.filter(d => d.available).length;
+            logger.info(`Refreshed ${catalogDistros.length} distributions from registry (${downloadedCount} downloaded locally)`);
         } catch (error) {
             logger.error('Failed to refresh from Microsoft Registry:', error);
             // Continue with existing catalog
+        } finally {
+            // Always clear refresh lock when done
+            this.setRefreshLock(false);
         }
     }
 
@@ -161,87 +159,30 @@ export class EnhancedDistroManager extends DistroManager {
      * Get updated default distros with validated URLs
      */
     public getUpdatedDefaultDistros(): DistroInfo[] {
-        // Start with community distros that we know work
-        return [
-            {
-                name: 'ubuntu-24.04',
-                displayName: 'Ubuntu 24.04 LTS',
-                description: 'Ubuntu 24.04 LTS (Noble Numbat) - Latest LTS',
-                version: '24.04',
-                architecture: 'x64',
-                sourceUrl: 'https://releases.ubuntu.com/24.04.3/ubuntu-24.04.3-wsl-amd64.wsl',
-                tags: ['ubuntu', 'lts', 'latest', 'microsoft'],
-                size: 667 * 1024 * 1024
-            },
-            {
-                name: 'ubuntu-22.04',
-                displayName: 'Ubuntu 22.04 LTS',
-                description: 'Ubuntu 22.04 LTS (Jammy Jellyfish) - Long Term Support',
-                version: '22.04.3',
-                architecture: 'x64',
-                sourceUrl: 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz',
-                tags: ['ubuntu', 'lts', 'stable'],
-                size: 325 * 1024 * 1024
-            },
-            {
-                name: 'debian-12',
-                displayName: 'Debian 12',
-                description: 'Debian 12 (Bookworm) - Stable and reliable',
-                version: '12',
-                architecture: 'x64',
-                sourceUrl: 'https://github.com/debuerreotype/docker-debian-artifacts/raw/dist-amd64/bookworm/rootfs.tar.xz',
-                tags: ['debian', 'stable'],
-                size: 50 * 1024 * 1024
-            },
-            {
-                name: 'alpine',
-                displayName: 'Alpine Linux',
-                description: 'Alpine Linux - Lightweight and secure',
-                version: '3.19',
-                architecture: 'x64',
-                sourceUrl: 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.0-x86_64.tar.gz',
-                tags: ['alpine', 'minimal', 'lightweight'],
-                size: 3 * 1024 * 1024
-            },
-            {
-                name: 'kali-linux',
-                displayName: 'Kali Linux',
-                description: 'Kali Linux - Penetration testing and security',
-                version: '2024.1',
-                architecture: 'x64',
-                sourceUrl: '', // Will be filled from Microsoft registry
-                tags: ['kali', 'security', 'pentesting', 'microsoft'],
-                size: 300 * 1024 * 1024
-            },
-            {
-                name: 'fedora',
-                displayName: 'Fedora',
-                description: 'Fedora - Leading edge Linux distribution',
-                version: '39',
-                architecture: 'x64',
-                sourceUrl: 'https://github.com/fedora-cloud/docker-brew-fedora/raw/39/x86_64/fedora-39-x86_64.tar.xz',
-                tags: ['fedora', 'cutting-edge'],
-                size: 70 * 1024 * 1024
-            },
-            {
-                name: 'archlinux',
-                displayName: 'Arch Linux',
-                description: 'Arch Linux - Rolling release for advanced users',
-                version: 'latest',
-                architecture: 'x64',
-                sourceUrl: 'https://mirror.rackspace.com/archlinux/iso/latest/archlinux-bootstrap-x86_64.tar.gz',
-                tags: ['arch', 'rolling', 'advanced'],
-                size: 150 * 1024 * 1024
-            }
-        ];
+        // Microsoft Registry is our single source of truth
+        // No hardcoded distros - all come from Microsoft's official registry
+        // This ensures simplicity and reliability
+        return [];
     }
 
     /**
      * Force refresh distributions
      */
     async refreshDistributions(): Promise<void> {
-        this.lastRefresh = null; // Force refresh
-        await this.refreshFromRegistry();
+        // Don't refresh if download is in progress
+        if (this.isDownloadInProgress()) {
+            logger.debug('Skipping manual refresh - download operation in progress');
+            return;
+        }
+
+        // Set refresh lock to prevent downloads during refresh
+        this.setRefreshLock(true);
+        try {
+            this.lastRefresh = null; // Force refresh
+            await this.refreshFromRegistry();
+        } finally {
+            this.setRefreshLock(false);
+        }
     }
 
     /**
