@@ -468,6 +468,15 @@ export class WSLImageManager {
     }
     
     /**
+     * Get cached images synchronously without WSL or manifest checks
+     * Returns immediately with locally cached metadata, perfect for instant UI display
+     * @returns Array of images from the last loaded metadata
+     */
+    getCachedImages(): ImageMetadata[] {
+        return Array.from(this.imageMetadata.values());
+    }
+
+    /**
      * List all images with metadata
      */
     async listImages(): Promise<ImageMetadata[]> {

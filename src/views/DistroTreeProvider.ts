@@ -84,25 +84,33 @@ export class DistroTreeItem extends vscode.TreeItem {
  * Tree provider for distros
  */
 export class DistroTreeProvider implements vscode.TreeDataProvider<DistroTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<DistroTreeItem | undefined | null | void> = 
+    private _onDidChangeTreeData: vscode.EventEmitter<DistroTreeItem | undefined | null | void> =
         new vscode.EventEmitter<DistroTreeItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<DistroTreeItem | undefined | null | void> = 
+    readonly onDidChangeTreeData: vscode.Event<DistroTreeItem | undefined | null | void> =
         this._onDidChangeTreeData.event;
-    
+
     private distroManager: DistroManager;
-    
+    private liveDataLoaded: boolean = false;
+
     constructor(distroManager?: DistroManager) {
         this.distroManager = distroManager || new DistroManager();
     }
-    
+
     refresh(): void {
         this._onDidChangeTreeData.fire();
     }
-    
+
+    /**
+     * Mark that live data has been loaded from async operations
+     */
+    markLiveDataLoaded(): void {
+        this.liveDataLoaded = true;
+    }
+
     getTreeItem(element: DistroTreeItem): vscode.TreeItem {
         return element;
     }
-    
+
     async getChildren(element?: DistroTreeItem): Promise<DistroTreeItem[]> {
         if (element) {
             // No children for distro items
@@ -110,7 +118,10 @@ export class DistroTreeProvider implements vscode.TreeDataProvider<DistroTreeIte
         }
 
         try {
-            const distros = await this.distroManager.listDistros();
+            // Use cached data for instant display if live data hasn't loaded yet
+            const distros = this.liveDataLoaded
+                ? await this.distroManager.listDistros()
+                : this.distroManager.getCachedDistros();
 
             // CRITICAL FIX: Only show downloaded distros (available = true)
             const availableDistros = distros.filter(d => d.available);

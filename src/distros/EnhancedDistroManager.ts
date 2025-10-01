@@ -26,17 +26,31 @@ export class EnhancedDistroManager extends DistroManager {
 
     /**
      * Override listDistros to merge Microsoft registry with local catalog
+     * Returns cached data immediately and refreshes in background for instant UI
      */
     async listDistros(): Promise<DistroInfo[]> {
-        // Check if we should refresh
-        if (this.shouldRefresh()) {
+        // Get current catalog
+        const catalog = (this as any).catalog;
+        const hasData = catalog && catalog.distributions && catalog.distributions.length > 0;
+
+        // If we have NO cached data at all (first run or corrupted), we MUST wait for refresh
+        // This ensures we always return something useful on first launch
+        if (!hasData && this.shouldRefresh()) {
+            logger.debug('No cached data - performing blocking refresh for first load');
             await this.refreshFromRegistry();
         }
+        // If we have cached data, refresh in background without blocking
+        else if (hasData && this.shouldRefresh()) {
+            // Launch refresh in background without blocking
+            this.refreshFromRegistry().catch(error => {
+                logger.error('Background registry refresh failed:', error);
+            });
+        }
 
-        // Get the catalog directly which includes our updated distros
-        const catalog = (this as any).catalog;
-        if (catalog && catalog.distributions) {
-            return catalog.distributions;
+        // Return catalog (now guaranteed to have data after first-run refresh)
+        const updatedCatalog = (this as any).catalog;
+        if (updatedCatalog && updatedCatalog.distributions) {
+            return updatedCatalog.distributions;
         }
 
         // Fall back to parent implementation

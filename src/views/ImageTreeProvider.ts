@@ -149,42 +149,53 @@ export class ImageTreeItem extends vscode.TreeItem {
  * Tree provider for images
  */
 export class ImageTreeProvider implements vscode.TreeDataProvider<ImageTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<ImageTreeItem | undefined | null | void> = 
+    private _onDidChangeTreeData: vscode.EventEmitter<ImageTreeItem | undefined | null | void> =
         new vscode.EventEmitter<ImageTreeItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<ImageTreeItem | undefined | null | void> = 
+    readonly onDidChangeTreeData: vscode.Event<ImageTreeItem | undefined | null | void> =
         this._onDidChangeTreeData.event;
-    
+
     private imageManager: WSLImageManager;
-    
+    private liveDataLoaded: boolean = false;
+
     constructor(imageManager?: WSLImageManager) {
         this.imageManager = imageManager || new WSLImageManager();
     }
-    
+
     refresh(): void {
         this._onDidChangeTreeData.fire();
     }
-    
+
+    /**
+     * Mark that live data has been loaded from async operations
+     */
+    markLiveDataLoaded(): void {
+        this.liveDataLoaded = true;
+    }
+
     getTreeItem(element: ImageTreeItem): vscode.TreeItem {
         return element;
     }
-    
+
     async getChildren(element?: ImageTreeItem): Promise<ImageTreeItem[]> {
         if (element) {
             // No children for image items
             return [];
         }
-        
+
         try {
-            const images = await this.imageManager.listImages();
-            
+            // Use cached data for instant display if live data hasn't loaded yet
+            const images = this.liveDataLoaded
+                ? await this.imageManager.listImages()
+                : this.imageManager.getCachedImages();
+
             // Sort by creation date (newest first)
             images.sort((a, b) => {
                 const dateA = new Date(a.created).getTime();
                 const dateB = new Date(b.created).getTime();
                 return dateB - dateA;
             });
-            
-            return images.map(image => 
+
+            return images.map(image =>
                 new ImageTreeItem(image, vscode.TreeItemCollapsibleState.None)
             );
         } catch (error) {

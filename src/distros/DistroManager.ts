@@ -610,6 +610,18 @@ export class DistroManager {
     }
 
     /**
+     * Get cached distros synchronously without any async operations
+     * Returns immediately with locally cached data, perfect for instant UI display
+     * @returns Array of distributions from the last loaded catalog
+     */
+    getCachedDistros(): DistroInfo[] {
+        if (!this.catalog) {
+            return [];
+        }
+        return this.catalog.distributions;
+    }
+
+    /**
      * List all available distros
      */
     async listDistros(): Promise<DistroInfo[]> {

@@ -69,18 +69,28 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Helper function to refresh all views and terminal profiles
     async function refreshAll() {
+        // Phase 1: Trigger instant refresh with cached data
+        // This fires immediately, causing tree views to populate with cached data
         distroTreeProvider?.refresh();
         imageTreeProvider?.refresh();
 
         try {
-            // Get real WSL distributions
-            const distributions = await wslManager.listDistributions();
+            // Phase 2: Load live data in parallel (not sequential!)
+            // Both network/WSL calls happen simultaneously for faster loading
+            const [distros, images, distributions] = await Promise.all([
+                distroManager.listDistros(),     // Network call to MS Registry
+                imageManager.listImages(),       // WSL.exe call
+                wslManager.listDistributions()   // WSL.exe call for real distributions
+            ]);
 
-            // Get images (treat enabled !== false as enabled)
-            const images = await imageManager.listImages();
+            // Phase 3: Mark live data loaded and trigger refresh with real data
+            distroTreeProvider?.markLiveDataLoaded();
+            imageTreeProvider?.markLiveDataLoaded();
+            distroTreeProvider?.refresh();
+            imageTreeProvider?.refresh();
+
+            // Update terminal profiles with live data
             const enabledImages = images.filter(img => img.enabled !== false);
-
-            // Combine real distributions with enabled images
             const imageDistributions = enabledImages.map(img => ({
                 name: img.name,
                 default: false,
@@ -88,10 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
                 version: String(img.wslVersion || 2)
             }));
 
-            // Merge all distributions (real WSL + images)
             const allDistributions = [...distributions, ...imageDistributions];
-
-            // Update terminal profiles with all distributions
             terminalProfileManager?.updateProfiles(allDistributions, images);
         } catch (error) {
             logger.error('Failed to update terminal profiles:', error);
