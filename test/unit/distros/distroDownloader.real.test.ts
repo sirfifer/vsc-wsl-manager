@@ -387,8 +387,9 @@ describe('DistroDownloader - Real Network Tests', () => {
 
     describe('Download Caching', () => {
         it('should skip download if file exists with correct checksum', async () => {
-            const testUrl = 'https://httpbin.org/bytes/256';
-            const destPath = path.join(tempDir, 'cached.bin');
+            // Use reliable Microsoft URL instead of httpbin.org
+            const testUrl = 'https://raw.githubusercontent.com/microsoft/WSL/main/distributions/DistributionInfo.json';
+            const destPath = path.join(tempDir, 'cached.json');
 
             // First download
             const checksum1 = await downloader.downloadWithChecksum(testUrl, destPath);

@@ -69,6 +69,9 @@ export interface DownloadOptions {
 
     /** Abort signal for cancellation */
     signal?: AbortSignal;
+
+    /** Distro info to use (if not already in manager) */
+    distro?: DistroInfo;
 }
 
 /**
@@ -157,12 +160,16 @@ export class DistroDownloader {
     ): Promise<void> {
         logger.info(`Starting download of distro: ${distroName}`);
 
-        // Get distro info
-        const distro = await this.distroManager.getDistro(distroName);
+        // Get distro info - use provided distro or look it up in manager
+        let distro: DistroInfo | null = options.distro || null;
+        if (!distro) {
+            distro = await this.distroManager.getDistro(distroName);
+        }
+
         if (!distro) {
             throw new Error(`Distro not found: ${distroName}`);
         }
-        
+
         if (!distro.sourceUrl) {
             throw new Error(`No download URL for distro: ${distroName}`);
         }
@@ -306,18 +313,39 @@ export class DistroDownloader {
 
             // Extract based on platform
             try {
-                // Only use tar.exe on actual Windows, not WSL
+                // Windows: Use PowerShell Expand-Archive for ZIP/APPX files
                 if (PLATFORM.isWindows && process.platform === 'win32') {
-                    // Windows 10/11 has tar.exe built-in which can handle both TAR and ZIP
-                    logger.debug('Using Windows tar.exe for APPX extraction');
-                    const result = await executor.executeCommand('tar.exe', [
-                        '--force-local',  // Prevent C:\ colon from being interpreted as remote host
-                        '-xf', appxPath,
-                        '-C', tempDir
-                    ]);
+                    logger.debug('Using PowerShell Expand-Archive for APPX extraction');
 
-                    if (result.exitCode !== 0) {
-                        throw new Error(`tar.exe extraction failed: ${result.stderr}`);
+                    // Check if file exists before attempting extraction
+                    if (!fs.existsSync(appxPath)) {
+                        throw new Error(`APPX file not found: ${appxPath}`);
+                    }
+
+                    // PowerShell Expand-Archive requires .zip extension
+                    // Rename file temporarily if it doesn't have .zip extension
+                    const zipPath = appxPath.endsWith('.zip') ? appxPath : appxPath + '.zip';
+                    if (appxPath !== zipPath) {
+                        fs.copyFileSync(appxPath, zipPath);
+                    }
+
+                    try {
+                        // Use PowerShell to extract APPX (which is a ZIP file)
+                        const psCommand = `Expand-Archive -Path '${zipPath}' -DestinationPath '${tempDir}' -Force`;
+                        const result = await executor.executeCommand('powershell.exe', [
+                            '-NoProfile',
+                            '-Command',
+                            psCommand
+                        ]);
+
+                        if (result.exitCode !== 0) {
+                            throw new Error(`PowerShell Expand-Archive failed: ${result.stderr}`);
+                        }
+                    } finally {
+                        // Clean up temporary .zip file if we created one
+                        if (appxPath !== zipPath && fs.existsSync(zipPath)) {
+                            fs.unlinkSync(zipPath);
+                        }
                     }
                 } else {
                     // Linux/WSL: try unzip first, then tar
@@ -380,14 +408,29 @@ export class DistroDownloader {
                 // Extract the nested APPX
                 try {
                     if (PLATFORM.isWindows && process.platform === 'win32') {
-                        const result = await executor.executeCommand('tar.exe', [
-                            '--force-local',  // Prevent C:\ colon from being interpreted as remote host
-                            '-xf', targetAppx,
-                            '-C', nestedTempDir
-                        ]);
+                        // Use PowerShell for nested APPX extraction
+                        // PowerShell requires .zip extension
+                        const zipPath = targetAppx.endsWith('.zip') ? targetAppx : targetAppx + '.zip';
+                        if (targetAppx !== zipPath) {
+                            fs.copyFileSync(targetAppx, zipPath);
+                        }
 
-                        if (result.exitCode !== 0) {
-                            throw new Error(`Nested tar.exe extraction failed: ${result.stderr}`);
+                        try {
+                            const psCommand = `Expand-Archive -Path '${zipPath}' -DestinationPath '${nestedTempDir}' -Force`;
+                            const result = await executor.executeCommand('powershell.exe', [
+                                '-NoProfile',
+                                '-Command',
+                                psCommand
+                            ]);
+
+                            if (result.exitCode !== 0) {
+                                throw new Error(`Nested PowerShell Expand-Archive failed: ${result.stderr}`);
+                            }
+                        } finally {
+                            // Clean up temporary .zip file
+                            if (targetAppx !== zipPath && fs.existsSync(zipPath)) {
+                                fs.unlinkSync(zipPath);
+                            }
                         }
                     } else {
                         if (await executor.isCommandAvailable('unzip')) {
